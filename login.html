@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم العالمية - إدارة الأسعار</title>
+    <!-- استيراد خط تجوال العصري من جوجل -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2980b9;
+            --hover-text-color: #1F2937;
+            --bg-body: #E2E8F0;
+            --card-bg: linear-gradient(135deg, #FFFFFF 0%, #F1F5F9 100%);
+            --input-bg: #FFFFFF;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --danger: #f43f5e;
+            --border-color: #cbd5e1;
+            --stats-bg: #f8fafc;
+        }
+
+        /* الثيم المظلم (Dark Mode) */
+        body.dark-mode {
+            --bg-body: #0f172a !important;
+            --card-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+            --input-bg: #1e293b !important;
+            --text-main: #f8fafc !important;
+            --text-muted: #94a3b8 !important;
+            --border-color: #334155 !important;
+            --stats-bg: #1e293b !important;
+            --hover-text-color: #f8fafc !important;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 15px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 620px;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 25px;
+            border-radius: 22px;
+            box-shadow: 0 20px 40px -10px rgba(41, 128, 185, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+
+        .container:hover {
+            box-shadow: 0 25px 50px -10px rgba(41, 128, 185, 0.25);
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            background: var(--stats-bg);
+            border: 2px solid var(--border-color);
+            color: var(--text-main);
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+        .theme-toggle:hover {
+            transform: scale(1.05);
+        }
+
+        h2 {
+            text-align: center;
+            color: var(--text-main);
+            margin-bottom: 20px;
+            font-size: 26px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: var(--stats-bg);
+            padding: 6px;
+            border-radius: 14px;
+            border: 1px solid var(--border-color);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            background: var(--border-color);
+            border: 2px solid transparent;
+            border-radius: 10px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            color: var(--text-main);
+            transition: all 0.25s ease-in-out;
+        }
+
+        .tab-btn:hover {
+            background: var(--primary) !important;
+            color: #ffffff !important;
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        .tab-btn.active {
+            background: var(--primary) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 12px rgba(41, 128, 185, 0.25);
+            border-color: var(--primary);
+        }
+
+        .section-content {
+            display: none;
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        .section-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 700;
+            color: var(--text-main);
+            font-size: 14px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 14px;
+            box-sizing: border-box;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.25s ease-in-out;
+            background-color: var(--input-bg);
+            color: var(--text-main);
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(41, 128, 185, 0.15);
+        }
+
+        .barcode-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .barcode-container input {
+            flex: 1;
+        }
+
+        .btn-qr-scan {
+            background: var(--primary);
+            color: #ffffff;
+            border: 2px solid transparent;
+            padding: 0 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-family: 'Tajawal', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            box-shadow: 0 6px 15px rgba(41, 128, 185, 0.2);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .btn-qr-scan svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .btn-qr-scan:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-save {
+            background: var(--primary);
+            color: #ffffff;
+            border: 2px solid transparent;
+            width: 100%;
+            padding: 13px;
+            border-radius: 12px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: 800;
+            box-shadow: 0 8px 20px rgba(41, 128, 185, 0.25);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .btn-save:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .stat-card {
+            background: var(--stats-bg);
+            border: 2px solid var(--border-color);
+            padding: 10px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 900;
+        }
+
+        .stat-card span {
+            display: block;
+            font-size: 15px;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+        }
+
+        .stat-card strong {
+            font-size: 16px;
+            color: var(--primary);
+        }
+
+        .product-card {
+            background: var(--input-bg);
+            border: 2px solid var(--border-color);
+            padding: 14px;
+            border-radius: 14px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .product-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(41, 128, 185, 0.1);
+            border-color: var(--primary);
+        }
+
+        .product-card input[type="checkbox"] {
+            width: 15px;
+            height: 15px;
+            cursor: pointer;
+            accent-color: var(--primary);
+            border-radius: 5px;
+        }
+
+        .product-thumb {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            border-radius: 8px;
+            background: var(--stats-bg);
+            border: 1px solid var(--border-color);
+        }
+
+        .product-info {
+            flex: 1;
+        }
+
+        .product-info h4 {
+            margin: 0 0 4px 0;
+            color: var(--primary);
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .product-info p {
+            margin: 2px 0;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .actions-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .btn-edit, .btn-delete {
+            border: 2px solid transparent;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            transition: all 0.3s ease;
+        }
+
+        .btn-edit {
+            background-color: #10b981;
+            color: #ffffff;
+        }
+        .btn-edit:hover { background:#003f15; color: #f8fafc; }
+
+        .btn-delete {
+            background-color: #f43f5e;
+            color:#f8fafc;
+        }
+        .btn-delete:hover { background-color: #770014; color: #f8fafc; }
+
+        .top-actions-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            background: var(--stats-bg);
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            color: var(--primary);
+            border: 2px solid var(--border-color);
+            font-size: 14px;
+        }
+
+        .btn-delete-selected, .btn-select-all {
+            border: 2px solid transparent;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            transition: all 0.3s ease;
+        }
+
+        .btn-delete-selected {
+            background-color: var(--danger);
+            color: white;
+            display: none;
+        }
+        .btn-delete-selected:hover { opacity: 0.9; }
+
+        .btn-select-all {
+            background-color: var(--primary);
+            color: white;
+            display: none;
+        }
+        .btn-select-all:hover { opacity: 0.9; }
+
+        #interactive.viewport, #searchInteractive.viewport {
+            width: 100%;
+            height: 180px;
+            display: none;
+            position: relative;
+            margin-bottom: 12px;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: inset 0 0 12px rgba(0,0,0,0.5);
+        }
+
+        /* Modal نافذة تفاصيل المنتج */
+        .product-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 22px;
+            width: 90%;
+            max-width: 380px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            border: 2px solid var(--border-color);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: color 0.2s;
+        }
+        .close-modal:hover { color: var(--danger); }
+
+        .modal-img {
+            width: 130px;
+            height: 130px;
+            object-fit: contain;
+            margin: 15px auto;
+            display: block;
+            border-radius: 12px;
+            background: var(--stats-bg);
+            padding: 10px;
+            border: 1px solid var(--border-color);
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: 900;
+            color: var(--text-main);
+            margin: 10px 0;
+        }
+
+        .modal-price {
+            font-size: 20px;
+            font-weight: 800;
+            color: #10b981;
+            margin-bottom: 10px;
+        }
+
+        .modal-barcode {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        #toast {
+            visibility: hidden;
+            min-width: 220px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            text-align: center;
+            border-radius: 12px;
+            padding: 12px;
+            position: fixed;
+            z-index: 1000;
+            right: 25px;
+            bottom: 25px;
+            font-size: 15px;
+            font-weight: 700;
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(15px);
+        }
+
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="تغيير الثيم">🌙</button>
+    <h2>لوحة تحكم المنتجات</h2>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('add')">إضافة منتج جديد</button>
+        <button class="tab-btn" onclick="switchTab('search')">بحث واستعلام شامل</button>
+    </div>
+
+    <!-- قسم الإضافة / التعديل -->
+    <div id="addSection" class="section-content active">
+        <input type="hidden" id="editingId" value="">
+        
+        <div class="form-group">
+            <label for="productName">اسم المنتج</label>
+            <input type="text" id="productName" placeholder="أدخل اسم المنتج هنا...">
+        </div>
+
+        <div class="form-group">
+            <label for="productPrice">السعر (بالجنيه)</label>
+            <input type="number" id="productPrice" placeholder="أدخل السعر...">
+        </div>
+
+        <div class="form-group">
+            <label for="productImage">صورة المنتج (كاميرا أو استوديو)</label>
+            <input type="file" id="productImage" accept="image/*" capture="environment">
+        </div>
+
+        <div class="form-group">
+            <label for="productBarcode">الباركود أو الـ QR Code</label>
+            <div class="barcode-container">
+                <input type="text" id="productBarcode" placeholder="امسح الرمز أو اكتبه يدوياً...">
+                <button type="button" class="btn-qr-scan" onclick="toggleScanner()" title="مسح QR Code">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M2,2H10V10H2V2M4,4V8H8V4H4M14,2H22V10H14V2M16,4V8H20V4H16M2,14H10V22H2V14M4,16V20H8V16H4M18,14V18H22V14H18M14,18H16V22H14V18M20,18H22V22H20V18M12,2H14V6H12V2M12,8H14V12H12V8M12,14H14V18H12V14M12,20H14V22H12V20M6,6H6.01V6.01H6V6M18,6H18.01V6.01H18V6M6,18H6.01V6.01H6V18Z"/>
+                    </svg>
+                    QR Scan
+                </button>
+            </div>
+        </div>
+
+        <div id="interactive" class="viewport"></div>
+
+        <button type="button" id="saveBtn" class="btn-save" onclick="saveProduct()">حفظ المنتج</button>
+    </div>
+
+    <!-- قسم البحث -->
+    <div id="searchSection" class="section-content">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span>إجمالي المنتجات</span>
+                <strong id="statTotal">0</strong>
+            </div>
+            <div class="stat-card">
+                <span>أعلى سعر</span>
+                <strong id="statMax">0 ج.م</strong>
+            </div>
+            <div class="stat-card">
+                <span>متوسط الأسعار</span>
+                <strong id="statAvg">0 ج.م</strong>
+            </div>
+        </div>
+
+        <div class="top-actions-bar">
+            <span id="productCounter">المنتجات المعروضة: 0</span>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" id="selectAllBtn" class="btn-select-all" onclick="toggleSelectAll()">تحديد الكل</button>
+                <button type="button" id="deleteSelectedBtn" class="btn-delete-selected" onclick="deleteSelectedProducts()">حذف المحددين</button>
+            </div>
+        </div>
+
+        <div class="form-group search-box">
+            <label for="searchInput">ابحث بالاسم، السعر، أو الـ QR Code</label>
+            <div class="barcode-container">
+                <input type="text" id="searchInput" placeholder="ابحث عن منتجات..." oninput="searchProducts()">
+                <button type="button" class="btn-qr-scan" onclick="toggleSearchScanner()" title="بحث بـ QR">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M2,2H10V10H2V2M4,4V8H8V4H4M14,2H22V10H14V2M16,4V8H20V4H16M2,14H10V22H2V14M4,16V20H8V16H4M18,14V18H22V14H18M14,18H16V22H14V18M20,18H22V22H20V18M12,2H14V6H12V2M12,8H14V12H12V8M12,14H14V18H12V14M12,20H14V22H12V20M6,6H6.01V6.01H6V6M18,6H18.01V6.01H18V6M6,18H6.01V6.01H6V18Z"/>
+                    </svg>
+                    QR Scan
+                </button>
+            </div>
+        </div>
+
+        <div id="searchInteractive" class="viewport"></div>
+
+        <div id="resultsList"></div>
+    </div>
+</div>
+
+<!-- نافذة Modal تفاصيل المنتج عند النقر عليه -->
+<div id="productModal" class="product-modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeProductModal()">&times;</span>
+        <img id="modalImg" class="modal-img" src="" alt="صورة المنتج">
+        <h3 id="modalName" class="modal-title"></h3>
+        <div id="modalPrice" class="modal-price"></div>
+        <div id="modalBarcode" class="modal-barcode"></div>
+    </div>
+</div>
+
+
+<div id="toast">تم بنجاح</div>
+
+<!-- ربط ملف الـ JavaScript الخارجي -->
+<script type="module" src="login.js"></script>
+
+</body>
+</html>
