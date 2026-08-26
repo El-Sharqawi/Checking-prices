@@ -1,4 +1,4 @@
-// دوال تشغيل الصوت (Beep مؤثرات صوتية حقيقية عبر Web Audio API)
+// (Javascript)
 function playBeep(type = 'success') {
     try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -28,7 +28,8 @@ window.toggleTheme = function() {
     document.body.classList.toggle('dark-mode');
     const isDark = document.body.classList.contains('dark-mode');
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    document.getElementById('themeToggleBtn').textContent = isDark ? '☀️' : '🌙';
+    const btn = document.getElementById('themeToggleBtn');
+    if (btn) btn.textContent = isDark ? '☀️' : '🌙';
 };
 
 // استرجاع الثيم عند التحميل
@@ -73,14 +74,19 @@ function updateStats(products) {
 
     const avgPrice = totalCount > 0 ? (totalPrice / totalCount).toFixed(1) : 0;
 
-    document.getElementById('statTotal').textContent = totalCount;
-    document.getElementById('statMax').textContent = maxPrice + ' ج.م';
-    document.getElementById('statAvg').textContent = avgPrice + ' ج.م';
+    const statTotal = document.getElementById('statTotal');
+    const statMax = document.getElementById('statMax');
+    const statAvg = document.getElementById('statAvg');
+
+    if (statTotal) statTotal.textContent = totalCount;
+    if (statMax) statMax.textContent = maxPrice + ' ج.م';
+    if (statAvg) statAvg.textContent = avgPrice + ' ج.م';
 }
 
 // دالة عرض رسالة الـ Toast
 function showToast(message, isSuccess = true) {
     const toast = document.getElementById('toast');
+    if (!toast) return;
     toast.textContent = message;
     toast.style.background = isSuccess ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #f43f5e, #e11d48)';
     toast.className = "show";
@@ -93,18 +99,31 @@ function showToast(message, isSuccess = true) {
     }, 3000);
 }
 
-// التبديل بين التبويبات
+// التبديل بين التبويبات الثلاثة
 window.switchTab = function(tabName) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.section-content').forEach(sec => sec.classList.remove('active'));
+    document.querySelectorAll('.section-content').forEach(sec => {
+        sec.classList.remove('active');
+        sec.style.display = 'none';
+    });
 
     if (tabName === 'add') {
         document.querySelectorAll('.tab-btn')[0].classList.add('active');
-        document.getElementById('addSection').classList.add('active');
-    } else {
+        const addSec = document.getElementById('addSection');
+        addSec.classList.add('active');
+        addSec.style.display = 'block';
+    } else if (tabName === 'search') {
         document.querySelectorAll('.tab-btn')[1].classList.add('active');
-        document.getElementById('searchSection').classList.add('active');
+        const searchSec = document.getElementById('searchSection');
+        searchSec.classList.add('active');
+        searchSec.style.display = 'block';
         loadProducts();
+    } else if (tabName === 'updates') {
+        document.querySelectorAll('.tab-btn')[2].classList.add('active');
+        const updatesSec = document.getElementById('updatesSection');
+        updatesSec.classList.add('active');
+        updatesSec.style.display = 'block';
+        loadPriceUpdates();
     }
 };
 
@@ -117,7 +136,7 @@ function saveProductsToStorage(products) {
     updateStats(products);
 }
 
-// حفظ أو تعديل منتج (مع معالجة رفع الصورة)
+// حفظ أو تعديل منتج (مع تتبع تغير السعر لقسم الأسعار الجديدة)
 window.saveProduct = function() {
     const id = document.getElementById('editingId').value;
     const name = document.getElementById('productName').value.trim();
@@ -134,6 +153,10 @@ window.saveProduct = function() {
 
     const proceedSave = (imageUrl) => {
         if (id) {
+            // جلب المنتج القديم لمقارنة سعره قبل التعديل
+            const oldProduct = products.find(item => item.id == id);
+            const isPriceChanged = oldProduct && parseFloat(oldProduct.price) !== parseFloat(price);
+
             products = products.map(p => {
                 if (p.id == id) {
                     return { 
@@ -146,6 +169,18 @@ window.saveProduct = function() {
                 }
                 return p;
             });
+
+            // لو السعر اتغير فعلاً، خزنه في الـ localStorage عشان يظهر في الأسعار الجديدة
+            if (isPriceChanged) {
+                const lastUpdateData = { 
+                    name: name, 
+                    price: price, 
+                    oldPrice: oldProduct.price,
+                    time: new Date().toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'}) 
+                };
+                localStorage.setItem('last_price_update', JSON.stringify(lastUpdateData));
+            }
+
             document.getElementById('editingId').value = '';
             showToast('تم تعديل المنتج بنجاح!');
         } else {
@@ -164,6 +199,10 @@ window.saveProduct = function() {
         document.getElementById('productPrice').value = '';
         document.getElementById('productBarcode').value = '';
         document.getElementById('productImage').value = '';
+        
+        // تفريغ حقل اسم صورة المنتج المخصص بالكاميرا لو موجود
+        const imageFileName = document.getElementById('imageFileName');
+        if (imageFileName) imageFileName.value = '';
         
         saveProductsToStorage(products);
         loadProducts();
@@ -188,18 +227,19 @@ window.loadProducts = function() {
 
 function displayProducts(products) {
     const resultsList = document.getElementById('resultsList');
-    document.getElementById('productCounter').textContent = `المنتجات المعروضة: ${products.length}`;
+    const counter = document.getElementById('productCounter');
+    if (counter) counter.textContent = `المنتجات المعروضة: ${products.length}`;
 
-    // إظهار أو إخفاء زر تحديد الكل بناءً على وجود منتجات
     const selectAllBtn = document.getElementById('selectAllBtn');
-    if (products.length > 0) {
-        selectAllBtn.style.display = 'block';
-    } else {
-        selectAllBtn.style.display = 'none';
+    if (selectAllBtn) {
+        selectAllBtn.style.display = products.length > 0 ? 'block' : 'none';
     }
+
+    if (!resultsList) return;
 
     if (products.length === 0) {
         resultsList.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px;">لا توجد منتجات مطابقة.</p>';
+        toggleDeleteSelectedBtn();
         return;
     }
 
@@ -228,7 +268,9 @@ function displayProducts(products) {
 
 // البحث الشامل
 window.searchProducts = function() {
-    const query = document.getElementById('searchInput').value.toLowerCase();
+    const searchInput = document.getElementById('searchInput');
+    if (!searchInput) return;
+    const query = searchInput.value.toLowerCase();
     const products = getProductsFromStorage();
     
     const filtered = products.filter(p => 
@@ -272,14 +314,12 @@ window.toggleDeleteSelectedBtn = function() {
     const selectAllBtn = document.getElementById('selectAllBtn');
     const totalBoxes = document.querySelectorAll('.product-checkbox');
 
-    // إظهار زر الحذف وزر تحديد الكل فقط إذا كان عدد المحددين أكبر من 2
-    if (checkedBoxes.length > 2) {
+    if (!deleteBtn || !selectAllBtn) return;
+
+    if (checkedBoxes.length > 0) {
         deleteBtn.style.display = 'block';
-        selectAllBtn.style.display = 'block';
     } else {
         deleteBtn.style.display = 'none';
-        // إذا كنت تريد إخفاء زر تحديد الكل بناءً على الشرط الجديد:
-        selectAllBtn.style.display = 'none'; 
     }
 
     if (checkedBoxes.length === totalBoxes.length && totalBoxes.length > 0) {
@@ -292,7 +332,6 @@ window.toggleDeleteSelectedBtn = function() {
 // زر تحديد الكل / إلغاء الكل
 window.toggleSelectAll = function() {
     const checkboxes = document.querySelectorAll('.product-checkbox');
-    const selectAllBtn = document.getElementById('selectAllBtn');
     const allChecked = Array.from(checkboxes).every(cb => cb.checked);
 
     checkboxes.forEach(cb => {
@@ -306,7 +345,7 @@ window.toggleSelectAll = function() {
 window.deleteSelectedProducts = function() {
     const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
     if (checkedBoxes.length === 0) return;
-    if (!confirm(`هل أنت متأكد من حذف ${checkedBoxes.length} منتجات المحددة؟`)) return;
+    if (!confirm(`هل أنت متأكد من حذف الـ ${checkedBoxes.length} منتجات المحددة؟`)) return;
 
     let idsToDelete = Array.from(checkedBoxes).map(cb => cb.getAttribute('data-id'));
     let products = getProductsFromStorage();
@@ -314,7 +353,8 @@ window.deleteSelectedProducts = function() {
 
     saveProductsToStorage(products);
     loadProducts();
-    document.getElementById('deleteSelectedBtn').style.display = 'none';
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+    if (deleteBtn) deleteBtn.style.display = 'none';
     showToast('تم حذف المنتجات المحددة بنجاح!', false);
 };
 
@@ -336,7 +376,6 @@ window.closeProductModal = function() {
     document.getElementById('productModal').style.display = 'none';
 };
 
-// إغلاق المودال عند النقر خارج المحتوى
 window.addEventListener('click', (e) => {
     const modal = document.getElementById('productModal');
     if (e.target === modal) {
@@ -348,6 +387,7 @@ window.addEventListener('click', (e) => {
 let scannerActive = false;
 window.toggleScanner = function() {
     const viewport = document.getElementById('interactive');
+    if (!viewport) return;
     if (scannerActive) {
         Quagga.stop();
         viewport.style.display = 'none';
@@ -385,6 +425,7 @@ window.toggleScanner = function() {
 let searchScannerActive = false;
 window.toggleSearchScanner = function() {
     const viewport = document.getElementById('searchInteractive');
+    if (!viewport) return;
     if (searchScannerActive) {
         Quagga.stop();
         viewport.style.display = 'none';
@@ -417,4 +458,42 @@ window.toggleSearchScanner = function() {
         searchScannerActive = false;
         showToast('تم العثور على الباركود في البحث!');
     });
+};
+
+// دالة تحديث اسم الصورة عبر الكاميرا/الاستديو
+window.updateImageFileName = function(input) {
+    const fileNameField = document.getElementById('imageFileName');
+    if (input.files && input.files[0]) {
+        fileNameField.value = input.files[0].name;
+        showToast('تم اختيار الصورة بنجاح!');
+    } else {
+        fileNameField.value = '';
+    }
+};
+
+// عرض سجل الأسعار الجديدة
+window.loadPriceUpdates = function() {
+    const updatesList = document.getElementById('updatesList');
+    if (!updatesList) return;
+
+    const lastUpdate = JSON.parse(localStorage.getItem('last_price_update') || 'null');
+    
+    if (!lastUpdate) {
+        updatesList.innerHTML = '<p style="color: var(--text-muted); padding: 20px; text-align: center;">لا توجد تعديلات سريعة على الأسعار حتى الآن.</p>';
+        return;
+    }
+
+    updatesList.innerHTML = `
+        <div class="product-card" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--bg-card); border-radius: 12px; margin-bottom: 10px;">
+            <div class="product-info">
+                <h4 style="margin: 0; color: var(--text-main); font-size: 16px;">${lastUpdate.name}</h4>
+                <p style="margin: 5px 0 0 0; color: var(--text-muted);">
+                    السعر السابق: <span style="text-decoration: line-through; color: #ef4444;">${lastUpdate.oldPrice} ج.م</span> 
+                    <span style="margin: 0 10px;">⬅️</span>
+                    السعر الجديد: <strong style="color: #10b981; font-size: 16px;">${lastUpdate.price} ج.م</strong>
+                </p>
+            </div>
+            <span style="font-size: 12px; background: var(--primary-light); color: var(--primary-color); padding: 5px 10px; border-radius: 8px; font-weight: bold;">${lastUpdate.time || ''}</span>
+        </div>
+    `;
 };

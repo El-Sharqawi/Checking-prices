@@ -65,8 +65,8 @@
 
         .theme-toggle {
             position: absolute;
-            top: 25px;
-            left: 25px;
+            top: 20px;
+            right: 20px;
             background: var(--stats-bg);
             border: 2px solid var(--border-color);
             color: var(--text-main);
@@ -79,6 +79,7 @@
             justify-content: center;
             font-size: 18px;
             transition: all 0.3s ease;
+            z-index: 10; 
         }
         .theme-toggle:hover {
             transform: scale(1.05);
@@ -503,7 +504,8 @@
 
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('add')">إضافة منتج جديد</button>
-        <button class="tab-btn" onclick="switchTab('search')">بحث واستعلام شامل</button>
+        <button class="tab-btn" onclick="switchTab('search')">استعلام شامل</button>
+        <button class="tab-btn" onclick="switchTab('updates')">الأسعار الجديدة 🔔</button>
     </div>
 
     <!-- قسم الإضافة / التعديل -->
@@ -521,8 +523,17 @@
         </div>
 
         <div class="form-group">
-            <label for="productImage">صورة المنتج (كاميرا أو استوديو)</label>
-            <input type="file" id="productImage" accept="image/*" capture="environment">
+            <label for="productImage">رفع صورة المنتج</label>
+            <div class="barcode-container">
+                <input type="file" id="productImage" accept="image/*" capture="environment" style="display: none;" onchange="updateImageFileName(this)">
+                <input type="text" id="imageFileName" placeholder="اختر صورة أو اضغط الكاميرا..." readonly onclick="document.getElementById('productImage').click()" style="cursor: pointer;">
+                <button type="button" class="btn-qr-scan" onclick="document.getElementById('productImage').click()" title="التقاط صورة بالـ كاميرا">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                        <path d="M4 5h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm8 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0-2a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                    </svg>
+                    كاميرا
+                </button>
+            </div>
         </div>
 
         <div class="form-group">
@@ -543,7 +554,16 @@
         <button type="button" id="saveBtn" class="btn-save" onclick="saveProduct()">حفظ المنتج</button>
     </div>
 
-    <!-- قسم البحث -->
+    <!-- قسم الأسعار الجديدة والتعديلات الأخيرة -->
+    <div id="updatesSection" class="section-content" style="display: none;">
+        <div class="form-group" style="text-align: center;">
+            <h3 style="color: var(--text-main); margin-bottom: 15px;">سجل آخر تعديلات وتغيرات الأسعار</h3>
+            <div id="updatesList" style="display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto; direction: rtl;">
+            </div>
+        </div>
+    </div>
+
+    <!-- قسم البحث والاستعلام الشامل -->
     <div id="searchSection" class="section-content">
         <div class="stats-grid">
             <div class="stat-card">
@@ -597,7 +617,6 @@
         <div id="modalBarcode" class="modal-barcode"></div>
     </div>
 </div>
-
 
 <div id="toast">تم بنجاح</div>
 
