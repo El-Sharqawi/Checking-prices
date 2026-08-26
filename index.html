@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة تحكم المنتجات - إدارة الأسعار</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <!-- مكتبة الباركود الحديثة والسريعة -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         :root {
             --primary: #2980b9;
@@ -266,7 +268,6 @@
 
         .viewport {
             width: 100%;
-            height: 180px;
             display: none;
             position: relative;
             margin-bottom: 12px;
@@ -344,7 +345,6 @@
         }
         #toast.show { visibility: visible; opacity: 1; transform: translateY(0); }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 </head>
 <body>
 
@@ -388,14 +388,14 @@
             <label>الباركود أو الـ QR Code</label>
             <div class="barcode-container">
                 <input type="text" id="productBarcode" placeholder="امسح الرمز أو اكتبه...">
-                <button type="button" class="btn-qr-scan" onclick="toggleScanner()">
+                <button type="button" class="btn-qr-scan" onclick="toggleScanner('reader', 'productBarcode')">
                     <svg viewBox="0 0 24 24"><path d="M2,2H10V10H2V2M4,4V8H8V4H4M14,2H22V10H14V2M16,4V8H20V4H16M2,14H10V22H2V14M4,16V20H8V16H4M18,14V18H22V14H18M14,18H16V22H14V18M20,18H22V22H20V18M12,2H14V6H12V2M12,8H14V12H12V8M12,14H14V18H12V14M12,20H14V22H12V20M6,6H6.01V6.01H6V6M18,6H18.01V6.01H18V6M6,18H6.01V6.01H6V18Z"/></svg>
                     QR Scan
                 </button>
             </div>
         </div>
 
-        <div id="interactive" class="viewport"></div>
+        <div id="reader" class="viewport"></div>
         <button type="button" class="btn-save" onclick="saveProduct()">حفظ المنتج</button>
     </div>
 
@@ -418,7 +418,6 @@
             </div>
         </div>
 
-        <!-- أزرار التحكم تظهر وتختفي بدقة وبدون مساحات فارغة -->
         <div class="floating-actions">
             <button type="button" id="selectAllBtn" class="btn-select-all" onclick="toggleSelectAll()">تحديد الكل</button>
             <button type="button" id="deleteSelectedBtn" class="btn-delete-selected" onclick="deleteSelectedProducts()">حذف المحددين</button>
@@ -428,14 +427,14 @@
             <label>ابحث بالاسم، السعر، أو الـ QR Code</label>
             <div class="barcode-container">
                 <input type="text" id="searchInput" placeholder="ابحث عن منتجات..." oninput="searchProducts()">
-                <button type="button" class="btn-qr-scan" onclick="toggleSearchScanner()">
+                <button type="button" class="btn-qr-scan" onclick="toggleScanner('searchReader', 'searchInput', true)">
                     <svg viewBox="0 0 24 24"><path d="M2,2H10V10H2V2M4,4V8H8V4H4M14,2H22V10H14V2M16,4V8H20V4H16M2,14H10V22H2V14M4,16V20H8V16H4M18,14V18H22V14H18M14,18H16V22H14V18M20,18H22V22H20V18M12,2H14V6H12V2M12,8H14V12H12V8M12,14H14V18H12V14M12,20H14V22H12V20M6,6H6.01V6.01H6V6M18,6H18.01V6.01H18V6M6,18H6.01V6.01H6V18Z"/></svg>
                     QR Scan
                 </button>
             </div>
         </div>
 
-        <div id="searchInteractive" class="viewport"></div>
+        <div id="searchReader" class="viewport"></div>
         <div id="resultsList"></div>
     </div>
 </div>
@@ -498,22 +497,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     loadProducts();
     loadPriceUpdates();
-
-    window.addEventListener('click', (e) => {
-        const addVp = document.getElementById('interactive');
-        const searchVp = document.getElementById('searchInteractive');
-        
-        if (scannerActive && !addVp.contains(e.target) && !e.target.closest('button[onclick="toggleScanner()"]')) {
-            Quagga.stop();
-            addVp.style.display = 'none';
-            scannerActive = false;
-        }
-        if (searchScannerActive && !searchVp.contains(e.target) && !e.target.closest('button[onclick="toggleSearchScanner()"]')) {
-            Quagga.stop();
-            searchVp.style.display = 'none';
-            searchScannerActive = false;
-        }
-    });
 });
 
 function showToast(msg, isSuccess = true) {
@@ -526,6 +509,9 @@ function showToast(msg, isSuccess = true) {
 }
 
 function switchTab(tab) {
+    // إيقاف الكاميرات عند التنقل بين التبويبات لتجنب الأخطاء
+    stopCurrentScanner();
+
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.section-content').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
 
@@ -626,7 +612,6 @@ function displayProducts(products) {
     const list = document.getElementById('resultsList');
     const selectAllBtn = document.getElementById('selectAllBtn');
 
-    // يظهر زرار "تحديد الكل" فقط إذا كان عدد المنتجات أكبر من 2
     if (products.length > 2) {
         selectAllBtn.style.display = 'block';
     } else {
@@ -715,7 +700,6 @@ function toggleDeleteSelectedBtn() {
     const checked = document.querySelectorAll('.product-checkbox:checked');
     const total = document.querySelectorAll('.product-checkbox');
     
-    // زرار حذف المحددين لا يظهر إلا إذا تم تحديد عناصر بالفعل
     document.getElementById('deleteSelectedBtn').style.display = checked.length > 0 ? 'block' : 'none';
     
     if(total.length > 2) {
@@ -807,33 +791,61 @@ function updateImageFileName(input) {
     }
 }
 
-let scannerActive = false;
-function toggleScanner() {
-    const vp = document.getElementById('interactive');
-    if (scannerActive) { Quagga.stop(); vp.style.display = 'none'; scannerActive = false; return; }
+// محرك الكاميرا والباركود الحديث باستخدام Html5Qrcode
+let activeScanner = null;
+function toggleScanner(elementId, inputTargetId, isSearch = false) {
+    const vp = document.getElementById(elementId);
+    
+    if (activeScanner) {
+        activeScanner.stop().then(() => {
+            activeScanner = null;
+            vp.style.display = 'none';
+        }).catch(err => {
+            activeScanner = null;
+            vp.style.display = 'none';
+        });
+        return;
+    }
+
     vp.style.display = 'block';
-    scannerActive = true;
-    Quagga.init({ inputStream: { name: "Live", type: "LiveStream", target: vp }, decoder: { readers: ["code_128_reader", "ean_reader"] } }, (err) => { if (!err) Quagga.start(); });
-    Quagga.onDetected((res) => {
-        document.getElementById('productBarcode').value = res.codeResult.code;
-        Quagga.stop(); vp.style.display = 'none'; scannerActive = false;
-        showToast('تم قراءة الرمز بنجاح!');
+    activeScanner = new Html5Qrcode(elementId);
+    
+    const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+    
+    activeScanner.start(
+        { facingMode: "environment" }, 
+        config, 
+        (decodedText) => {
+            document.getElementById(inputTargetId).value = decodedText;
+            if (isSearch) {
+                searchProducts();
+            }
+            activeScanner.stop().then(() => {
+                activeScanner = null;
+                vp.style.display = 'none';
+            });
+            showToast('تم قراءة الرمز بنجاح!');
+        },
+        (errorMessage) => {
+            // أخطاء المسح المؤقتة نتجاهلها عشان ماتعملش ازعاج في الكونسول
+        }
+    ).catch(err => {
+        showToast('تعذر تشغيل الكاميرا، تأكد من الصلاحيات!', false);
+        vp.style.display = 'none';
+        activeScanner = null;
     });
 }
 
-let searchScannerActive = false;
-function toggleSearchScanner() {
-    const vp = document.getElementById('searchInteractive');
-    if (searchScannerActive) { Quagga.stop(); vp.style.display = 'none'; searchScannerActive = false; return; }
-    vp.style.display = 'block';
-    searchScannerActive = true;
-    Quagga.init({ inputStream: { name: "Live", type: "LiveStream", target: vp }, decoder: { readers: ["code_128_reader", "ean_reader"] } }, (err) => { if (!err) Quagga.start(); });
-    Quagga.onDetected((res) => {
-        document.getElementById('searchInput').value = res.codeResult.code;
-        searchProducts();
-        Quagga.stop(); vp.style.display = 'none'; searchScannerActive = false;
-        showToast('تم العثور على الباركود!');
-    });
+function stopCurrentScanner() {
+    if (activeScanner) {
+        activeScanner.stop().then(() => {
+            activeScanner = null;
+            document.getElementById('reader').style.display = 'none';
+            document.getElementById('searchReader').style.display = 'none';
+        }).catch(e => {
+            activeScanner = null;
+        });
+    }
 }
 </script>
 </body>
