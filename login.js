@@ -1,4 +1,4 @@
-// (Javascript)
+// دالة الصوت الموحدة (نغمة لقط الباركود الناجحة)
 function playBeep(type = 'success') {
     try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -15,10 +15,11 @@ function playBeep(type = 'success') {
             oscillator.start();
             oscillator.stop(audioCtx.currentTime + 0.15);
         } else {
-            oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
+            oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(900, audioCtx.currentTime + 0.1);
             gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
             oscillator.start();
-            oscillator.stop(audioCtx.currentTime + 0.2);
+            oscillator.stop(audioCtx.currentTime + 0.15);
         }
     } catch (e) {}
 }
@@ -57,10 +58,11 @@ window.addEventListener('keydown', (e) => {
             document.getElementById('searchInteractive').style.display = 'none';
         } catch(err) {}
         closeProductModal();
+        closeConfirmModal();
     }
 });
 
-// تحديث الإحصائيات
+// تحديث الإحصائيات (إجمالي المنتجات وأعلى سعر والمنتجات المعروضة)
 function updateStats(products) {
     const totalCount = products.length;
     let maxPrice = 0;
@@ -72,15 +74,13 @@ function updateStats(products) {
         if (price > maxPrice) maxPrice = price;
     });
 
-    const avgPrice = totalCount > 0 ? (totalPrice / totalCount).toFixed(1) : 0;
-
     const statTotal = document.getElementById('statTotal');
     const statMax = document.getElementById('statMax');
-    const statAvg = document.getElementById('statAvg');
+    const statCounter = document.getElementById('statCounter');
 
     if (statTotal) statTotal.textContent = totalCount;
     if (statMax) statMax.textContent = maxPrice + ' ج.م';
-    if (statAvg) statAvg.textContent = avgPrice + ' ج.م';
+    if (statCounter) statCounter.textContent = totalCount;
 }
 
 // دالة عرض رسالة الـ Toast
@@ -91,8 +91,7 @@ function showToast(message, isSuccess = true) {
     toast.style.background = isSuccess ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #f43f5e, #e11d48)';
     toast.className = "show";
     
-    if (isSuccess) playBeep('success');
-    else playBeep('error');
+    playBeep('success');
 
     setTimeout(() => {
         toast.className = toast.className.replace("show", "");
@@ -136,7 +135,7 @@ function saveProductsToStorage(products) {
     updateStats(products);
 }
 
-// حفظ أو تعديل منتج (مع تتبع تغير السعر لقسم الأسعار الجديدة)
+// حفظ أو تعديل منتج (مع تسجيل السعر الجديد في السجل التراكمي)
 window.saveProduct = function() {
     const id = document.getElementById('editingId').value;
     const name = document.getElementById('productName').value.trim();
@@ -153,14 +152,13 @@ window.saveProduct = function() {
 
     const proceedSave = (imageUrl) => {
         if (id) {
-            // جلب المنتج القديم لمقارنة سعره قبل التعديل
             const oldProduct = products.find(item => item.id == id);
             const isPriceChanged = oldProduct && parseFloat(oldProduct.price) !== parseFloat(price);
 
             products = products.map(p => {
                 if (p.id == id) {
                     return { 
-                        id, 
+                        id: Number(id), 
                         name, 
                         price, 
                         barcode: barcode || 'بدون باركود', 
@@ -170,15 +168,21 @@ window.saveProduct = function() {
                 return p;
             });
 
-            // لو السعر اتغير فعلاً، خزنه في الـ localStorage عشان يظهر في الأسعار الجديدة
+            // إضافة التعديل لسجل الأسعار الجديدة بشكل تراكمي
             if (isPriceChanged) {
-                const lastUpdateData = { 
-                    name: name, 
-                    price: price, 
+                let priceUpdates = JSON.parse(localStorage.getItem('price_updates_list') || '[]');
+                const newUpdate = {
+                    updateId: Date.now() + Math.random(),
+                    productId: Number(id),
+                    name: name,
+                    image: imageUrl || oldProduct.image || '',
                     oldPrice: oldProduct.price,
-                    time: new Date().toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'}) 
+                    price: price,
+                    barcode: barcode || oldProduct.barcode || 'بدون باركود',
+                    time: new Date().toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'})
                 };
-                localStorage.setItem('last_price_update', JSON.stringify(lastUpdateData));
+                priceUpdates.unshift(newUpdate);
+                localStorage.setItem('price_updates_list', JSON.stringify(priceUpdates));
             }
 
             document.getElementById('editingId').value = '';
@@ -200,9 +204,8 @@ window.saveProduct = function() {
         document.getElementById('productBarcode').value = '';
         document.getElementById('productImage').value = '';
         
-        // تفريغ حقل اسم صورة المنتج المخصص بالكاميرا لو موجود
         const imageFileName = document.getElementById('imageFileName');
-        if (imageFileName) imageFileName.value = '';
+        if (imageFileName) imageFileName.textContent = '';
         
         saveProductsToStorage(products);
         loadProducts();
@@ -217,7 +220,7 @@ window.saveProduct = function() {
     } else {
         proceedSave(null);
     }
-}
+};
 
 window.loadProducts = function() {
     const products = getProductsFromStorage();
@@ -225,12 +228,11 @@ window.loadProducts = function() {
     displayProducts(products);
 };
 
+// عرض المنتجات بتصميم منسق (صورة، اسم، سعر واضح ملون، باركود)
 function displayProducts(products) {
     const resultsList = document.getElementById('resultsList');
-    const counter = document.getElementById('productCounter');
-    if (counter) counter.textContent = `المنتجات المعروضة: ${products.length}`;
-
     const selectAllBtn = document.getElementById('selectAllBtn');
+    
     if (selectAllBtn) {
         selectAllBtn.style.display = products.length > 0 ? 'block' : 'none';
     }
@@ -245,15 +247,15 @@ function displayProducts(products) {
 
     let html = '';
     products.forEach(p => {
-        const imgSrc = p.image ? p.image : 'https://via.placeholder.com/50?text=No+Img';
+        const imgSrc = p.image ? p.image : 'https://via.placeholder.com/60?text=No+Img';
         html += `
             <div class="product-card" onclick="openProductModal(${p.id}, event)">
                 <input type="checkbox" class="product-checkbox" data-id="${p.id}" onclick="event.stopPropagation()" onchange="toggleDeleteSelectedBtn()">
                 <img src="${imgSrc}" class="product-thumb" alt="صورة">
                 <div class="product-info">
                     <h4>${p.name}</h4>
-                    <p>السعر: <strong>${p.price} ج.م</strong></p>
-                    <p>الباركود: ${p.barcode}</p>
+                    <p class="product-price-txt">السعر: <strong>${p.price} ج.م</strong></p>
+                    <p class="product-barcode-txt">الباركود: ${p.barcode}</p>
                 </div>
                 <div class="actions-group" onclick="event.stopPropagation()">
                     <button class="btn-edit" onclick="editProduct(${p.id})">تعديل</button>
@@ -297,17 +299,63 @@ window.editProduct = function(id) {
     showToast('جاري وضع التعديل للمنتج...');
 };
 
-// حذف منتج واحد
-window.deleteProduct = function(id) {
-    if (!confirm('هل أنت متأكد من حذف هذا المنتج؟')) return;
-    let products = getProductsFromStorage();
-    products = products.filter(p => p.id != id);
-    saveProductsToStorage(products);
-    loadProducts();
-    showToast('تم حذف المنتج بنجاح!', false);
+// نافذة التأكيد المركزية (Modal) بدلاً من الـ alert
+let deleteActionCallback = null;
+
+function showConfirmModal(message, callback) {
+    const msgElem = document.getElementById('confirmMessage');
+    if (msgElem) msgElem.innerText = message;
+    const modal = document.getElementById('confirmModal');
+    if (modal) modal.style.display = 'flex';
+    deleteActionCallback = callback;
+}
+
+window.closeConfirmModal = function() {
+    const modal = document.getElementById('confirmModal');
+    if (modal) modal.style.display = 'none';
+    deleteActionCallback = null;
 };
 
-// تفعيل وتحديث أزرار الحذف الجماعي والتحديد
+document.addEventListener('DOMContentLoaded', () => {
+    const yesBtn = document.getElementById('confirmYesBtn');
+    if (yesBtn) {
+        yesBtn.onclick = function() {
+            if (deleteActionCallback) deleteActionCallback();
+            closeConfirmModal();
+        };
+    }
+});
+
+// حذف منتج واحد مع تحديث سجل الأسعار الجديدة
+window.deleteProduct = function(id) {
+    showConfirmModal("هل أنت متأكد من حذف هذا المنتج؟ سيتم إزالته نهائياً من القائمة والأسعار الجديدة.", function() {
+        let products = getProductsFromStorage();
+        products = products.filter(p => p.id != id);
+        saveProductsToStorage(products);
+
+        // إزالة المرتبط به من سجل الأسعار الجديدة
+        let priceUpdates = JSON.parse(localStorage.getItem('price_updates_list') || '[]');
+        priceUpdates = priceUpdates.filter(u => u.productId !== Number(id));
+        localStorage.setItem('price_updates_list', JSON.stringify(priceUpdates));
+
+        loadProducts();
+        loadPriceUpdates();
+        showToast("تم الحذف بنجاح!", false);
+    });
+};
+
+// زر تحديد الكل / إلغاء الكل
+window.toggleSelectAll = function() {
+    const checkboxes = document.querySelectorAll('.product-checkbox');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+
+    checkboxes.forEach(cb => {
+        cb.checked = !allChecked;
+    });
+
+    toggleDeleteSelectedBtn();
+};
+
 window.toggleDeleteSelectedBtn = function() {
     const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
     const deleteBtn = document.getElementById('deleteSelectedBtn');
@@ -329,36 +377,29 @@ window.toggleDeleteSelectedBtn = function() {
     }
 };
 
-// زر تحديد الكل / إلغاء الكل
-window.toggleSelectAll = function() {
-    const checkboxes = document.querySelectorAll('.product-checkbox');
-    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-
-    checkboxes.forEach(cb => {
-        cb.checked = !allChecked;
-    });
-
-    toggleDeleteSelectedBtn();
-};
-
 // حذف العناصر المحددة
 window.deleteSelectedProducts = function() {
     const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
     if (checkedBoxes.length === 0) return;
-    if (!confirm(`هل أنت متأكد من حذف الـ ${checkedBoxes.length} منتجات المحددة؟`)) return;
 
-    let idsToDelete = Array.from(checkedBoxes).map(cb => cb.getAttribute('data-id'));
-    let products = getProductsFromStorage();
-    products = products.filter(p => !idsToDelete.includes(p.id.toString()));
+    showConfirmModal(`هل أنت متأكد من حذف الـ ${checkedBoxes.length} منتجات المحددة؟`, function() {
+        let idsToDelete = Array.from(checkedBoxes).map(cb => Number(cb.getAttribute('data-id')));
+        let products = getProductsFromStorage();
+        products = products.filter(p => !idsToDelete.includes(Number(p.id)));
 
-    saveProductsToStorage(products);
-    loadProducts();
-    const deleteBtn = document.getElementById('deleteSelectedBtn');
-    if (deleteBtn) deleteBtn.style.display = 'none';
-    showToast('تم حذف المنتجات المحددة بنجاح!', false);
+        saveProductsToStorage(products);
+
+        let priceUpdates = JSON.parse(localStorage.getItem('price_updates_list') || '[]');
+        priceUpdates = priceUpdates.filter(u => !idsToDelete.includes(Number(u.productId)));
+        localStorage.setItem('price_updates_list', JSON.stringify(priceUpdates));
+
+        loadProducts();
+        loadPriceUpdates();
+        showToast("تم حذف المنتجات المحددة بنجاح!", false);
+    });
 };
 
-// نافذة Modal عرض المنتج عند النقر عليه
+// نافذة Modal عرض تفاصيل المنتج في الاستعلام الشامل
 window.openProductModal = function(id, event) {
     const products = getProductsFromStorage();
     const p = products.find(item => item.id == id);
@@ -376,14 +417,33 @@ window.closeProductModal = function() {
     document.getElementById('productModal').style.display = 'none';
 };
 
+// نافذة Modal خاصة بسجل الأسعار الجديدة (تعرض السعر القديم مشطوب والجديد بلون عريض)
+window.openUpdateModal = function(updateId) {
+    const priceUpdates = JSON.parse(localStorage.getItem('price_updates_list') || '[]');
+    const update = priceUpdates.find(u => u.updateId == updateId);
+    if (!update) return;
+
+    document.getElementById('modalImg').src = update.image ? update.image : 'https://via.placeholder.com/130?text=No+Img';
+    document.getElementById('modalName').textContent = update.name;
+    
+    // تصميم السعر القديم والجديد داخل الـ Modal
+    document.getElementById('modalPrice').innerHTML = `
+        <span style="text-decoration: line-through; color: #ef4444; font-size: 16px; margin-left: 10px;">${update.oldPrice} ج.م</span>
+        <span style="color: #10b981; font-weight: 900; font-size: 22px;">${update.price} ج.م</span>
+    `;
+    document.getElementById('modalBarcode').textContent = 'الباركود: ' + update.barcode;
+
+    document.getElementById('productModal').style.display = 'flex';
+};
+
 window.addEventListener('click', (e) => {
     const modal = document.getElementById('productModal');
-    if (e.target === modal) {
-        closeProductModal();
-    }
+    const confirmModal = document.getElementById('confirmModal');
+    if (e.target === modal) closeProductModal();
+    if (e.target === confirmModal) closeConfirmModal();
 });
 
-// تشغيل كاميرا الباركود (QuaggaJS)
+// تشغيل كاميرا الباركود للإضافة
 let scannerActive = false;
 window.toggleScanner = function() {
     const viewport = document.getElementById('interactive');
@@ -398,14 +458,8 @@ window.toggleScanner = function() {
     viewport.style.display = 'block';
     scannerActive = true;
     Quagga.init({
-        inputStream: {
-            name: "Live",
-            type: "LiveStream",
-            target: viewport
-        },
-        decoder: {
-            readers: ["code_128_reader", "ean_reader", "qr_reader"]
-        }
+        inputStream: { name: "Live", type: "LiveStream", target: viewport },
+        decoder: { readers: ["code_128_reader", "ean_reader", "qr_reader"] }
     }, function(err) {
         if (err) return;
         Quagga.start();
@@ -436,14 +490,8 @@ window.toggleSearchScanner = function() {
     viewport.style.display = 'block';
     searchScannerActive = true;
     Quagga.init({
-        inputStream: {
-            name: "Live",
-            type: "LiveStream",
-            target: viewport
-        },
-        decoder: {
-            readers: ["code_128_reader", "ean_reader"]
-        }
+        inputStream: { name: "Live", type: "LiveStream", target: viewport },
+        decoder: { readers: ["code_128_reader", "ean_reader"] }
     }, function(err) {
         if (err) return;
         Quagga.start();
@@ -460,40 +508,60 @@ window.toggleSearchScanner = function() {
     });
 };
 
-// دالة تحديث اسم الصورة عبر الكاميرا/الاستديو
+// تحديث اسم الصورة المختارة
 window.updateImageFileName = function(input) {
-    const fileNameField = document.getElementById('imageFileName');
+    const fileNameDiv = document.getElementById('imageFileName');
     if (input.files && input.files[0]) {
-        fileNameField.value = input.files[0].name;
+        fileNameDiv.textContent = "تم اختيار الصورة: " + input.files[0].name;
         showToast('تم اختيار الصورة بنجاح!');
     } else {
-        fileNameField.value = '';
+        fileNameDiv.textContent = '';
     }
 };
 
-// عرض سجل الأسعار الجديدة
+// عرض سجل الأسعار الجديدة التراكمي مع تشيك بوكس وزر حذف خاص بكل عنصر
 window.loadPriceUpdates = function() {
     const updatesList = document.getElementById('updatesList');
     if (!updatesList) return;
 
-    const lastUpdate = JSON.parse(localStorage.getItem('last_price_update') || 'null');
+    const priceUpdates = JSON.parse(localStorage.getItem('price_updates_list') || '[]');
     
-    if (!lastUpdate) {
+    if (priceUpdates.length === 0) {
         updatesList.innerHTML = '<p style="color: var(--text-muted); padding: 20px; text-align: center;">لا توجد تعديلات سريعة على الأسعار حتى الآن.</p>';
         return;
     }
 
-    updatesList.innerHTML = `
-        <div class="product-card" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--bg-card); border-radius: 12px; margin-bottom: 10px;">
-            <div class="product-info">
-                <h4 style="margin: 0; color: var(--text-main); font-size: 16px;">${lastUpdate.name}</h4>
-                <p style="margin: 5px 0 0 0; color: var(--text-muted);">
-                    السعر السابق: <span style="text-decoration: line-through; color: #ef4444;">${lastUpdate.oldPrice} ج.م</span> 
-                    <span style="margin: 0 10px;">⬅️</span>
-                    السعر الجديد: <strong style="color: #10b981; font-size: 16px;">${lastUpdate.price} ج.م</strong>
-                </p>
+    let html = '';
+    priceUpdates.forEach(update => {
+        const imgSrc = update.image ? update.image : 'https://via.placeholder.com/50?text=No+Img';
+        html += `
+            <div class="product-card" onclick="openUpdateModal(${update.updateId})">
+                <input type="checkbox" class="update-checkbox" data-update-id="${update.updateId}" onclick="event.stopPropagation()">
+                <img src="${imgSrc}" class="product-thumb" alt="صورة">
+                <div class="product-info">
+                    <h4>${update.name}</h4>
+                    <p>
+                        السعر السابق: <span style="text-decoration: line-through; color: #ef4444;">${update.oldPrice} ج.م</span> 
+                        <span style="margin: 0 6px;">⬅️</span>
+                        السعر الجديد: <strong style="color: #10b981; font-size: 15px;">${update.price} ج.م</strong>
+                    </p>
+                </div>
+                <div class="actions-group" onclick="event.stopPropagation()">
+                    <button class="btn-delete" onclick="deleteSinglePriceUpdate(${update.updateId})">حذف</button>
+                </div>
             </div>
-            <span style="font-size: 12px; background: var(--primary-light); color: var(--primary-color); padding: 5px 10px; border-radius: 8px; font-weight: bold;">${lastUpdate.time || ''}</span>
-        </div>
-    `;
+        `;
+    });
+    updatesList.innerHTML = html;
+};
+
+// حذف عنصر واحد من سجل الأسعار الجديدة
+window.deleteSinglePriceUpdate = function(updateId) {
+    showConfirmModal("هل أنت متأكد من حذف هذا السجل من الأسعار الجديدة؟", function() {
+        let priceUpdates = JSON.parse(localStorage.getItem('price_updates_list') || '[]');
+        priceUpdates = priceUpdates.filter(u => u.updateId !== Number(updateId));
+        localStorage.setItem('price_updates_list', JSON.stringify(priceUpdates));
+        loadPriceUpdates();
+        showToast("تم الحذف بنجاح!", false);
+    });
 };

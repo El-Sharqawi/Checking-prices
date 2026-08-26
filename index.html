@@ -3,13 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة التحكم العالمية - إدارة الأسعار</title>
-    <!-- استيراد خط تجوال العصري من جوجل -->
+    <title>لوحة تحكم المنتجات - إدارة الأسعار</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #2980b9;
-            --hover-text-color: #1F2937;
             --bg-body: #E2E8F0;
             --card-bg: linear-gradient(135deg, #FFFFFF 0%, #F1F5F9 100%);
             --input-bg: #FFFFFF;
@@ -20,7 +18,6 @@
             --stats-bg: #f8fafc;
         }
 
-        /* الثيم المظلم (Dark Mode) */
         body.dark-mode {
             --bg-body: #0f172a !important;
             --card-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
@@ -29,7 +26,6 @@
             --text-muted: #94a3b8 !important;
             --border-color: #334155 !important;
             --stats-bg: #1e293b !important;
-            --hover-text-color: #f8fafc !important;
         }
 
         body {
@@ -49,40 +45,30 @@
             width: 100%;
             max-width: 620px;
             background: var(--card-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
             padding: 25px;
             border-radius: 22px;
             box-shadow: 0 20px 40px -10px rgba(41, 128, 185, 0.15);
             border: 2px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             position: relative;
-        }
-
-        .container:hover {
-            box-shadow: 0 25px 50px -10px rgba(41, 128, 185, 0.25);
+            padding-top: 50px !important;
         }
 
         .theme-toggle {
             position: absolute;
-            top: 20px;
-            right: 20px;
+            top: 0;
+            right: 0;
             background: var(--stats-bg);
             border: 2px solid var(--border-color);
             color: var(--text-main);
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
+            width: 45px;
+            height: 45px;
+            border-radius: 0 22px 0 16px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 18px;
-            transition: all 0.3s ease;
-            z-index: 10; 
-        }
-        .theme-toggle:hover {
-            transform: scale(1.05);
+            z-index: 10;
         }
 
         h2 {
@@ -91,7 +77,6 @@
             margin-bottom: 20px;
             font-size: 26px;
             font-weight: 900;
-            letter-spacing: -0.5px;
         }
 
         .tabs {
@@ -111,44 +96,24 @@
             border: 2px solid transparent;
             border-radius: 10px;
             font-family: 'Tajawal', sans-serif;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 700;
             cursor: pointer;
             color: var(--text-main);
-            transition: all 0.25s ease-in-out;
-        }
-
-        .tab-btn:hover {
-            background: var(--primary) !important;
-            color: #ffffff !important;
-            border-color: var(--primary);
-            transform: translateY(-1px);
+            transition: all 0.25s ease;
+            text-align: center;
         }
 
         .tab-btn.active {
             background: var(--primary) !important;
             color: #ffffff !important;
             box-shadow: 0 4px 12px rgba(41, 128, 185, 0.25);
-            border-color: var(--primary);
         }
 
-        .section-content {
-            display: none;
-            animation: fadeIn 0.3s ease forwards;
-        }
+        .section-content { display: none; }
+        .section-content.active { display: block; }
 
-        .section-content.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
+        .form-group { margin-bottom: 16px; }
 
         label {
             display: block;
@@ -158,7 +123,7 @@
             font-size: 14px;
         }
 
-        input, select {
+        input {
             width: 100%;
             padding: 12px 14px;
             box-sizing: border-box;
@@ -167,30 +132,20 @@
             font-family: 'Tajawal', sans-serif;
             font-size: 15px;
             outline: none;
-            transition: all 0.25s ease-in-out;
             background-color: var(--input-bg);
             color: var(--text-main);
         }
 
-        input:focus, select:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(41, 128, 185, 0.15);
-        }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(41, 128, 185, 0.15); }
 
-        .barcode-container {
-            display: flex;
-            gap: 10px;
-        }
-
-        .barcode-container input {
-            flex: 1;
-        }
+        .barcode-container { display: flex; gap: 10px; }
+        .barcode-container input { flex: 1; }
 
         .btn-qr-scan {
             background: var(--primary);
             color: #ffffff;
             border: 2px solid transparent;
-            padding: 0 18px;
+            padding: 0 16px;
             border-radius: 12px;
             cursor: pointer;
             display: flex;
@@ -199,26 +154,17 @@
             gap: 6px;
             font-family: 'Tajawal', sans-serif;
             font-weight: 700;
-            font-size: 14px;
-            box-shadow: 0 6px 15px rgba(41, 128, 185, 0.2);
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            font-size: 13px;
+            height: 48px;
+            box-shadow: 0 4px 12px rgba(41, 128, 185, 0.2);
+            white-space: nowrap;
         }
-
-        .btn-qr-scan svg {
-            width: 20px;
-            height: 20px;
-            fill: currentColor;
-        }
-
-        .btn-qr-scan:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-        }
+        .btn-qr-scan svg { width: 18px; height: 18px; fill: currentColor; }
 
         .btn-save {
             background: var(--primary);
             color: #ffffff;
-            border: 2px solid transparent;
+            border: none;
             width: 100%;
             padding: 13px;
             border-radius: 12px;
@@ -228,41 +174,45 @@
             margin-top: 10px;
             font-weight: 800;
             box-shadow: 0 8px 20px rgba(41, 128, 185, 0.25);
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .btn-save:hover {
-            opacity: 0.95;
-            transform: translateY(-1px);
         }
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
             margin-bottom: 15px;
         }
 
         .stat-card {
             background: var(--stats-bg);
             border: 2px solid var(--border-color);
-            padding: 10px;
+            padding: 12px;
             border-radius: 12px;
             text-align: center;
             font-weight: 900;
         }
 
-        .stat-card span {
-            display: block;
-            font-size: 15px;
-            color: var(--text-muted);
-            margin-bottom: 2px;
+        .stat-card span { display: block; font-size: 14px; color: var(--text-muted); margin-bottom: 4px; }
+        .stat-card strong { font-size: 18px; color: var(--primary); }
+
+        .floating-actions {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
         }
 
-        .stat-card strong {
-            font-size: 16px;
-            color: var(--primary);
+        .btn-delete-selected, .btn-select-all {
+            border: none;
+            padding: 8px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            display: none;
         }
+        .btn-delete-selected { background-color: var(--danger); color: white; }
+        .btn-select-all { background-color: var(--primary); color: white; }
 
         .product-card {
             background: var(--input-bg);
@@ -272,120 +222,49 @@
             margin-bottom: 10px;
             display: flex;
             align-items: center;
-            gap: 12px;
-            transition: all 0.3s ease;
+            gap: 14px;
             cursor: pointer;
+            transition: all 0.2s ease;
         }
-
-        .product-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(41, 128, 185, 0.1);
-            border-color: var(--primary);
-        }
+        .product-card:hover { border-color: var(--primary); transform: translateY(-1px); }
 
         .product-card input[type="checkbox"] {
-            width: 15px;
-            height: 15px;
-            cursor: pointer;
+            width: 18px;
+            height: 18px;
             accent-color: var(--primary);
-            border-radius: 5px;
+            cursor: pointer;
         }
 
         .product-thumb {
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
             object-fit: contain;
-            border-radius: 8px;
+            border-radius: 10px;
             background: var(--stats-bg);
             border: 1px solid var(--border-color);
         }
 
-        .product-info {
-            flex: 1;
-        }
+        .product-info { flex: 1; }
+        .product-info h4 { margin: 0 0 4px 0; color: var(--primary); font-size: 17px; font-weight: 700; }
+        .product-price-txt { margin: 3px 0; font-size: 14px; color: var(--text-main); }
+        .product-price-txt strong { color: #10b981; font-size: 16px; font-weight: 800; }
+        .product-barcode-txt { margin: 0; font-size: 13px; color: var(--text-muted); }
 
-        .product-info h4 {
-            margin: 0 0 4px 0;
-            color: var(--primary);
-            font-size: 16px;
-            font-weight: 700;
-        }
-
-        .product-info p {
-            margin: 2px 0;
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-
-        .actions-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
+        .actions-group { display: flex; flex-direction: column; gap: 6px; }
 
         .btn-edit, .btn-delete {
-            border: 2px solid transparent;
+            border: none;
             padding: 6px 12px;
             border-radius: 8px;
             cursor: pointer;
             font-family: 'Tajawal', sans-serif;
             font-size: 12px;
             font-weight: 700;
-            transition: all 0.3s ease;
         }
+        .btn-edit { background-color: #10b981; color: #ffffff; }
+        .btn-delete { background-color: var(--danger); color: #ffffff; }
 
-        .btn-edit {
-            background-color: #10b981;
-            color: #ffffff;
-        }
-        .btn-edit:hover { background:#003f15; color: #f8fafc; }
-
-        .btn-delete {
-            background-color: #f43f5e;
-            color:#f8fafc;
-        }
-        .btn-delete:hover { background-color: #770014; color: #f8fafc; }
-
-        .top-actions-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            background: var(--stats-bg);
-            padding: 10px 16px;
-            border-radius: 12px;
-            font-weight: 700;
-            color: var(--primary);
-            border: 2px solid var(--border-color);
-            font-size: 14px;
-        }
-
-        .btn-delete-selected, .btn-select-all {
-            border: 2px solid transparent;
-            padding: 6px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-family: 'Tajawal', sans-serif;
-            font-size: 13px;
-            font-weight: 700;
-            transition: all 0.3s ease;
-        }
-
-        .btn-delete-selected {
-            background-color: var(--danger);
-            color: white;
-            display: none;
-        }
-        .btn-delete-selected:hover { opacity: 0.9; }
-
-        .btn-select-all {
-            background-color: var(--primary);
-            color: white;
-            display: none;
-        }
-        .btn-select-all:hover { opacity: 0.9; }
-
-        #interactive.viewport, #searchInteractive.viewport {
+        .viewport {
             width: 100%;
             height: 180px;
             display: none;
@@ -394,11 +273,9 @@
             background: #000;
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: inset 0 0 12px rgba(0,0,0,0.5);
         }
 
-        /* Modal نافذة تفاصيل المنتج */
-        .product-modal {
+        .modal {
             display: none;
             position: fixed;
             z-index: 2000;
@@ -417,12 +294,11 @@
             padding: 30px;
             border-radius: 22px;
             width: 90%;
-            max-width: 380px;
+            max-width: 360px;
             text-align: center;
             position: relative;
             box-shadow: 0 25px 50px rgba(0,0,0,0.3);
             border: 2px solid var(--border-color);
-            animation: fadeIn 0.3s ease;
         }
 
         .close-modal {
@@ -433,9 +309,7 @@
             font-weight: bold;
             cursor: pointer;
             color: var(--text-muted);
-            transition: color 0.2s;
         }
-        .close-modal:hover { color: var(--danger); }
 
         .modal-img {
             width: 130px;
@@ -447,25 +321,6 @@
             background: var(--stats-bg);
             padding: 10px;
             border: 1px solid var(--border-color);
-        }
-
-        .modal-title {
-            font-size: 22px;
-            font-weight: 900;
-            color: var(--text-main);
-            margin: 10px 0;
-        }
-
-        .modal-price {
-            font-size: 20px;
-            font-weight: 800;
-            color: #10b981;
-            margin-bottom: 10px;
-        }
-
-        .modal-barcode {
-            font-size: 14px;
-            color: var(--text-muted);
         }
 
         #toast {
@@ -487,19 +342,14 @@
             opacity: 0;
             transform: translateY(15px);
         }
-
-        #toast.show {
-            visibility: visible;
-            opacity: 1;
-            transform: translateY(0);
-        }
+        #toast.show { visibility: visible; opacity: 1; transform: translateY(0); }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 </head>
 <body>
 
 <div class="container">
-    <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="تغيير الثيم">🌙</button>
+    <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()">🌙</button>
     <h2>لوحة تحكم المنتجات</h2>
 
     <div class="tabs">
@@ -508,62 +358,54 @@
         <button class="tab-btn" onclick="switchTab('updates')">الأسعار الجديدة 🔔</button>
     </div>
 
-    <!-- قسم الإضافة / التعديل -->
+    <!-- قسم الإضافة -->
     <div id="addSection" class="section-content active">
         <input type="hidden" id="editingId" value="">
         
         <div class="form-group">
-            <label for="productName">اسم المنتج</label>
+            <label>اسم المنتج</label>
             <input type="text" id="productName" placeholder="أدخل اسم المنتج هنا...">
         </div>
 
         <div class="form-group">
-            <label for="productPrice">السعر (بالجنيه)</label>
+            <label>السعر (بالجنيه)</label>
             <input type="number" id="productPrice" placeholder="أدخل السعر...">
         </div>
 
         <div class="form-group">
-            <label for="productImage">رفع صورة المنتج</label>
-            <div class="barcode-container">
+            <label>رفع صورة المنتج</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
                 <input type="file" id="productImage" accept="image/*" capture="environment" style="display: none;" onchange="updateImageFileName(this)">
-                <input type="text" id="imageFileName" placeholder="اختر صورة أو اضغط الكاميرا..." readonly onclick="document.getElementById('productImage').click()" style="cursor: pointer;">
-                <button type="button" class="btn-qr-scan" onclick="document.getElementById('productImage').click()" title="التقاط صورة بالـ كاميرا">
-                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
-                        <path d="M4 5h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm8 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0-2a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
-                    </svg>
-                    كاميرا
+                <button type="button" class="btn-qr-scan" onclick="document.getElementById('productImage').click()" style="flex: 1; height: 48px; justify-content: center;">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M4 5h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm8 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0-2a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
+                    اختر أو التقط صورة المنتج
                 </button>
             </div>
+            <div id="imageFileName" style="font-size: 12px; color: var(--text-muted); margin-top: 5px;"></div>
         </div>
 
         <div class="form-group">
-            <label for="productBarcode">الباركود أو الـ QR Code</label>
+            <label>الباركود أو الـ QR Code</label>
             <div class="barcode-container">
-                <input type="text" id="productBarcode" placeholder="امسح الرمز أو اكتبه يدوياً...">
-                <button type="button" class="btn-qr-scan" onclick="toggleScanner()" title="مسح QR Code">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M2,2H10V10H2V2M4,4V8H8V4H4M14,2H22V10H14V2M16,4V8H20V4H16M2,14H10V22H2V14M4,16V20H8V16H4M18,14V18H22V14H18M14,18H16V22H14V18M20,18H22V22H20V18M12,2H14V6H12V2M12,8H14V12H12V8M12,14H14V18H12V14M12,20H14V22H12V20M6,6H6.01V6.01H6V6M18,6H18.01V6.01H18V6M6,18H6.01V6.01H6V18Z"/>
-                    </svg>
+                <input type="text" id="productBarcode" placeholder="امسح الرمز أو اكتبه...">
+                <button type="button" class="btn-qr-scan" onclick="toggleScanner()">
+                    <svg viewBox="0 0 24 24"><path d="M2,2H10V10H2V2M4,4V8H8V4H4M14,2H22V10H14V2M16,4V8H20V4H16M2,14H10V22H2V14M4,16V20H8V16H4M18,14V18H22V14H18M14,18H16V22H14V18M20,18H22V22H20V18M12,2H14V6H12V2M12,8H14V12H12V8M12,14H14V18H12V14M12,20H14V22H12V20M6,6H6.01V6.01H6V6M18,6H18.01V6.01H18V6M6,18H6.01V6.01H6V18Z"/></svg>
                     QR Scan
                 </button>
             </div>
         </div>
 
         <div id="interactive" class="viewport"></div>
-
-        <button type="button" id="saveBtn" class="btn-save" onclick="saveProduct()">حفظ المنتج</button>
+        <button type="button" class="btn-save" onclick="saveProduct()">حفظ المنتج</button>
     </div>
 
-    <!-- قسم الأسعار الجديدة والتعديلات الأخيرة -->
-    <div id="updatesSection" class="section-content" style="display: none;">
-        <div class="form-group" style="text-align: center;">
-            <h3 style="color: var(--text-main); margin-bottom: 15px;">سجل آخر تعديلات وتغيرات الأسعار</h3>
-            <div id="updatesList" style="display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto; direction: rtl;">
-            </div>
-        </div>
+    <!-- سجل الأسعار الجديدة -->
+    <div id="updatesSection" class="section-content">
+        <h3 style="text-align: center; margin-bottom: 15px;">سجل آخر تعديلات وتغيرات الأسعار</h3>
+        <div id="updatesList" style="display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto;"></div>
     </div>
 
-    <!-- قسم البحث والاستعلام الشامل -->
+    <!-- الاستعلام الشامل -->
     <div id="searchSection" class="section-content">
         <div class="stats-grid">
             <div class="stat-card">
@@ -574,54 +416,425 @@
                 <span>أعلى سعر</span>
                 <strong id="statMax">0 ج.م</strong>
             </div>
-            <div class="stat-card">
-                <span>متوسط الأسعار</span>
-                <strong id="statAvg">0 ج.م</strong>
-            </div>
         </div>
 
-        <div class="top-actions-bar">
-            <span id="productCounter">المنتجات المعروضة: 0</span>
-            <div style="display: flex; gap: 8px;">
-                <button type="button" id="selectAllBtn" class="btn-select-all" onclick="toggleSelectAll()">تحديد الكل</button>
-                <button type="button" id="deleteSelectedBtn" class="btn-delete-selected" onclick="deleteSelectedProducts()">حذف المحددين</button>
-            </div>
+        <!-- أزرار التحكم تظهر وتختفي بدقة وبدون مساحات فارغة -->
+        <div class="floating-actions">
+            <button type="button" id="selectAllBtn" class="btn-select-all" onclick="toggleSelectAll()">تحديد الكل</button>
+            <button type="button" id="deleteSelectedBtn" class="btn-delete-selected" onclick="deleteSelectedProducts()">حذف المحددين</button>
         </div>
 
-        <div class="form-group search-box">
-            <label for="searchInput">ابحث بالاسم، السعر، أو الـ QR Code</label>
+        <div class="form-group">
+            <label>ابحث بالاسم، السعر، أو الـ QR Code</label>
             <div class="barcode-container">
                 <input type="text" id="searchInput" placeholder="ابحث عن منتجات..." oninput="searchProducts()">
-                <button type="button" class="btn-qr-scan" onclick="toggleSearchScanner()" title="بحث بـ QR">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M2,2H10V10H2V2M4,4V8H8V4H4M14,2H22V10H14V2M16,4V8H20V4H16M2,14H10V22H2V14M4,16V20H8V16H4M18,14V18H22V14H18M14,18H16V22H14V18M20,18H22V22H20V18M12,2H14V6H12V2M12,8H14V12H12V8M12,14H14V18H12V14M12,20H14V22H12V20M6,6H6.01V6.01H6V6M18,6H18.01V6.01H18V6M6,18H6.01V6.01H6V18Z"/>
-                    </svg>
+                <button type="button" class="btn-qr-scan" onclick="toggleSearchScanner()">
+                    <svg viewBox="0 0 24 24"><path d="M2,2H10V10H2V2M4,4V8H8V4H4M14,2H22V10H14V2M16,4V8H20V4H16M2,14H10V22H2V14M4,16V20H8V16H4M18,14V18H22V14H18M14,18H16V22H14V18M20,18H22V22H20V18M12,2H14V6H12V2M12,8H14V12H12V8M12,14H14V18H12V14M12,20H14V22H12V20M6,6H6.01V6.01H6V6M18,6H18.01V6.01H18V6M6,18H6.01V6.01H6V18Z"/></svg>
                     QR Scan
                 </button>
             </div>
         </div>
 
         <div id="searchInteractive" class="viewport"></div>
-
         <div id="resultsList"></div>
     </div>
 </div>
 
-<!-- نافذة Modal تفاصيل المنتج عند النقر عليه -->
-<div id="productModal" class="product-modal">
-    <div class="modal-content">
+<!-- Modal التأكيد -->
+<div id="confirmModal" class="modal">
+    <div class="modal-content" style="max-width: 320px;" onclick="event.stopPropagation()">
+        <h3 style="font-size: 18px; margin-bottom: 10px;">تأكيد الحذف</h3>
+        <p id="confirmMessage" style="color: var(--text-muted); margin-bottom: 20px; font-size: 14px;"></p>
+        <div style="display: flex; gap: 10px;">
+            <button type="button" id="confirmYesBtn" style="flex: 1; background: var(--danger); color: white; border: none; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer;">نعم، حذف</button>
+            <button type="button" onclick="closeConfirmModal()" style="flex: 1; background: var(--border-color); color: var(--text-main); border: none; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer;">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal عرض التفاصيل -->
+<div id="productModal" class="modal" onclick="closeProductModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
         <span class="close-modal" onclick="closeProductModal()">&times;</span>
-        <img id="modalImg" class="modal-img" src="" alt="صورة المنتج">
-        <h3 id="modalName" class="modal-title"></h3>
-        <div id="modalPrice" class="modal-price"></div>
-        <div id="modalBarcode" class="modal-barcode"></div>
+        <img id="modalImg" class="modal-img" src="" alt="صورة">
+        <h3 id="modalName" style="font-size: 20px; font-weight: 900; margin: 10px 0;"></h3>
+        <div id="modalPrice" style="font-size: 18px; font-weight: 800; color: #10b981; margin-bottom: 10px;"></div>
+        <div id="modalBarcode" style="font-size: 14px; color: var(--text-muted);"></div>
     </div>
 </div>
 
 <div id="toast">تم بنجاح</div>
 
-<!-- ربط ملف الـ JavaScript الخارجي -->
-<script type="module" src="login.js"></script>
+<script>
+function playBeep() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        osc.start(now);
+        osc.stop(now + 0.25);
+    } catch (e) {}
+}
 
+function toggleTheme() {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    document.getElementById('themeToggleBtn').textContent = isDark ? '☀️' : '🌙';
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark-mode');
+        document.getElementById('themeToggleBtn').textContent = '☀️';
+    }
+    loadProducts();
+    loadPriceUpdates();
+
+    window.addEventListener('click', (e) => {
+        const addVp = document.getElementById('interactive');
+        const searchVp = document.getElementById('searchInteractive');
+        
+        if (scannerActive && !addVp.contains(e.target) && !e.target.closest('button[onclick="toggleScanner()"]')) {
+            Quagga.stop();
+            addVp.style.display = 'none';
+            scannerActive = false;
+        }
+        if (searchScannerActive && !searchVp.contains(e.target) && !e.target.closest('button[onclick="toggleSearchScanner()"]')) {
+            Quagga.stop();
+            searchVp.style.display = 'none';
+            searchScannerActive = false;
+        }
+    });
+});
+
+function showToast(msg, isSuccess = true) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.style.background = isSuccess ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #f43f5e, #e11d48)';
+    toast.className = "show";
+    playBeep();
+    setTimeout(() => toast.className = "", 3000);
+}
+
+function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.section-content').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
+
+    if (tab === 'add') {
+        document.querySelectorAll('.tab-btn')[0].classList.add('active');
+        document.getElementById('addSection').classList.add('active');
+        document.getElementById('addSection').style.display = 'block';
+    } else if (tab === 'search') {
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+        document.getElementById('searchSection').classList.add('active');
+        document.getElementById('searchSection').style.display = 'block';
+        loadProducts();
+    } else if (tab === 'updates') {
+        document.querySelectorAll('.tab-btn')[2].classList.add('active');
+        document.getElementById('updatesSection').classList.add('active');
+        document.getElementById('updatesSection').style.display = 'block';
+        loadPriceUpdates();
+    }
+}
+
+function getProducts() { return JSON.parse(localStorage.getItem('smart_products') || '[]'); }
+function saveProducts(p) { localStorage.setItem('smart_products', JSON.stringify(p)); updateStats(p); }
+
+function updateStats(products) {
+    document.getElementById('statTotal').textContent = products.length;
+    let max = 0;
+    products.forEach(p => { if (parseFloat(p.price) > max) max = parseFloat(p.price); });
+    document.getElementById('statMax').textContent = max + ' ج.م';
+}
+
+function saveProduct() {
+    const id = document.getElementById('editingId').value;
+    const name = document.getElementById('productName').value.trim();
+    const price = document.getElementById('productPrice').value.trim();
+    const barcode = document.getElementById('productBarcode').value.trim() || 'بدون باركود';
+    const imageInput = document.getElementById('productImage');
+
+    if (!name || !price) {
+        showToast('من فضلك ادخل اسم المنتج والسعر!', false);
+        return;
+    }
+
+    let products = getProducts();
+
+    const proceed = (img) => {
+        if (id) {
+            const old = products.find(p => p.id == id);
+            const priceChanged = old && parseFloat(old.price) !== parseFloat(price);
+
+            products = products.map(p => p.id == id ? { id: Number(id), name, price, barcode, image: img || p.image || '' } : p);
+
+            if (priceChanged) {
+                let updates = JSON.parse(localStorage.getItem('price_updates_list') || '[]');
+                updates.unshift({
+                    updateId: Date.now() + Math.random(),
+                    productId: Number(id),
+                    name,
+                    image: img || old.image || '',
+                    oldPrice: old.price,
+                    price,
+                    barcode
+                });
+                localStorage.setItem('price_updates_list', JSON.stringify(updates));
+            }
+            document.getElementById('editingId').value = '';
+            showToast('تم تعديل المنتج بنجاح!');
+        } else {
+            products.push({ id: Date.now(), name, price, barcode, image: img || '' });
+            showToast('تم حفظ المنتج بنجاح!');
+        }
+
+        document.getElementById('productName').value = '';
+        document.getElementById('productPrice').value = '';
+        document.getElementById('productBarcode').value = '';
+        document.getElementById('productImage').value = '';
+        document.getElementById('imageFileName').textContent = '';
+        
+        saveProducts(products);
+        loadProducts();
+    };
+
+    if (imageInput.files && imageInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => proceed(e.target.result);
+        reader.readAsDataURL(imageInput.files[0]);
+    } else {
+        proceed(null);
+    }
+}
+
+function loadProducts() {
+    const products = getProducts();
+    updateStats(products);
+    displayProducts(products);
+}
+
+function displayProducts(products) {
+    const list = document.getElementById('resultsList');
+    const selectAllBtn = document.getElementById('selectAllBtn');
+
+    // يظهر زرار "تحديد الكل" فقط إذا كان عدد المنتجات أكبر من 2
+    if (products.length > 2) {
+        selectAllBtn.style.display = 'block';
+    } else {
+        selectAllBtn.style.display = 'none';
+    }
+
+    if (products.length === 0) {
+        list.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px;">لا توجد منتجات.</p>';
+        toggleDeleteSelectedBtn();
+        return;
+    }
+
+    let html = '';
+    products.forEach(p => {
+        html += `
+            <div class="product-card" onclick="openProductModal(${p.id})">
+                <input type="checkbox" class="product-checkbox" data-id="${p.id}" onclick="event.stopPropagation()" onchange="toggleDeleteSelectedBtn()">
+                <img src="${p.image || 'https://via.placeholder.com/60?text=No+Img'}" class="product-thumb">
+                <div class="product-info">
+                    <h4>${p.name}</h4>
+                    <p class="product-price-txt">السعر: <strong>${p.price} ج.م</strong></p>
+                    <p class="product-barcode-txt">الباركود: ${p.barcode}</p>
+                </div>
+                <div class="actions-group" onclick="event.stopPropagation()">
+                    <button class="btn-edit" onclick="editProduct(${p.id})">تعديل</button>
+                    <button class="btn-delete" onclick="deleteProduct(${p.id})">حذف</button>
+                </div>
+            </div>
+        `;
+    });
+    list.innerHTML = html;
+    toggleDeleteSelectedBtn();
+}
+
+function searchProducts() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    const products = getProducts();
+    displayProducts(products.filter(p => p.name.toLowerCase().includes(q) || p.price.toString().includes(q) || p.barcode.toLowerCase().includes(q)));
+}
+
+function editProduct(id) {
+    const p = getProducts().find(item => item.id == id);
+    if (!p) return;
+    document.getElementById('editingId').value = p.id;
+    document.getElementById('productName').value = p.name;
+    document.getElementById('productPrice').value = p.price;
+    document.getElementById('productBarcode').value = p.barcode;
+    switchTab('add');
+    showToast('جاري وضع التعديل...');
+}
+
+let confirmCallback = null;
+function showConfirm(msg, cb) {
+    document.getElementById('confirmMessage').textContent = msg;
+    document.getElementById('confirmModal').style.display = 'flex';
+    confirmCallback = cb;
+}
+function closeConfirmModal() {
+    document.getElementById('confirmModal').style.display = 'none';
+    confirmCallback = null;
+}
+document.getElementById('confirmYesBtn').onclick = () => { if (confirmCallback) confirmCallback(); closeConfirmModal(); };
+
+function deleteProduct(id) {
+    showConfirm("هل أنت متأكد من حذف هذا المنتج؟ سيتم إزالته نهائياً.", () => {
+        let products = getProducts().filter(p => p.id != id);
+        saveProducts(products);
+
+        let updates = JSON.parse(localStorage.getItem('price_updates_list') || '[]').filter(u => u.productId !== Number(id));
+        localStorage.setItem('price_updates_list', JSON.stringify(updates));
+
+        loadProducts();
+        loadPriceUpdates();
+        showToast("تم الحذف بنجاح!", false);
+    });
+}
+
+function toggleSelectAll() {
+    const cbs = document.querySelectorAll('.product-checkbox');
+    const allChecked = Array.from(cbs).every(cb => cb.checked);
+    cbs.forEach(cb => cb.checked = !allChecked);
+    toggleDeleteSelectedBtn();
+}
+
+function toggleDeleteSelectedBtn() {
+    const checked = document.querySelectorAll('.product-checkbox:checked');
+    const total = document.querySelectorAll('.product-checkbox');
+    
+    // زرار حذف المحددين لا يظهر إلا إذا تم تحديد عناصر بالفعل
+    document.getElementById('deleteSelectedBtn').style.display = checked.length > 0 ? 'block' : 'none';
+    
+    if(total.length > 2) {
+        document.getElementById('selectAllBtn').style.display = 'block';
+        document.getElementById('selectAllBtn').textContent = (checked.length === total.length) ? 'إلغاء الكل' : 'تحديد الكل';
+    } else {
+        document.getElementById('selectAllBtn').style.display = 'none';
+    }
+}
+
+function deleteSelectedProducts() {
+    const checked = document.querySelectorAll('.product-checkbox:checked');
+    if (checked.length === 0) return;
+    showConfirm(`هل أنت متأكد من حذف الـ ${checked.length} منتجات المحددة؟`, () => {
+        let ids = Array.from(checked).map(cb => Number(cb.getAttribute('data-id')));
+        let products = getProducts().filter(p => !ids.includes(Number(p.id)));
+        saveProducts(products);
+
+        let updates = JSON.parse(localStorage.getItem('price_updates_list') || '[]').filter(u => !ids.includes(Number(u.productId)));
+        localStorage.setItem('price_updates_list', JSON.stringify(updates));
+
+        loadProducts();
+        loadPriceUpdates();
+        showToast("تم الحذف بنجاح!", false);
+    });
+}
+
+function openProductModal(id) {
+    const p = getProducts().find(item => item.id == id);
+    if (!p) return;
+    document.getElementById('modalImg').src = p.image || 'https://via.placeholder.com/130?text=No+Img';
+    document.getElementById('modalName').textContent = p.name;
+    document.getElementById('modalPrice').textContent = p.price + ' جنيه';
+    document.getElementById('modalBarcode').textContent = 'الباركود: ' + p.barcode;
+    document.getElementById('productModal').style.display = 'flex';
+}
+
+function openUpdateModal(updateId) {
+    const updates = JSON.parse(localStorage.getItem('price_updates_list') || '[]');
+    const u = updates.find(item => item.updateId == updateId);
+    if (!u) return;
+    document.getElementById('modalImg').src = u.image || 'https://via.placeholder.com/130?text=No+Img';
+    document.getElementById('modalName').textContent = u.name;
+    document.getElementById('modalPrice').innerHTML = `<span style="text-decoration: line-through; color: #ef4444; margin-left: 10px;">${u.oldPrice} ج.م</span> <span style="color: #10b981; font-weight: 900; font-size: 22px;">${u.price} ج.م</span>`;
+    document.getElementById('modalBarcode').textContent = 'الباركود: ' + u.barcode;
+    document.getElementById('productModal').style.display = 'flex';
+}
+
+function closeProductModal() { document.getElementById('productModal').style.display = 'none'; }
+
+function loadPriceUpdates() {
+    const list = document.getElementById('updatesList');
+    const updates = JSON.parse(localStorage.getItem('price_updates_list') || '[]');
+    if (updates.length === 0) {
+        list.innerHTML = '<p style="color: var(--text-muted); padding: 20px; text-align: center;">لا توجد تعديلات على الأسعار حتى الآن.</p>';
+        return;
+    }
+    let html = '';
+    updates.forEach(u => {
+        html += `
+            <div class="product-card" onclick="openUpdateModal(${u.updateId})">
+                <img src="${u.image || 'https://via.placeholder.com/50?text=No+Img'}" class="product-thumb">
+                <div class="product-info">
+                    <h4>${u.name}</h4>
+                    <p style="margin:0; font-size:14px;">السابق: <span style="text-decoration: line-through; color: #ef4444;">${u.oldPrice} ج.م</span> ⬅️ الجديد: <strong style="color: #10b981;">${u.price} ج.م</strong></p>
+                </div>
+                <div class="actions-group" onclick="event.stopPropagation()">
+                    <button class="btn-delete" onclick="deleteSingleUpdate(${u.updateId})">حذف</button>
+                </div>
+            </div>
+        `;
+    });
+    list.innerHTML = html;
+}
+
+function deleteSingleUpdate(updateId) {
+    showConfirm("هل أنت متأكد من حذف هذا السجل؟", () => {
+        let updates = JSON.parse(localStorage.getItem('price_updates_list') || '[]').filter(u => u.updateId !== Number(updateId));
+        localStorage.setItem('price_updates_list', JSON.stringify(updates));
+        loadPriceUpdates();
+        showToast("تم الحذف بنجاح!", false);
+    });
+}
+
+function updateImageFileName(input) {
+    if (input.files && input.files[0]) {
+        document.getElementById('imageFileName').textContent = "تم اختيار الصورة: " + input.files[0].name;
+        showToast('تم اختيار الصورة بنجاح!');
+    }
+}
+
+let scannerActive = false;
+function toggleScanner() {
+    const vp = document.getElementById('interactive');
+    if (scannerActive) { Quagga.stop(); vp.style.display = 'none'; scannerActive = false; return; }
+    vp.style.display = 'block';
+    scannerActive = true;
+    Quagga.init({ inputStream: { name: "Live", type: "LiveStream", target: vp }, decoder: { readers: ["code_128_reader", "ean_reader"] } }, (err) => { if (!err) Quagga.start(); });
+    Quagga.onDetected((res) => {
+        document.getElementById('productBarcode').value = res.codeResult.code;
+        Quagga.stop(); vp.style.display = 'none'; scannerActive = false;
+        showToast('تم قراءة الرمز بنجاح!');
+    });
+}
+
+let searchScannerActive = false;
+function toggleSearchScanner() {
+    const vp = document.getElementById('searchInteractive');
+    if (searchScannerActive) { Quagga.stop(); vp.style.display = 'none'; searchScannerActive = false; return; }
+    vp.style.display = 'block';
+    searchScannerActive = true;
+    Quagga.init({ inputStream: { name: "Live", type: "LiveStream", target: vp }, decoder: { readers: ["code_128_reader", "ean_reader"] } }, (err) => { if (!err) Quagga.start(); });
+    Quagga.onDetected((res) => {
+        document.getElementById('searchInput').value = res.codeResult.code;
+        searchProducts();
+        Quagga.stop(); vp.style.display = 'none'; searchScannerActive = false;
+        showToast('تم العثور على الباركود!');
+    });
+}
+</script>
 </body>
 </html>
