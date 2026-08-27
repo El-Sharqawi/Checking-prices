@@ -24,12 +24,65 @@
 
     <div id="connectionStatus" class="connection-status" aria-live="polite"></div>
     <div class="tabs">
-        <button type="button" class="tab-btn active" onclick="switchTab('add')">إضافة منتج جديد  ➕</button>
-        <button type="button" class="tab-btn" onclick="switchTab('search')">استعلام عن الاسعار 🔍</button>
+        <button type="button" class="tab-btn" onclick="switchTab('pos')">البيع السريع 🛒</button>
+        <button type="button" class="tab-btn active" onclick="switchTab('add')">إضافة منتج  ➕</button>
+        <button type="button" class="tab-btn" onclick="switchTab('search')">تعديل / حذف 🔍</button>
         <button type="button" class="tab-btn" onclick="switchTab('updates')">الأسعار الجديدة 🔔</button>
     </div>
 
-    <!-- قسم الإضافة والتعديل -->
+    <div id="pos-section" class="tab-content section-content" style="display: none;">
+    <div class="pos-container" style="background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+
+        <div style="position: relative; display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
+        <div style="flex: 1; position: relative;">
+            <input type="text" id="posSearchInput" placeholder="ابحث بالاسم أو امسح الباركود..." style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--input-bg); color: var(--text-color);" autocomplete="off">
+            
+            <div id="posAutocompleteResults" style="position: absolute; top: 100%; left: 0; right: 0; background: var(--card-bg, #fff); border: 1px solid var(--border-color, #cbd5e1); border-radius: 8px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></div>
+        </div>
+    
+        <button type="button" onclick="toggleScanner('pos-reader', 'posSearchInput')" style="background: #2563eb; color: white; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                📷 مسح
+        </button>
+        </div>
+
+        <div class="invoice-grand-total-container" style="text-align: center; margin-bottom: 20px; padding: 10px; border-top: 1px dashed var(--border-color); border-bottom: 1px dashed var(--border-color);">
+    <div style="font-size: 18px; margin-bottom: 5px; color: var(--text-muted);">
+        عدد المنتجات: <span id="posItemCount" style="font-weight: bold; color: var(--text-color);">0</span>
+    </div>
+    <div style="font-size: 22px; font-weight: bold; color: #dc2626;">
+        الإجمالي: <span id="posGrandTotal">0.00</span> جنيه
+    </div>
+</div>
+        <div id="pos-reader" style="width: 100%; display: none; margin-bottom: 15px; border-radius: 8px; overflow: hidden;"></div>
+
+        <div style="overflow-x: auto; margin-bottom: 20px;">
+            <table style="width: 100%; border-collapse: collapse; text-align: center;" id="posTable">
+                <thead>
+                    <tr style="background: var(--table-header-bg, #f1f5f9); color: var(--text-color); border-bottom: 2px solid #cbd5e1;">
+                        <th style="padding: 10px; border: 1px solid #cbd5e1;">No.</th>
+                        <th style="padding: 10px; border: 1px solid #cbd5e1;">Name</th>
+                        <th style="padding: 10px; border: 1px solid #cbd5e1;">Quantity</th>
+                        <th style="padding: 10px; border: 1px solid #cbd5e1;">U.Price</th>
+                        <th style="padding: 10px; border: 1px solid #cbd5e1;">Total</th>
+                        <th style="padding: 10px; border: 1px solid #cbd5e1;">حذف</th>
+                    </tr>
+                </thead>
+                <tbody id="posTableBody">
+                </tbody>
+            </table>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; gap: 10px;">
+            <button type="button" onclick="clearPosInvoice()" style="background: #dc2626; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                🗑️ تفريغ الفاتورة
+            </button>
+            <button type="button" onclick="printPosInvoice()" style="background: #16a34a; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                🖨️ طباعة PDF
+            </button>
+        </div>
+    </div>
+</div>
+
     <div id="addSection" class="section-content active">
         <input type="hidden" id="editingId" value="">
 
@@ -40,7 +93,7 @@
 
         <div class="form-group">
             <label for="productPrice">السعر</label>
-            <input type="number" id="productPrice" placeholder="أدخل السعر..." min="0" step="0.01" inputmode="decimal">
+            <input type="number" id="productPrice" placeholder="أدخل السعر..." min="0" step="0.01" inputmode="decimal" autocomplete="off">
         </div>
 
         <div class="form-group">
@@ -49,8 +102,7 @@
                        style="display:none;" onchange="updateImageFileName(this)">
                 <button type="button" class="btn-qr-scan image-picker-btn"
                         onclick="document.getElementById('productImage').click()">                    
-                    </svg>
-                            رفع صورة المنتج
+                    رفع صورة المنتج
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
                     <path d="M4 5h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm8 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0-2a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
                 </button>
@@ -78,13 +130,11 @@
         </button>
     </div>
 
-    <!-- سجل الأسعار الجديدة -->
     <div id="updatesSection" class="section-content">
         <h3 class="section-title">سجل آخر تعديلات وتغيرات الأسعار</h3>
         <div id="updatesList" class="updates-list"></div>
     </div>
 
-    <!-- الاستعلام الشامل -->
     <div id="searchSection" class="section-content">
         <div class="stats-grid">
             <div class="stat-card">

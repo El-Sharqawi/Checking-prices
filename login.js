@@ -1,3 +1,5 @@
+// javascript
+
 /* =========================================================
    1) Firebase Initialization
    ========================================================= */
@@ -204,7 +206,7 @@ function toggleTheme() {
 }
 
 /* =========================================================
-   5) Tabs
+   5) Tabs (محدث ليشمل البيع السريع)
    ========================================================= */
 
 function switchTab(tab) {
@@ -214,14 +216,17 @@ function switchTab(tab) {
         btn.classList.remove("active");
     });
 
-    document.querySelectorAll(".section-content").forEach(section => {
+    // إخفاء كل الأقسام (سواء بتعتمد على active أو display:none)
+    document.querySelectorAll(".tab-content, .section-content").forEach(section => {
+        section.style.display = "none";
         section.classList.remove("active");
     });
 
     const tabMap = {
-        add: { buttonIndex: 0, sectionId: "addSection" },
-        search: { buttonIndex: 1, sectionId: "searchSection" },
-        updates: { buttonIndex: 2, sectionId: "updatesSection" }
+        pos: { buttonIndex: 0, sectionId: "pos-section" },
+        add: { buttonIndex: 1, sectionId: "addSection" },
+        search: { buttonIndex: 2, sectionId: "searchSection" },
+        updates: { buttonIndex: 3, sectionId: "updatesSection" }
     };
 
     const selected = tabMap[tab];
@@ -235,10 +240,11 @@ function switchTab(tab) {
     }
 
     if (section) {
+        section.style.display = "block";
         section.classList.add("active");
     }
 
-    if (tab === "search") {
+    if (tab === "search" && typeof searchProducts === "function") {
         searchProducts();
     }
 }
@@ -334,19 +340,14 @@ function updateStats(products) {
 }
 
 /* =========================================================
-   8) Save / Update Product
+   8) Save / Update Product (فوري بدون انتظار)
    ========================================================= */
 
 async function saveProduct() {
-    if (isSaving) {
-        return;
-    }
-
     if (!firebaseReady || !db) {
         showToast("Firebase غير متصل. لا يمكن الحفظ الآن.", false);
         return;
     }
-
     const editingId = document.getElementById("editingId").value.trim();
     const name = document.getElementById("productName").value.trim();
     const priceRaw = document.getElementById("productPrice").value.trim();
@@ -366,9 +367,6 @@ async function saveProduct() {
         return;
     }
 
-    isSaving = true;
-    setSaveButtonState(true);
-
     try {
         const imageFile =
             imageInput && imageInput.files && imageInput.files[0]
@@ -378,17 +376,13 @@ async function saveProduct() {
         const newImage = await getImageAsDataUrl(imageFile);
 
         if (editingId) {
-            await updateExistingProduct(
-                editingId,
-                name,
-                priceRaw,
-                barcode,
-                newImage
-            );
-
             document.getElementById("editingId").value = "";
             resetFormFields();
             showToast("تم تعديل المنتج بنجاح!");
+            
+            updateExistingProduct(editingId, name, priceRaw, barcode, newImage).catch(err => {
+                console.error("Background update error:", err);
+            });
         } else {
             const newProduct = {
                 name,
@@ -397,26 +391,18 @@ async function saveProduct() {
                 image: newImage || "",
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             };
-            await db.collection("products").add(newProduct);
 
             resetFormFields();
             showToast("تم حفظ المنتج بنجاح!");
+
+            db.collection("products").add(newProduct).catch(err => {
+                console.error("Background save error:", err);
+                showToast("حدث خطأ أثناء الحفظ بالسحاب.", false);
+            });
         }
     } catch (error) {
         console.error("Save product error:", error);
-
-        let message = "حدث خطأ أثناء الحفظ.";
-
-        if (error && error.code === "permission-denied") {
-            message = "تم رفض الحفظ من Firestore. راجع Rules.";
-        } else if (error && error.message) {
-            console.warn(error.message);
-        }
-
-        showToast(message, false);
-    } finally {
-        isSaving = false;
-        setSaveButtonState(false);
+        showToast("حدث خطأ أثناء معالجة البيانات.", false);
     }
 }
 
@@ -1112,3 +1098,215 @@ window.addEventListener("DOMContentLoaded", () => {
         initRealtimeListeners();
     }
 });
+
+let posCart = [];
+
+function playBeepSound() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(1000, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.15);
+    } catch (e) {
+        console.log("AudioContext blocked or not supported", e);
+    }
+}
+
+let currentSelectedIndex = -1;
+
+document.addEventListener("DOMContentLoaded", () => {
+    const posInput = document.getElementById("posSearchInput");
+    const resultsContainer = document.getElementById("posAutocompleteResults");
+
+    if (posInput && resultsContainer) {
+        posInput.addEventListener("input", function() {
+            const query = posInput.value.trim().toLowerCase();
+            resultsContainer.innerHTML = "";
+            currentSelectedIndex = -1;
+
+            if (!query) {
+                resultsContainer.style.display = "none";
+                return;
+            }
+
+            const matchedProducts = allProductsCache.filter(p => 
+                (p.name && p.name.toLowerCase().includes(query)) || 
+                (p.barcode && p.barcode.toLowerCase().includes(query))
+            );
+
+            if (matchedProducts.length === 0) {
+                resultsContainer.style.display = "none";
+                return;
+            }
+
+            resultsContainer.style.display = "block";
+            matchedProducts.forEach((product) => {
+                const itemDiv = document.createElement("div");
+                itemDiv.className = "pos-suggestion-item";
+                itemDiv.innerHTML = `
+                    <span style="color: var(--text-main); font-weight: 500;">${escapeHtml(product.name)}</span>
+                    <span style="color: #dc2626; font-weight: bold;">${escapeHtml(product.price)} جنيه</span>
+                `;
+
+                itemDiv.addEventListener("click", () => {
+                    addProductToPosCart(product);
+                    posInput.value = "";
+                    resultsContainer.style.display = "none";
+                    currentSelectedIndex = -1;
+                });
+
+                resultsContainer.appendChild(itemDiv);
+            });
+        });
+
+        posInput.addEventListener("keydown", function(e) {
+            const items = resultsContainer.querySelectorAll(".pos-suggestion-item");
+            if (items.length === 0) return;
+
+            if (e.key === "ArrowDown") {
+                e.preventDefault();
+                currentSelectedIndex++;
+                if (currentSelectedIndex >= items.length) {
+                    currentSelectedIndex = 0;
+                }
+                updateActiveSuggestion(items);
+            } 
+            else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                currentSelectedIndex--;
+                if (currentSelectedIndex < 0) {
+                    currentSelectedIndex = items.length - 1;
+                }
+                updateActiveSuggestion(items);
+            } 
+            else if (e.key === "Enter") {
+                e.preventDefault();
+                if (currentSelectedIndex >= 0 && currentSelectedIndex < items.length) {
+                    items[currentSelectedIndex].click();
+                } else if (items.length === 1) {
+                    items[0].click();
+                }
+            }
+        });
+
+        document.addEventListener("click", function(e) {
+            if (!posInput.contains(e.target) && !resultsContainer.contains(e.target)) {
+                resultsContainer.style.display = "none";
+                currentSelectedIndex = -1;
+            }
+        });
+    }
+});
+
+function updateActiveSuggestion(items) {
+    items.forEach((item, index) => {
+        if (index === currentSelectedIndex) {
+            item.classList.add("active-suggestion");
+            item.scrollIntoView({ block: "nearest" });
+        } else {
+            item.classList.remove("active-suggestion");
+        }
+    });
+}
+
+function clearPosInvoice() {
+    posCart = [];
+    renderPosTable();
+    showToast("تم تفريغ الفاتورة بنجاح");
+}
+
+function addProductToPosCart(foundProduct) {
+    playBeepSound();
+
+    const existingCartItem = posCart.find(item => item.id === foundProduct.id);
+    if (existingCartItem) {
+        existingCartItem.quantity += 1;
+    } else {
+        posCart.push({
+            id: foundProduct.id,
+            name: foundProduct.name,
+            price: Number(foundProduct.price) || 0,
+            quantity: 1
+        });
+    }
+
+    renderPosTable();
+}
+
+function renderPosTable() {
+    const tbody = document.getElementById("posTableBody");
+    const countSpan = document.getElementById("posItemCount");
+    const grandTotalSpan = document.getElementById("posGrandTotal");
+
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+    let grandTotal = 0;
+
+    if (countSpan) {
+        countSpan.textContent = posCart.length;
+    }
+
+    posCart.call ? null : null;
+
+    posCart.forEach((item, index) => {
+        const itemTotal = item.price * item.quantity;
+        grandTotal += itemTotal;
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td style="padding: 10px; border: 1px solid var(--border-color);">${index + 1}</td>
+            <td style="padding: 10px; border: 1px solid var(--border-color); text-align: right;">${escapeHtml(item.name)}</td>
+            <td style="padding: 10px; border: 1px solid var(--border-color);">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <button type="button" onclick="updatePosQty('${item.id}', -1)" style="padding: 2px 8px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer;">-</button>
+                    <span style="font-weight: bold; min-width: 20px;">${item.quantity}</span>
+                    <button type="button" onclick="updatePosQty('${item.id}', 1)" style="padding: 2px 8px; background: #22c55e; color: white; border: none; border-radius: 4px; cursor: pointer;">+</button>
+                </div>
+            </td>
+            <td style="padding: 10px; border: 1px solid var(--border-color);">${item.price.toFixed(2)}</td>
+            <td style="padding: 10px; border: 1px solid var(--border-color); font-weight: bold;">${itemTotal.toFixed(2)}</td>
+            <td style="padding: 10px; border: 1px solid var(--border-color);">
+                <button type="button" onclick="removePosItem('${item.id}')" style="background: #dc2626; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer;">🗑️</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    if (grandTotalSpan) {
+        grandTotalSpan.textContent = grandTotal.toFixed(2);
+    }
+}
+
+function updatePosQty(id, change) {
+    const item = posCart.find(i => i.id === id);
+    if (item) {
+        item.quantity += change;
+        if (item.quantity <= 0) {
+            posCart = posCart.filter(i => i.id !== id);
+        }
+        renderPosTable();
+    }
+}
+
+function removePosItem(id) {
+    posCart = posCart.filter(i => i.id !== id);
+    renderPosTable();
+}
+
+function printPosInvoice() {
+    if (posCart.length === 0) {
+        showToast("الفاتورة فارغة!", false);
+        return;
+    }
+    window.print();
+}
