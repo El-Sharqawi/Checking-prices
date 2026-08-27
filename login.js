@@ -56,6 +56,16 @@ function initializeFirebase() {
         }
 
         db = firebase.firestore();
+
+        // ** سطر تفعيل العمل بدون إنترنت **
+        db.enablePersistence().catch((err) => {
+            if (err.code == 'failed-precondition') {
+                console.log("فشل التفعيل: هناك أكثر من تبويب مفتوح.");
+            } else if (err.code == 'unimplemented') {
+                console.log("المتصفح لا يدعم ميزة التخزين المؤقت.");
+            }
+        });
+
         firebaseReady = true;
         setConnectionStatus("تم الاتصال بقاعدة البيانات.", "success");
 
