@@ -4,16 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#2980b9">
-    <title>لوحة تحكم المنتجات - إدارة الأسعار</title>
+    <title>Moka Mohamed</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="login.css">
-
-    <!-- Firebase 8: لازم تحميل Firebase قبل ملف JavaScript -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-
-    <!-- قارئ QR / Barcode: تم حذف التكرار الموجود في النسخة القديمة -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 
@@ -27,10 +23,9 @@
     <h2>لوحة تحكم المنتجات</h2>
 
     <div id="connectionStatus" class="connection-status" aria-live="polite"></div>
-
     <div class="tabs">
-        <button type="button" class="tab-btn active" onclick="switchTab('add')">إضافة منتج جديد</button>
-        <button type="button" class="tab-btn" onclick="switchTab('search')">استعلام شامل</button>
+        <button type="button" class="tab-btn active" onclick="switchTab('add')">إضافة منتج جديد  ➕</button>
+        <button type="button" class="tab-btn" onclick="switchTab('search')">استعلام عن الاسعار 🔍</button>
         <button type="button" class="tab-btn" onclick="switchTab('updates')">الأسعار الجديدة 🔔</button>
     </div>
 
@@ -44,21 +39,20 @@
         </div>
 
         <div class="form-group">
-            <label for="productPrice">السعر (بالجنيه)</label>
+            <label for="productPrice">السعر</label>
             <input type="number" id="productPrice" placeholder="أدخل السعر..." min="0" step="0.01" inputmode="decimal">
         </div>
 
         <div class="form-group">
-            <label for="productImage">رفع صورة المنتج</label>
             <div class="image-picker-row">
                 <input type="file" id="productImage" accept="image/*" capture="environment"
                        style="display:none;" onchange="updateImageFileName(this)">
                 <button type="button" class="btn-qr-scan image-picker-btn"
-                        onclick="document.getElementById('productImage').click()">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                        <path d="M4 5h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm8 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0-2a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                        onclick="document.getElementById('productImage').click()">                    
                     </svg>
-                    اختر أو التقط صورة المنتج
+                            رفع صورة المنتج
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                    <path d="M4 5h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm8 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0-2a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
                 </button>
             </div>
             <div id="imageFileName" class="file-name"></div>
@@ -69,10 +63,10 @@
             <div class="barcode-container">
                 <input type="text" id="productBarcode" placeholder="امسح الرمز أو اكتبه..." autocomplete="off">
                 <button type="button" class="btn-qr-scan" onclick="toggleScanner('reader', 'productBarcode')">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M2,2H10V10H2V2M4,4V8H8V4H4M14,2H22V10H14V2M16,4V8H20V4H16M2,14H10V22H2V14M4,16V20H8V16H4M18,14V18H22V14H18M14,18H16V22H14V18M20,18H22V22H20V18M12,2H14V6H12V2M12,8H14V12H12V8M12,14H14V18H12V14M12,20H14V22H12V20M6,6H6.01V6.01H6V6M18,6H18.01V6.01H18V6M6,18H6.01V6.01H6V18Z"/>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                        <path d="M2,4H4V20H2V4M6,4H7V20H6V4M9,4H12V20H9V4M13,4H14V20H13V4M16,4H19V20H16V4M20,4H22V20H20V4Z"/>
                     </svg>
-                    QR Scan
+                    Scan QR
                 </button>
             </div>
         </div>
@@ -113,10 +107,10 @@
             <div class="barcode-container">
                 <input type="text" id="searchInput" placeholder="ابحث عن منتجات..." oninput="searchProducts()" autocomplete="off">
                 <button type="button" class="btn-qr-scan" onclick="toggleScanner('searchReader', 'searchInput', true)">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M2,2H10V10H2V2M4,4V8H8V4H4M14,2H22V10H14V2M16,4V8H20V4H16M2,14H10V22H2V14M4,16V20H8V16H4M18,14V18H22V14H18M14,18H16V22H14V18M20,18H22V22H20V18M12,2H14V6H12V2M12,8H14V12H12V8M12,14H14V18H12V14M12,20H14V22H12V20M6,6H6.01V6.01H6V6M18,6H18.01V6.01H18V6M6,18H6.01V6.01H6V18Z"/>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                        <path d="M2,4H4V20H2V4M6,4H7V20H6V4M9,4H12V20H9V4M13,4H14V20H13V4M16,4H19V20H16V4M20,4H22V20H20V4Z"/>
                     </svg>
-                    QR Scan
+                    Scan QR 
                 </button>
             </div>
         </div>
@@ -126,7 +120,6 @@
     </div>
 </div>
 
-<!-- Modal التأكيد -->
 <div id="confirmModal" class="modal" onclick="closeConfirmModal()">
     <div class="modal-content confirm-content" onclick="event.stopPropagation()">
         <h3 class="confirm-title">تأكيد الحذف</h3>
@@ -138,7 +131,6 @@
     </div>
 </div>
 
-<!-- Modal عرض التفاصيل -->
 <div id="productModal" class="modal" onclick="closeProductModal()">
     <div class="modal-content" onclick="event.stopPropagation()">
         <span class="close-modal" onclick="closeProductModal()">&times;</span>

@@ -1,9 +1,4 @@
 /* =========================================================
-   لوحة تحكم المنتجات - JavaScript
-   Firebase Firestore + Real-time Sync
-   ========================================================= */
-
-/* =========================================================
    1) Firebase Initialization
    ========================================================= */
 
@@ -62,7 +57,6 @@ function initializeFirebase() {
         firebaseReady = true;
         setConnectionStatus("تم الاتصال بقاعدة البيانات.", "success");
 
-        // نخفي الرسالة بعد فترة قصيرة، لكن تظل الأخطاء ظاهرة.
         setTimeout(() => {
             if (firebaseReady) setConnectionStatus("");
         }, 2500);
@@ -124,7 +118,6 @@ function playBeep() {
             try { audioCtx.close(); } catch (e) {}
         });
     } catch (e) {
-        // الصوت اختياري ولا يجب أن يوقف الموقع.
     }
 }
 
@@ -256,8 +249,6 @@ function switchTab(tab) {
 
 function initRealtimeListeners() {
     if (!firebaseReady || !db) return;
-
-    // المنتجات
     db.collection("products").onSnapshot(
         snapshot => {
             allProductsCache = [];
@@ -281,7 +272,6 @@ function initRealtimeListeners() {
         }
     );
 
-    // سجل تعديلات الأسعار
     db.collection("price_updates_list").onSnapshot(
         snapshot => {
             allPriceUpdatesCache = [];
@@ -293,8 +283,6 @@ function initRealtimeListeners() {
                 });
             });
 
-            // الأحدث أولاً بدون الحاجة إلى orderBy؛
-            // هذا يمنع فشل الاستعلام لو كانت بعض السجلات القديمة ناقصة timestamp.
             allPriceUpdatesCache.sort((a, b) => {
                 const aTime = a.timestamp && a.timestamp.toMillis
                     ? a.timestamp.toMillis()
@@ -350,7 +338,6 @@ function updateStats(products) {
    ========================================================= */
 
 async function saveProduct() {
-    // أهم إصلاح لمشكلة الضغط مرتين وتكرار الحفظ.
     if (isSaving) {
         return;
     }
@@ -410,8 +397,6 @@ async function saveProduct() {
                 image: newImage || "",
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             };
-
-            // ننتظر Firestore فعلياً قبل إظهار نجاح الحفظ أو تفريغ الحقول.
             await db.collection("products").add(newProduct);
 
             resetFormFields();
@@ -462,7 +447,6 @@ async function updateExistingProduct(id, name, price, barcode, newImage) {
     };
 
     if (priceChanged) {
-        // Batch = تحديث المنتج + إنشاء سجل تغيير السعر كعملية واحدة.
         const batch = db.batch();
 
         batch.update(productRef, updatedData);
@@ -657,8 +641,6 @@ function closeConfirmModal() {
 
 function runConfirmCallback() {
     const callback = confirmCallback;
-
-    // أغلق النافذة أولاً حتى لا تتكرر العملية.
     closeConfirmModal();
 
     if (typeof callback === "function") {
@@ -783,12 +765,8 @@ async function deleteSelectedProducts() {
                 productIds.forEach(id => {
                     batch.delete(db.collection("products").doc(id));
                 });
-
                 await batch.commit();
-
-                // نحذف سجلات تغيير الأسعار المرتبطة أيضاً.
                 const updateRefs = [];
-
                 for (const id of productIds) {
                     const snapshot = await db
                         .collection("price_updates_list")
@@ -910,10 +888,8 @@ function openUpdateModal(docId) {
         barcode.textContent =
             "الباركود: " + (update.barcode || "بدون باركود");
     }
-
     if (modal) modal.style.display = "flex";
 }
-
 function closeProductModal() {
     const modal = document.getElementById("productModal");
     if (modal) modal.style.display = "none";
@@ -932,9 +908,7 @@ function displayPriceUpdates(updates) {
             '<p style="color:var(--text-muted);padding:20px;text-align:center;">لا توجد تعديلات على الأسعار حتى الآن.</p>';
         return;
     }
-
     let html = "";
-
     updates.forEach(update => {
         const id = escapeHtml(update.id);
         const name = escapeHtml(update.name || "بدون اسم");
@@ -1033,8 +1007,6 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
         showToast("مكتبة قراءة الباركود لم يتم تحميلها.", false);
         return;
     }
-
-    // لو فيه Scanner شغال، اقفله أولاً.
     if (activeScanner) {
         await stopCurrentScanner();
         return;
@@ -1073,7 +1045,6 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
                 await stopCurrentScanner();
             },
             () => {
-                // أخطاء القراءة العادية لا تظهر للمستخدم.
             }
         );
     } catch (error) {
@@ -1105,18 +1076,13 @@ async function stopCurrentScanner() {
         try {
             scanner.clear();
         } catch (error) {
-            // clear قد يفشل إذا لم يبدأ scanner بشكل كامل.
         }
     }
-
-    // نخفي الاثنين دائماً، لأن الـ scanner قد يكون كان في تبويب آخر.
     const reader = document.getElementById("reader");
     const searchReader = document.getElementById("searchReader");
 
     if (reader) reader.style.display = "none";
     if (searchReader) searchReader.style.display = "none";
-
-    // منع متغير غير مستخدم من إثارة lint warnings في بعض البيئات.
     void activeElementId;
 }
 
@@ -1125,7 +1091,6 @@ async function stopCurrentScanner() {
    ========================================================= */
 
 window.addEventListener("DOMContentLoaded", () => {
-    // Theme
     try {
         if (localStorage.getItem("theme") === "dark") {
             document.body.classList.add("dark-mode");
@@ -1137,14 +1102,11 @@ window.addEventListener("DOMContentLoaded", () => {
         console.warn("Theme storage unavailable:", error);
     }
 
-    // Confirmation button يتم ربطه بعد تحميل DOM،
-    // عكس النسخة القديمة التي كانت تربطه أثناء تحميل الملف.
     const confirmYesBtn = document.getElementById("confirmYesBtn");
 
     if (confirmYesBtn) {
         confirmYesBtn.addEventListener("click", runConfirmCallback);
     }
-
     // Firebase
     if (initializeFirebase()) {
         initRealtimeListeners();
