@@ -1,198 +1,459 @@
 <!DOCTYPE html>
+
 <html lang="ar" dir="rtl">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <meta name="theme-color" content="#2980b9">
+
     <title>Moka Mohamed</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="login.css">
+
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
 </head>
 
 <body>
+
 <div class="container">
 
-    <button type="button" class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" aria-label="تغيير الوضع">
-        🌙
-    </button>
+    <button type="button" class="refresh-btn" id="refreshBtn" onclick="refreshApp()" aria-label="تحديث" title="تحديث">↻</button>
+
+    <button type="button" class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" aria-label="تغيير الوضع" title="تغيير الوضع">☀️</button>
 
     <h2>لوحة تحكم المنتجات</h2>
 
     <div id="connectionStatus" class="connection-status" aria-live="polite"></div>
+
     <div class="tabs">
-        <button type="button" class="tab-btn" onclick="switchTab('pos')">البيع السريع 🛒</button>
-        <button type="button" class="tab-btn active" onclick="switchTab('add')">إضافة منتج  ➕</button>
-        <button type="button" class="tab-btn" onclick="switchTab('search')">تعديل / حذف 🔍</button>
-        <button type="button" class="tab-btn" onclick="switchTab('updates')">الأسعار الجديدة 🔔</button>
+
+        <button type="button" class="tab-btn" onclick="switchTab('pos')">البيع السريع ⚡</button>
+
+        <button type="button" class="tab-btn" onclick="switchTab('add')">إضافة منتج 🔹</button>
+
+        <button type="button" class="tab-btn" onclick="switchTab('search')">تعديل / حذف ✏️</button>
+
+        <button type="button" class="tab-btn" onclick="switchTab('shakak')">Note 📘</button>
+
+        <button type="button" class="tab-btn" onclick="switchTab('debts')">العملاء 💬</button>
+
+        <button type="button" class="tab-btn" onclick="switchTab('reports')">التقرير اليومي 📊</button>
+
     </div>
 
-    <div id="pos-section" class="tab-content section-content" style="display: none;">
-    <div class="pos-container" style="background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+    <div id="pos-section" class="tab-content section-content inline-style-1">
 
-        <div style="position: relative; display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
-        <div style="flex: 1; position: relative;">
-            <input type="text" id="posSearchInput" placeholder="ابحث بالاسم أو امسح الباركود..." style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--input-bg); color: var(--text-color);" autocomplete="off">
-            
-            <div id="posAutocompleteResults" style="position: absolute; top: 100%; left: 0; right: 0; background: var(--card-bg, #fff); border: 1px solid var(--border-color, #cbd5e1); border-radius: 8px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></div>
+    <div class="pos-container inline-style-2">
+
+        <div class="inline-style-3">
+
+        <div class="inline-style-4">
+
+            <input type="text" id="posSearchInput" placeholder="ابحث بالاسم أو QR..." autocomplete="off" class="inline-style-5">
+
+            <div id="posAutocompleteResults" class="inline-style-6"></div>
+
         </div>
-    
-        <button type="button" onclick="toggleScanner('pos-reader', 'posSearchInput')" style="background: #2563eb; color: white; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
-                📷 مسح
+
+        <button type="button" class="pos-scan-btn" onclick="toggleScanner('pos-reader', 'posSearchInput')">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                    <path d="M2,4H4V20H2V4M6,4H7V20H6V4M9,4H12V20H9V4M13,4H14V20H13V4M16,4H19V20H16V4M20,4H22V20H20V4Z"/>
+                </svg>
+                QR
         </button>
+
         </div>
 
-        <div class="invoice-grand-total-container" style="text-align: center; margin-bottom: 20px; padding: 10px; border-top: 1px dashed var(--border-color); border-bottom: 1px dashed var(--border-color);">
-    <div style="font-size: 18px; margin-bottom: 5px; color: var(--text-muted);">
-        عدد المنتجات: <span id="posItemCount" style="font-weight: bold; color: var(--text-color);">0</span>
+        <div class="invoice-grand-total-container inline-style-7">
+
+    <div class="inline-style-8">
+
+        عدد المنتجات: <span id="posItemCount" class="inline-style-9">0</span>
+
     </div>
-    <div style="font-size: 22px; font-weight: bold; color: #dc2626;">
+
+    <div class="inline-style-10">
+
         الإجمالي: <span id="posGrandTotal">0.00</span> جنيه
-    </div>
-</div>
-        <div id="pos-reader" style="width: 100%; display: none; margin-bottom: 15px; border-radius: 8px; overflow: hidden;"></div>
 
-        <div style="overflow-x: auto; margin-bottom: 20px;">
-            <table style="width: 100%; border-collapse: collapse; text-align: center;" id="posTable">
+    </div>
+
+</div>
+
+        <div id="pos-reader" class="inline-style-11"></div>
+
+        <div class="inline-style-12">
+
+            <table id="posTable" class="inline-style-13">
+
                 <thead>
-                    <tr style="background: var(--table-header-bg, #f1f5f9); color: var(--text-color); border-bottom: 2px solid #cbd5e1;">
-                        <th style="padding: 10px; border: 1px solid #cbd5e1;">No.</th>
-                        <th style="padding: 10px; border: 1px solid #cbd5e1;">Name</th>
-                        <th style="padding: 10px; border: 1px solid #cbd5e1;">Quantity</th>
-                        <th style="padding: 10px; border: 1px solid #cbd5e1;">U.Price</th>
-                        <th style="padding: 10px; border: 1px solid #cbd5e1;">Total</th>
-                        <th style="padding: 10px; border: 1px solid #cbd5e1;">حذف</th>
+
+                    <tr class="inline-style-14">
+
+                        <th class="inline-style-15">الرقم</th>
+
+                        <th class="inline-style-15">الاسم</th>
+
+                        <th class="inline-style-15">الكمية</th>
+
+                        <th class="inline-style-15">سعر الوحدة</th>
+
+                        <th class="inline-style-15">الإجمالي</th>
+
+                        <th class="inline-style-15">حذف</th>
+
                     </tr>
+
                 </thead>
+
                 <tbody id="posTableBody">
+
                 </tbody>
+
             </table>
+
         </div>
 
-        <div style="display: flex; justify-content: space-between; gap: 10px;">
-            <button type="button" onclick="clearPosInvoice()" style="background: #dc2626; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px;">
-                🗑️ تفريغ الفاتورة
+        <div class="pos-actions">
+            <button type="button" onclick="completePosSale()" class="pos-action-btn pos-sale-btn inline-style-18">
+                بيع 💸
             </button>
-            <button type="button" onclick="printPosInvoice()" style="background: #16a34a; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px;">
-                🖨️ طباعة PDF
-            </button>
+
         </div>
+
     </div>
+
 </div>
 
-    <div id="addSection" class="section-content active">
+    <div id="shakakSection" class="section-content">
+        <div class="pos-container shakak-container">
+            <div class="form-group">
+                <label for="shakakCustomerName">اسم العميل <span class="required-mark">*</span></label>
+                <div class="shakak-customer-wrap">
+                    <input type="text" id="shakakCustomerName" placeholder="اكتب اسم العميل..." autocomplete="off" required>
+                    <div id="shakakCustomerAutocompleteResults" class="pos-autocomplete-results shakak-customer-results"></div>
+                </div>
+            </div>
+            <div class="shakak-date-time-grid">
+                <div class="form-group">
+                    <label for="shakakDate">التاريخ</label>
+                    <input type="date" id="shakakDate">
+                </div>
+                <div class="form-group">
+                    <label for="shakakTime">الوقت</label>
+                    <input type="time" id="shakakTime">
+                </div>
+            </div>
+            <div class="pos-search-row">
+                <div class="pos-search-wrap">
+                    <input type="text" id="shakakSearchInput" placeholder="ابحث بالاسم أو QR..." autocomplete="off">
+                    <div id="shakakAutocompleteResults" class="pos-autocomplete-results"></div>
+                </div>
+                <button type="button" onclick="toggleScanner('shakak-reader', 'shakakSearchInput')" class="shakak-scan-btn">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M2,4H4V20H2V4M6,4H7V20H6V4M9,4H12V20H9V4M13,4H14V20H13V4M16,4H19V20H16V4M20,4H22V20H20V4Z"/></svg> QR
+                </button>
+            </div>
+            <div id="shakak-reader" class="viewport"></div>
+            <div class="invoice-grand-total-container shakak-total-box">
+                <div class="shakak-total-line">عدد المنتجات: <span id="shakakItemCount">0</span></div>
+                <div class="shakak-grand-total">الإجمالي: <span id="shakakGrandTotal">0.00</span></div>
+            </div>
+            <div class="table-scroll">
+                <table class="shakak-table" id="shakakTable">
+                    <thead><tr><th>الرقم</th><th>المنتج</th><th>الكمية</th><th>سعر الوحدة</th><th>الاجمالي</th><th>حذف</th></tr></thead>
+                    <tbody id="shakakTableBody"></tbody>
+                </table>
+            </div>
+            <div class="shakak-payment-grid">
+                <div class="form-group">
+                    <label for="shakakPaidAmount">المبلغ المدفوع</label>
+                    <input type="number" id="shakakPaidAmount" min="0" step="0.01" value="0" inputmode="decimal" oninput="updateShakakPaymentSummary()">
+                </div>
+                <div class="form-group">
+                    <label for="shakakRemainingAmount">المتبقي</label>
+                    <input type="number" id="shakakRemainingAmount" value="0.00" readonly>
+                </div>
+            </div>
+            <div class="shakak-payment-summary">
+                <div>إجمالي الفاتورة: <strong id="shakakSummaryTotal">0.00</strong></div>
+                <div>المدفوع: <strong id="shakakSummaryPaid">0.00</strong></div>
+                <div>المتبقي: <strong id="shakakSummaryDebt">0.00</strong></div>
+            </div>
+            <div class="shakak-actions">
+<button type="button" onclick="saveShakakRecord()" class="btn-save-shakak" id="saveShakakBtn">حفظ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addSection" class="section-content">
+
         <input type="hidden" id="editingId" value="">
 
         <div class="form-group">
+
             <label for="productName">اسم المنتج</label>
+
             <input type="text" id="productName" placeholder="أدخل اسم المنتج هنا..." autocomplete="off">
+
         </div>
 
         <div class="form-group">
+
             <label for="productPrice">السعر</label>
+
             <input type="number" id="productPrice" placeholder="أدخل السعر..." min="0" step="0.01" inputmode="decimal" autocomplete="off">
+
         </div>
 
         <div class="form-group">
+
             <div class="image-picker-row">
-                <input type="file" id="productImage" accept="image/*" capture="environment"
-                       style="display:none;" onchange="updateImageFileName(this)">
+
+                <input type="file" id="productImage" accept="image/*" capture="environment" onchange="updateImageFileName(this)" class="inline-style-19">
+
                 <button type="button" class="btn-qr-scan image-picker-btn"
-                        onclick="document.getElementById('productImage').click()">                    
+
+                        onclick="document.getElementById('productImage').click()">
+
                     رفع صورة المنتج
+
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+
                     <path d="M4 5h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm8 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0-2a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+
                 </button>
+
             </div>
+
             <div id="imageFileName" class="file-name"></div>
+
         </div>
 
         <div class="form-group">
-            <label for="productBarcode">الباركود أو الـ QR Code</label>
+
+            <label for="productBarcode">الرمز الشريطي</label>
+
             <div class="barcode-container">
+
                 <input type="text" id="productBarcode" placeholder="امسح الرمز أو اكتبه..." autocomplete="off">
+
                 <button type="button" class="btn-qr-scan" onclick="toggleScanner('reader', 'productBarcode')">
+
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+
                         <path d="M2,4H4V20H2V4M6,4H7V20H6V4M9,4H12V20H9V4M13,4H14V20H13V4M16,4H19V20H16V4M20,4H22V20H20V4Z"/>
+
                     </svg>
-                    Scan QR
+
+                    QR
+
                 </button>
+
             </div>
+
         </div>
 
         <div id="reader" class="viewport"></div>
 
         <button type="button" class="btn-save" id="saveProductBtn" onclick="saveProduct()">
+
             حفظ المنتج
+
         </button>
+
     </div>
 
-    <div id="updatesSection" class="section-content">
-        <h3 class="section-title">سجل آخر تعديلات وتغيرات الأسعار</h3>
-        <div id="updatesList" class="updates-list"></div>
+    <div id="debtsSection" class="section-content">
+        <div class="pos-container debts-container">
+<div class="form-group">
+                <label for="debtsSearchInput">بحث عن العميل</label>
+                <input type="text" id="debtsSearchInput" placeholder="ابحث باسم العميل..." autocomplete="off" oninput="filterDebtCustomers()">
+            </div>
+            <div id="debtPaymentPanel" class="debt-payment-panel inline-style-19">
+                <div class="debt-selected-name">العميل: <strong id="selectedDebtCustomerName"></strong></div>
+                <div class="debt-current-line">إجمالي الدين الحالي: <strong id="selectedDebtCurrentAmount">0.00</strong> جنيه</div>
+                <div class="form-group">
+                    <label for="debtPaymentAmount">المبلغ المسدد</label>
+                    <input type="number" id="debtPaymentAmount" min="0" step="0.01" placeholder="اكتب المبلغ..." inputmode="decimal">
+                </div>
+                <div class="debt-payment-actions">
+                    <button type="button" onclick="cancelDebtPayment()" class="btn-cancel-debt">إلغاء</button>
+                    <button type="button" onclick="payDebt()" class="btn-pay-debt"> تسجيل السداد</button>
+                </div>
+            </div>
+            <div id="debtCustomersList" class="debt-customers-list"></div>
+        </div>
+    </div>
+
+    <div id="reportsSection" class="section-content">
+        <div class="daily-report-container">
+            <div class="daily-report-header">
+                <h3 class="section-title">التقرير اليومي</h3>
+                <div class="daily-report-header-row">
+                    <div class="daily-report-day-box"><span>اليوم</span><strong id="reportWeekday">اليوم</strong></div>
+                    <div class="daily-report-date-picker">
+                        <label for="reportDateDisplay">التاريخ</label>
+                        <div class="report-date-control">
+                            <button type="button" class="report-day-nav" id="reportPrevDay" aria-label="اليوم السابق">→</button>
+                            <input type="text" id="reportDateDisplay" readonly autocomplete="off" aria-label="اختيار التاريخ">
+                            <input type="date" id="reportDate" tabindex="-1" aria-hidden="true">
+                            <button type="button" class="report-day-nav" id="reportNextDay" aria-label="اليوم التالي">←</button>
+                            <div id="reportCalendar" class="report-calendar" hidden></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="daily-report-summary">
+                <div class="report-stat-card report-total-card"><span>إجمالي المبيعات</span><strong id="reportTotalSales">0.00</strong></div>
+                <div class="report-stat-card report-cash-card"><span>مبيعات كاش</span><strong id="reportCashSales">0.00</strong></div>
+                <div class="report-stat-card report-credit-card"><span>مبيعات شكك</span><strong id="reportCreditSales">0.00</strong></div>
+                <div class="report-stat-card report-top-card"><span>أكثر منتج مبيعًا</span><strong id="reportTopProduct">-</strong></div>
+            </div>
+
+            <div class="daily-report-sales">
+                <div class="daily-report-sales-title">المنتجات التي تم بيعها</div>
+                <div class="table-scroll">
+                    <table class="daily-report-table">
+                        <thead>
+                            <tr><th>المنتج</th><th>السعر</th><th>الكمية</th><th>الإجمالي</th><th>الوقت</th><th>النوع</th><th>العميل</th></tr>
+                        </thead>
+                        <tbody id="dailyReportTableBody"></tbody>
+                    </table>
+                </div>
+                <div id="dailyReportEmpty" class="daily-report-empty inline-style-19">لا توجد مبيعات مسجلة في هذا اليوم.</div>
+            </div>
+        </div>
     </div>
 
     <div id="searchSection" class="section-content">
+
         <div class="stats-grid">
+
             <div class="stat-card">
+
                 <span>إجمالي المنتجات</span>
+
                 <strong id="statTotal">0</strong>
+
             </div>
+
             <div class="stat-card">
+
                 <span>أعلى سعر</span>
+
                 <strong id="statMax">0 ج.م</strong>
+
             </div>
+
+            <button type="button" class="stat-card stat-card-clickable" onclick="switchTab('priceUpdates')" aria-label="فتح الأسعار الجديدة">
+                <span>الأسعار الجديدة</span>
+                <strong aria-hidden="true">🧾</strong>
+            </button>
+
         </div>
 
         <div class="floating-actions">
+
             <button type="button" id="selectAllBtn" class="btn-select-all" onclick="toggleSelectAll()">تحديد الكل</button>
-            <button type="button" id="deleteSelectedBtn" class="btn-delete-selected" onclick="deleteSelectedProducts()">حذف المحددين</button>
+
+            <button type="button" id="deleteSelectedBtn" class="btn-delete-selected" onclick="deleteSelectedProducts()">حذف الكل</button>
+
         </div>
 
         <div class="form-group">
-            <label for="searchInput">ابحث بالاسم، السعر، أو الـ QR Code</label>
+
+            <label for="searchInput">ابحث بالاسم، السعر، أو QR</label>
+
             <div class="barcode-container">
+
                 <input type="text" id="searchInput" placeholder="ابحث عن منتجات..." oninput="searchProducts()" autocomplete="off">
+
                 <button type="button" class="btn-qr-scan" onclick="toggleScanner('searchReader', 'searchInput', true)">
+
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+
                         <path d="M2,4H4V20H2V4M6,4H7V20H6V4M9,4H12V20H9V4M13,4H14V20H13V4M16,4H19V20H16V4M20,4H22V20H20V4Z"/>
+
                     </svg>
-                    Scan QR 
+
+                    QR
+
                 </button>
+
             </div>
+
         </div>
 
         <div id="searchReader" class="viewport"></div>
+
         <div id="resultsList"></div>
+
     </div>
+
+</div>
+
+<div id="priceUpdatesSection" class="section-content">
+    <div class="price-updates-header">
+        <button type="button" class="btn-back-section" onclick="switchTab('search')">رجوع</button>
+        <h3 class="section-title">الأسعار الجديدة</h3>
+    </div>
+    <div id="updatesList" class="updates-list"></div>
 </div>
 
 <div id="confirmModal" class="modal" onclick="closeConfirmModal()">
+
     <div class="modal-content confirm-content" onclick="event.stopPropagation()">
+
         <h3 class="confirm-title">تأكيد الحذف</h3>
+
         <p id="confirmMessage" class="confirm-message"></p>
+
         <div class="modal-buttons">
+
             <button type="button" id="confirmYesBtn" class="confirm-delete-btn">نعم، حذف</button>
+
             <button type="button" onclick="closeConfirmModal()" class="confirm-cancel-btn">إلغاء</button>
+
         </div>
+
     </div>
+
 </div>
 
 <div id="productModal" class="modal" onclick="closeProductModal()">
+
     <div class="modal-content" onclick="event.stopPropagation()">
+
         <span class="close-modal" onclick="closeProductModal()">&times;</span>
+
         <img id="modalImg" class="modal-img" src="" alt="صورة المنتج">
+
         <h3 id="modalName" class="modal-name"></h3>
+
         <div id="modalPrice" class="modal-price"></div>
+
         <div id="modalBarcode" class="modal-barcode"></div>
+
     </div>
+
 </div>
 
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script src="login.js"></script>
+
 </body>
+
 </html>
