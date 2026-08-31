@@ -144,33 +144,27 @@ function playBeep() {
         const audioCtx = new AudioContextClass();
 
         const now = audioCtx.currentTime;
-
         const osc = audioCtx.createOscillator();
-
         const gain = audioCtx.createGain();
 
-        osc.type = "sine";
+        osc.type = "square";
+        osc.frequency.setValueAtTime(2200, now);
+        osc.frequency.exponentialRampToValueAtTime(2600, now + 0.06);
+        osc.frequency.setValueAtTime(2600, now + 0.06);
+        osc.frequency.exponentialRampToValueAtTime(1800, now + 0.16);
+
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.18, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
 
         osc.connect(gain);
-
         gain.connect(audioCtx.destination);
 
-        osc.frequency.setValueAtTime(523.25, now);
-
-        osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
-
-        gain.gain.setValueAtTime(0.15, now);
-
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-
         osc.start(now);
-
-        osc.stop(now + 0.25);
+        osc.stop(now + 0.16);
 
         osc.addEventListener("ended", () => {
-
             try { audioCtx.close(); } catch (e) {}
-
         });
 
     } catch (e) {
@@ -283,7 +277,7 @@ function getImageAsDataUrl(file) {
 
 }
 
-function refreshApp() {
+async function refreshApp() {
     try {
         stopCurrentScanner();
         posCart = [];
@@ -294,7 +288,66 @@ function refreshApp() {
     } catch (error) {
         console.warn("Refresh state reset warning:", error);
     }
-    window.location.reload();
+
+    const reloadWithCacheBust = () => {
+        const cachedUrl = new URL(window.location.href);
+        cachedUrl.searchParams.set("v", String(Date.now()));
+        window.location.replace(cachedUrl.toString());
+    };
+
+    const clearAppCachesSafely = async () => {
+        try {
+            if (!("caches" in window)) return;
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map(name => caches.delete(name)));
+        } catch (error) {
+            console.warn("Cache clear warning:", error);
+        }
+    };
+
+    const refreshServiceWorkerSafely = async () => {
+        if (!("serviceWorker" in navigator)) return;
+
+        try {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+
+            await Promise.all(registrations.map(async registration => {
+                try {
+                    await registration.update();
+                } catch (error) {
+                    console.warn("Service worker update warning:", error);
+                }
+            }));
+
+            await Promise.all(registrations.map(async registration => {
+                try {
+                    const isUnregistered = await registration.unregister();
+                    if (!isUnregistered) {
+                        console.info("Service worker could not be unregistered; browser may keep control.");
+                    }
+                } catch (error) {
+                    console.warn("Service worker unregister warning:", error);
+                }
+            }));
+        } catch (error) {
+            console.warn("Service worker refresh warning:", error);
+        }
+    };
+
+    if (typeof showToast === "function") {
+        showToast("جاري تحديث التطبيق...", true);
+    }
+
+    try {
+        await refreshServiceWorkerSafely();
+        await clearAppCachesSafely();
+    } catch (error) {
+        console.warn("PWA refresh fallback warning:", error);
+    }
+
+    setTimeout(() => {
+        reloadWithCacheBust();
+    }, 500);
 }
 
 function setThemeIcon(isDark) {
@@ -2169,25 +2222,34 @@ function playBeepSound() {
 
     try {
 
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
 
+        if (!AudioContextClass) return;
+
+        const audioCtx = new AudioContextClass();
+        const now = audioCtx.currentTime;
         const oscillator = audioCtx.createOscillator();
-
         const gainNode = audioCtx.createGain();
 
-        oscillator.type = "sine";
+        oscillator.type = "square";
+        oscillator.frequency.setValueAtTime(2200, now);
+        oscillator.frequency.exponentialRampToValueAtTime(2600, now + 0.06);
+        oscillator.frequency.setValueAtTime(2600, now + 0.06);
+        oscillator.frequency.exponentialRampToValueAtTime(1800, now + 0.16);
 
-        oscillator.frequency.setValueAtTime(1000, audioCtx.currentTime);
-
-        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.0001, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.18, now + 0.01);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
 
         oscillator.connect(gainNode);
-
         gainNode.connect(audioCtx.destination);
 
-        oscillator.start();
+        oscillator.start(now);
+        oscillator.stop(now + 0.16);
 
-        oscillator.stop(audioCtx.currentTime + 0.15);
+        oscillator.onended = () => {
+            try { audioCtx.close(); } catch (e) {}
+        };
 
     } catch (e) {
 
