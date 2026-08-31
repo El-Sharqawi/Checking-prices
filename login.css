@@ -2176,3 +2176,297 @@ body.dark-mode .modal-barcode { color: #fff !important; }
     .refresh-btn { right: 8px !important; }
     .theme-toggle { left: 8px !important; }
 }
+/* =====================================================================
+   تعديلات إضافية للموبايل (طلب العميل) — تصغير الجداول والكروت
+   وترتيبها بشكل أفضل على الشاشات الصغيرة، بدون المساس بشاشة سطح المكتب
+   أو بشاشة "إضافة منتج" أو شاشة "الأسعار الجديدة"
+   ===================================================================== */
+@media (max-width: 560px) {
+
+    /* ---------- 1) شاشة البيع السريع: تصغير الجدول ليظهر بالكامل ---------- */
+    .inline-style-12 {
+        overflow-x: visible !important;
+        margin-bottom: 14px !important;
+    }
+    #posTable.inline-style-13 {
+        table-layout: fixed !important;
+        width: 100% !important;
+    }
+    #posTable.inline-style-13 th.inline-style-15,
+    #posTable.inline-style-13 td.inline-style-15 {
+        padding: 4px 2px !important;
+        font-size: 10.5px !important;
+        word-break: break-word !important;
+        line-height: 1.25 !important;
+    }
+    #posTable.inline-style-13 th.inline-style-15:first-child,
+    #posTable.inline-style-13 td.inline-style-15:first-child {
+        width: 9% !important;
+    }
+    #posTable.inline-style-13 th.inline-style-15:last-child,
+    #posTable.inline-style-13 td.inline-style-15:last-child {
+        width: 12% !important;
+    }
+    .inline-style-9 { font-size: 15px !important; }
+    .inline-style-8, .inline-style-10 { font-size: 15px !important; }
+    .inline-style-10 { font-size: 17px !important; }
+
+    /* ---------- 2) شاشة تعديل / حذف: الكروت التلاتة جمب بعض ---------- */
+    .stats-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 6px !important;
+        margin-bottom: 12px !important;
+    }
+    .stats-grid .stat-card,
+    .stats-grid .stat-card-clickable {
+        padding: 8px 4px !important;
+    }
+    .stats-grid .stat-card span,
+    .stats-grid .stat-card-clickable span {
+        font-size: 10.5px !important;
+        margin-bottom: 2px !important;
+    }
+    .stats-grid .stat-card strong,
+    .stats-grid .stat-card-clickable strong {
+        font-size: 13px !important;
+    }
+
+    #searchSection .product-card {
+        padding: 8px !important;
+        gap: 8px !important;
+        margin-bottom: 7px !important;
+    }
+    #searchSection .product-thumb {
+        width: 42px !important;
+        height: 42px !important;
+    }
+    #searchSection .product-info h4 {
+        font-size: 14px !important;
+        margin: 0 0 2px !important;
+    }
+    #searchSection .product-price-txt {
+        font-size: 12px !important;
+        margin: 1px 0 !important;
+    }
+    #searchSection .product-price-txt strong {
+        font-size: 13px !important;
+    }
+    #searchSection .product-barcode-txt {
+        font-size: 11px !important;
+    }
+    #searchSection .actions-group {
+        gap: 4px !important;
+    }
+    #searchSection .btn-edit,
+    #searchSection .btn-delete {
+        padding: 4px 9px !important;
+        font-size: 10.5px !important;
+    }
+
+    /* ---------- 3) شاشة Note: صف البحث + QR جمب بعض 70/30 ---------- */
+    #shakakSection .pos-search-row {
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 6px !important;
+        margin-bottom: 12px !important;
+    }
+    #shakakSection .pos-search-wrap {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+    }
+    #shakakSection #shakakSearchInput {
+        padding: 9px 8px !important;
+        font-size: 13px !important;
+    }
+    #shakakSection .shakak-scan-btn {
+        flex: 0 0 auto !important;
+        width: auto !important;
+        min-width: 0 !important;
+        padding: 9px 10px !important;
+        font-size: 12px !important;
+        gap: 4px !important;
+    }
+
+    /* حقل اسم العميل مش عايز يبقى ماخد نص الشاشة */
+    #shakakCustomerName {
+        padding: 9px 8px !important;
+        font-size: 13px !important;
+    }
+
+    /* جدول منتجات الشكك: يظهر بالكامل */
+    #shakakSection .table-scroll {
+        overflow-x: visible !important;
+        margin-bottom: 12px !important;
+    }
+    .shakak-table {
+        table-layout: fixed !important;
+    }
+    .shakak-table th,
+    .shakak-table td {
+        padding: 4px 2px !important;
+        font-size: 10.5px !important;
+        word-break: break-word !important;
+        line-height: 1.25 !important;
+    }
+    .shakak-table th:first-child,
+    .shakak-table td:first-child {
+        width: 9% !important;
+    }
+    .shakak-table th:last-child,
+    .shakak-table td:last-child {
+        width: 12% !important;
+    }
+
+    /* المبلغ المدفوع و المتبقي جمب بعض بدل تحت بعض */
+    .shakak-payment-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 8px !important;
+    }
+    .shakak-payment-grid input {
+        padding: 9px 8px !important;
+        font-size: 13px !important;
+    }
+
+    /* ---------- 4) شاشة العملاء: تصغير كل حاجة جوه ---------- */
+    #debtsSection .debt-customer-card {
+        padding: 10px !important;
+        gap: 8px !important;
+    }
+    #debtsSection .debt-customer-info h4 {
+        font-size: 15px !important;
+        margin: 0 0 3px !important;
+    }
+    #debtsSection .debt-meta {
+        font-size: 12px !important;
+    }
+    #debtsSection .debt-card-actions button {
+        padding: 6px 10px !important;
+        font-size: 11.5px !important;
+    }
+    #debtsSection #debtsSearchInput {
+        padding: 9px 8px !important;
+        font-size: 13px !important;
+    }
+    #debtPaymentPanel {
+        padding: 10px !important;
+        margin: 10px 0 14px !important;
+    }
+    #debtPaymentPanel .debt-selected-name,
+    #debtPaymentPanel .debt-current-line {
+        font-size: 12.5px !important;
+        margin-bottom: 6px !important;
+    }
+    #debtPaymentPanel .debt-current-line strong {
+        font-size: 14px !important;
+    }
+    #debtPaymentAmount {
+        padding: 9px 8px !important;
+        font-size: 13px !important;
+    }
+    #debtsSection .btn-cancel-debt,
+    #debtsSection .btn-pay-debt {
+        padding: 9px 10px !important;
+        font-size: 13px !important;
+    }
+
+    /* ---------- 5) شاشة التقرير اليومي ---------- */
+    .daily-report-container {
+        padding: 12px !important;
+    }
+    .daily-report-header .section-title {
+        font-size: 18px !important;
+        margin: 0 0 10px !important;
+        grid-column: 1 / -1 !important;
+    }
+
+    /* دمج الصفين (تاريخ+يوم) مع كروت الإحصائيات في شبكة واحدة 3x2 */
+    .daily-report-container {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 6px !important;
+    }
+    .daily-report-header,
+    .daily-report-header-row,
+    .daily-report-summary {
+        display: contents !important;
+    }
+
+    .daily-report-day-box,
+    .daily-report-date-picker {
+        min-height: 56px !important;
+        padding: 6px 4px !important;
+    }
+    .daily-report-day-box span,
+    .daily-report-date-picker label {
+        font-size: 10px !important;
+        margin-bottom: 2px !important;
+    }
+    .daily-report-day-box strong {
+        font-size: 15px !important;
+    }
+    .report-date-control {
+        max-width: 100% !important;
+        gap: 2px !important;
+        grid-template-columns: 16px minmax(0,1fr) 16px !important;
+    }
+    #reportDateDisplay {
+        height: 28px !important;
+        font-size: 8.5px !important;
+        padding: 0 !important;
+        letter-spacing: -0.3px !important;
+    }
+    .report-day-nav {
+        height: 28px !important;
+        font-size: 12px !important;
+    }
+
+    .report-stat-card {
+        min-height: 56px !important;
+        padding: 6px 3px !important;
+        gap: 2px !important;
+    }
+    .report-stat-card span {
+        font-size: 9.5px !important;
+    }
+    .report-stat-card strong {
+        font-size: 12.5px !important;
+    }
+    .report-total-card strong { font-size: 13px !important; }
+    .report-top-card strong { font-size: 11px !important; }
+
+    .daily-report-sales {
+        grid-column: 1 / -1 !important;
+        padding-top: 12px !important;
+    }
+    .daily-report-sales-title {
+        font-size: 15px !important;
+        margin-bottom: 8px !important;
+    }
+
+    /* جدول المبيعات: يظهر كامل الحقول */
+    #reportsSection .table-scroll {
+        overflow-x: visible !important;
+    }
+    .daily-report-table {
+        table-layout: fixed !important;
+    }
+    .daily-report-table th,
+    .daily-report-table td {
+        padding: 3px 1px !important;
+        font-size: 8.5px !important;
+        word-break: break-word !important;
+        line-height: 1.2 !important;
+    }
+    .report-type-badge {
+        min-width: 0 !important;
+        padding: 2px 3px !important;
+        font-size: 8px !important;
+    }
+    .report-time-cell {
+        font-size: 8px !important;
+    }
+
+    .daily-report-empty {
+        grid-column: 1 / -1 !important;
+    }
+}
