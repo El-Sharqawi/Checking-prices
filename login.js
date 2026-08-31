@@ -144,13 +144,15 @@ function playBeep() {
         osc.connect(gain);
         gain.connect(audioCtx.destination);
         
-        osc.frequency.setValueAtTime(2000, now); 
+        // تردد حاد وقوي
+        osc.frequency.setValueAtTime(2400, now); 
         
-        gain.gain.setValueAtTime(0.1, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08); // مدة قصيرة جداً وحادة
+        // رفع مستوى الصوت (Gain) بشكل أكبر بكثير ليصبح عالي جداً
+        gain.gain.setValueAtTime(0.4, now); 
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
         
         osc.start(now);
-        osc.stop(now + 0.08);
+        osc.stop(now + 0.1);
         
         osc.addEventListener("ended", () => {
             try { audioCtx.close(); } catch (e) {}
