@@ -1713,6 +1713,42 @@ function setupBarcodeLookupOnAddForm() {
     });
 }
 
+function setupCameraFlashButton(viewport) {
+    if (!viewport) return;
+
+    const existingBtn = viewport.querySelector(".camera-flash-btn");
+    if (existingBtn) return;
+
+    const flashButton = document.createElement("button");
+    flashButton.type = "button";
+    flashButton.className = "camera-flash-btn";
+    flashButton.setAttribute("aria-label", "الفلاش");
+    flashButton.title = "الفلاش";
+    flashButton.textContent = "⚡";
+
+    flashButton.addEventListener("click", async () => {
+        if (!activeScanner) return;
+
+        try {
+            const capabilities = await activeScanner.getRunningTrackCameraCapabilities();
+            if (!capabilities || !capabilities.torch) {
+                showToast("الفلاش غير متاح", false);
+                return;
+            }
+
+            await activeScanner.toggleTorch();
+            const isOn = flashButton.classList.toggle("is-on");
+            flashButton.textContent = isOn ? "💡" : "⚡";
+            flashButton.title = isOn ? "إيقاف الفلاش" : "تشغيل الفلاش";
+        } catch (error) {
+            console.warn("Torch toggle error:", error);
+            showToast("تعذر تشغيل الفلاش", false);
+        }
+    });
+
+    viewport.appendChild(flashButton);
+}
+
 async function toggleScanner(elementId, inputTargetId, isSearch = false) {
 
     const viewport = document.getElementById(elementId);
@@ -1736,6 +1772,7 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
     }
 
     viewport.style.display = "block";
+    setupCameraFlashButton(viewport);
 
     try {
 
@@ -1894,11 +1931,12 @@ async function stopCurrentScanner() {
     const shakakReader = document.getElementById("shakak-reader");
     const posReader = document.getElementById("pos-reader");
 
-    if (reader) reader.style.display = "none";
-
-    if (searchReader) searchReader.style.display = "none";
-    if (shakakReader) shakakReader.style.display = "none";
-    if (posReader) posReader.style.display = "none";
+    [reader, searchReader, shakakReader, posReader].forEach(el => {
+        if (!el) return;
+        el.style.display = "none";
+        const flashBtn = el.querySelector(".camera-flash-btn");
+        if (flashBtn) flashBtn.remove();
+    });
 
     void activeElementId;
 
