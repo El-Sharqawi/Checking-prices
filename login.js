@@ -1665,101 +1665,11 @@ function setupBarcodeLookupOnAddForm() {
     });
 }
 
-let scannerFlashEnabled = false;
-
-function ensureScannerFlashButton(viewport) {
-    if (!viewport) return null;
-    let flashBtn = viewport.querySelector(".scanner-flash-btn");
-    if (flashBtn) return flashBtn;
-
-    flashBtn = document.createElement("button");
-    flashBtn.type = "button";
-    flashBtn.className = "scanner-flash-btn";
-    flashBtn.textContent = "تشغيل الفلاش";
-    flashBtn.setAttribute("aria-label", "تشغيل أو إيقاف الفلاش");
-    flashBtn.style.position = "absolute";
-    flashBtn.style.right = "14px";
-    flashBtn.style.bottom = "14px";
-    flashBtn.style.zIndex = "5";
-    flashBtn.style.border = "none";
-    flashBtn.style.borderRadius = "999px";
-    flashBtn.style.background = "rgba(15, 23, 42, 0.8)";
-    flashBtn.style.color = "#fff";
-    flashBtn.style.padding = "8px 14px";
-    flashBtn.style.fontSize = "13px";
-    flashBtn.style.fontWeight = "700";
-    flashBtn.style.cursor = "pointer";
-    flashBtn.style.boxShadow = "0 6px 14px rgba(0,0,0,0.25)";
-    flashBtn.style.display = "none";
-    flashBtn.addEventListener("click", async () => {
-        await toggleScannerFlash();
-    });
-    viewport.style.position = "relative";
-    viewport.appendChild(flashBtn);
-    return flashBtn;
-}
-
-function updateScannerFlashButtonState() {
-    const flashButtons = document.querySelectorAll(".scanner-flash-btn");
-    flashButtons.forEach(button => {
-        const isOn = scannerFlashEnabled && activeScanner;
-        button.textContent = isOn ? "إطفاء الفلاش" : "تشغيل الفلاش";
-        button.style.background = isOn ? "rgba(251, 191, 36, 0.95)" : "rgba(15, 23, 42, 0.8)";
-        button.style.color = isOn ? "#111827" : "#fff";
-        button.style.display = activeScanner ? "block" : "none";
-    });
-}
-
-async function toggleScannerFlash() {
-    if (!activeScanner) {
-        scannerFlashEnabled = false;
-        updateScannerFlashButtonState();
-        return;
-    }
-
-    const canToggleTorch = typeof activeScanner.getRunningTrackCameraCapabilities === "function";
-    if (!canToggleTorch) {
-        showToast("الفلاش غير مدعوم على هذه الكاميرا", false);
-        return;
-    }
-
-    const capabilities = activeScanner.getRunningTrackCameraCapabilities();
-    const supportsTorch = capabilities && typeof capabilities.torch !== "undefined" && capabilities.torch !== null;
-
-    if (!supportsTorch) {
-        showToast("الفلاش غير مدعوم على هذه الكاميرا", false);
-        return;
-    }
-
-    scannerFlashEnabled = !scannerFlashEnabled;
-
-    try {
-        if (typeof activeScanner.applyVideoConstraints === "function") {
-            await activeScanner.applyVideoConstraints({
-                advanced: [{ torch: scannerFlashEnabled }]
-            });
-        } else {
-            scannerFlashEnabled = !scannerFlashEnabled;
-            showToast("الفلاش غير متاح في هذا المتصفح", false);
-            return;
-        }
-
-        updateScannerFlashButtonState();
-    } catch (error) {
-        console.error("Scanner flash toggle error:", error);
-        scannerFlashEnabled = !scannerFlashEnabled;
-        showToast("تعذر تبديل الفلاش", false);
-        updateScannerFlashButtonState();
-    }
-}
-
 async function toggleScanner(elementId, inputTargetId, isSearch = false) {
 
     const viewport = document.getElementById(elementId);
 
     if (!viewport) return;
-
-    ensureScannerFlashButton(viewport);
 
     if (typeof Html5Qrcode === "undefined") {
 
@@ -1777,8 +1687,6 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
 
     }
 
-    scannerFlashEnabled = false;
-    updateScannerFlashButtonState();
     viewport.style.display = "block";
 
     try {
@@ -1852,7 +1760,7 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
                         switchTab("add");
                         const barcodeInput = document.getElementById("productBarcode");
                         if (barcodeInput) barcodeInput.value = scannedCode;
-                        showToast("عفوا هذا المنتج غير مسجل", false);
+                        showToast("عفوًا، هذا المنتج غير مسجل", false);
                         await lookupAndFillProductFromBarcode(scannedCode, { forceName: true });
                     }
                     return;
@@ -1944,11 +1852,279 @@ async function stopCurrentScanner() {
     if (shakakReader) shakakReader.style.display = "none";
     if (posReader) posReader.style.display = "none";
 
-    scannerFlashEnabled = false;
-    updateScannerFlashButtonState();
-
     void activeElementId;
 
+}
+
+function openMonthlyReportModal() {
+    const modal = document.getElementById('monthlyReportModal');
+    const input = document.getElementById('monthlyReportMonthInput');
+    if (input && !input.value) {
+        input.value = getCurrentMonthValue();
+    }
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+    loadMonthlyReport();
+}
+
+function closeMonthlyReportModal() {
+    const modal = document.getElementById('monthlyReportModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function getCurrentMonthValue(date = new Date()) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function formatCurrency(value) {
+    const num = Number(value || 0);
+    return isNaN(num) ? '0.00' : num.toFixed(2);
+}
+
+function normalizeDateValue(value) {
+    if (!value) return null;
+
+    if (value.toDate) {
+        return value.toDate();
+    }
+
+    if (value.seconds) {
+        return new Date(value.seconds * 1000);
+    }
+
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
+        const [year, month, day] = value.trim().split('-').map(Number);
+        return new Date(year, month - 1, day, 12);
+    }
+
+    const date = new Date(value);
+    return isNaN(date.getTime()) ? null : date;
+}
+
+function getRecordTotal(record) {
+    if (!record || typeof record !== 'object') return 0;
+
+    const possibleKeys = [
+        'total', 'grandTotal', 'amount', 'paidAmount', 'finalTotal', 'saleTotal',
+        'totalPrice', 'orderTotal', 'sum', 'value'
+    ];
+
+    for (const key of possibleKeys) {
+        if (record[key] !== undefined && record[key] !== null && !isNaN(Number(record[key]))) {
+            return Number(record[key]);
+        }
+    }
+
+    if (Array.isArray(record.items)) {
+        return record.items.reduce((sum, item) => {
+            const itemTotal = Number(item.total || item.amount || item.price || 0);
+            return sum + (isNaN(itemTotal) ? 0 : itemTotal);
+        }, 0);
+    }
+
+    return 0;
+}
+
+function getRecordType(record) {
+    if (!record || typeof record !== 'object') return 'cash';
+
+    const type = String(record.saleType || record.type || record.paymentType || record.mode || '').trim().toLowerCase();
+    if (type.includes('credit') || type.includes('شقق') || type.includes('آجل') || type.includes('debt')) return 'credit';
+    if (type.includes('cash') || type.includes('نقد') || type.includes('كاش')) return 'cash';
+
+    const paid = Number(record.paidAmount || record.cash || record.received || 0);
+    const total = getRecordTotal(record);
+    if (paid > 0 && total > 0 && paid >= total) return 'cash';
+    if (paid > 0 && total > 0 && paid < total) return 'credit';
+
+    return 'cash';
+}
+
+function getReportRowQuantity(record) {
+    const items = Array.isArray(record.items) ? record.items : [];
+    const quantityFromItems = items.reduce((sum, item) => {
+        const qty = Number(item.quantity || item.qty || item.count || 0);
+        return sum + (isNaN(qty) ? 0 : qty);
+    }, 0);
+
+    if (quantityFromItems > 0) return quantityFromItems;
+
+    const fallback = Number(record.quantity || record.qty || record.count || 1);
+    return isNaN(fallback) ? 0 : fallback;
+}
+
+function getMonthRowsFromSnapshot(snapshot, monthValue) {
+    const rows = [];
+    if (!snapshot || !snapshot.docs) return rows;
+
+    snapshot.docs.forEach((doc) => {
+        const record = doc.data ? doc.data() : {};
+        const date = normalizeDateValue(record.date || record.saleDate || record.createdAt || record.timestamp || record.created_on || record.updatedAt || doc.createTime || doc.updateTime);
+        if (!date) return;
+
+        const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        if (month !== monthValue) return;
+
+        const total = getRecordTotal(record);
+        if (!total || total <= 0) return;
+
+        const items = Array.isArray(record.items) ? record.items : [];
+        const productName = record.productName || record.name || record.product || (items[0] && (items[0].name || items[0].productName)) || 'منتج';
+
+        rows.push({
+            name: productName,
+            quantity: getReportRowQuantity(record),
+            total,
+            type: getRecordType(record),
+            date,
+            items
+        });
+    });
+
+    return rows;
+}
+
+function safeQuery(db, collectionName, monthValue) {
+    if (!db || !db.collection) return Promise.resolve([]);
+
+    return db.collection(collectionName).get()
+        .then((snapshot) => getMonthRowsFromSnapshot(snapshot, monthValue))
+        .catch(() => []);
+}
+
+function resetMonthlyReportCards() {
+    const empty = document.getElementById('monthlyReportEmpty');
+    const tbody = document.getElementById('monthlyReportTableBody');
+
+    if (tbody) tbody.innerHTML = '';
+    if (empty) empty.hidden = false;
+
+    ['monthlyReportTotal', 'monthlyReportSalesCount', 'monthlyReportProductsSold', 'monthlyReportCash', 'monthlyReportCredit', 'monthlyReportTopProduct']
+        .forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.textContent = id === 'monthlyReportSalesCount' || id === 'monthlyReportProductsSold' ? '0' : '0.00';
+                if (id === 'monthlyReportTopProduct') el.textContent = '-';
+            }
+        });
+}
+
+function buildMonthlyReportSummary(rows) {
+    let total = 0;
+    let cash = 0;
+    let credit = 0;
+    let salesCount = 0;
+    let productsSold = 0;
+    const productMap = {};
+
+    rows.forEach((row) => {
+        salesCount += 1;
+        total += Number(row.total || 0);
+
+        if (row.type === 'cash') {
+            cash += Number(row.total || 0);
+        } else {
+            credit += Number(row.total || 0);
+        }
+
+        const items = Array.isArray(row.items) && row.items.length ? row.items : [{ name: row.name || 'منتج', quantity: row.quantity || 1 }];
+        items.forEach((item) => {
+            const itemName = String(item.name || 'منتج').trim() || 'منتج';
+            const itemQty = Number(item.quantity || item.qty || item.count || 0);
+            const safeQty = isNaN(itemQty) ? 0 : itemQty;
+            if (safeQty > 0) {
+                productsSold += safeQty;
+                productMap[itemName] = (productMap[itemName] || 0) + safeQty;
+            }
+        });
+    });
+
+    const topProduct = Object.entries(productMap).sort((a, b) => b[1] - a[1])[0];
+
+    return {
+        total,
+        cash,
+        credit,
+        salesCount,
+        productsSold,
+        topProduct: topProduct ? `${topProduct[0]} (${topProduct[1]})` : '-'
+    };
+}
+
+async function loadMonthlyReport() {
+    const monthValueInput = document.getElementById('monthlyReportMonthInput');
+    const monthValue = monthValueInput && monthValueInput.value ? monthValueInput.value : getCurrentMonthValue();
+
+    if (monthValueInput) {
+        monthValueInput.value = monthValue;
+    }
+
+    if (!window.firebase || !firebase.firestore) {
+        resetMonthlyReportCards();
+        return;
+    }
+
+    const db = firebase.firestore();
+    const collections = ['daily_sales', 'shakak_records', 'sales', 'saleRecords', 'transactions', 'orders', 'records'];
+
+    try {
+        const results = await Promise.all(collections.map((name) => safeQuery(db, name, monthValue)));
+        const rows = results.flat();
+        const tbody = document.getElementById('monthlyReportTableBody');
+        const empty = document.getElementById('monthlyReportEmpty');
+        let productRows = [];
+
+        if (!rows.length) {
+            resetMonthlyReportCards();
+            return;
+        }
+
+        const summary = buildMonthlyReportSummary(rows);
+
+        if (tbody) {
+            const productSummaryMap = {};
+
+            rows.forEach((row) => {
+                const items = Array.isArray(row.items) && row.items.length ? row.items : [{ name: row.name || 'منتج', quantity: row.quantity || 1, total: row.total || 0 }];
+                items.forEach((item) => {
+                    const name = String(item.name || 'منتج').trim() || 'منتج';
+                    const quantity = Number(item.quantity || item.qty || item.count || 0);
+                    const safeQty = isNaN(quantity) ? 0 : quantity;
+                    if (safeQty <= 0) return;
+                    const itemTotal = Number(item.total || item.amount || 0);
+                    if (!productSummaryMap[name]) {
+                        productSummaryMap[name] = { quantity: 0, total: 0 };
+                    }
+                    productSummaryMap[name].quantity += safeQty;
+                    productSummaryMap[name].total += isNaN(itemTotal) ? 0 : itemTotal;
+                });
+            });
+
+            Object.entries(productSummaryMap)
+                .sort((a, b) => b[1].quantity - a[1].quantity)
+                .forEach(([name, stats]) => {
+                    productRows.push(`<tr><td>${escapeHtml(name)}</td><td>${stats.quantity}</td><td>${formatCurrency(stats.total)}</td><td>مبيعات</td></tr>`);
+                });
+
+            tbody.innerHTML = productRows.join('');
+        }
+
+        if (empty) empty.hidden = productRows.length > 0;
+
+        document.getElementById('monthlyReportTotal').textContent = formatCurrency(summary.total);
+        document.getElementById('monthlyReportSalesCount').textContent = String(summary.salesCount);
+        document.getElementById('monthlyReportProductsSold').textContent = String(summary.productsSold);
+        document.getElementById('monthlyReportCash').textContent = formatCurrency(summary.cash);
+        document.getElementById('monthlyReportCredit').textContent = formatCurrency(summary.credit);
+        document.getElementById('monthlyReportTopProduct').textContent = summary.topProduct;
+    } catch (error) {
+        console.error('Monthly report error:', error);
+        showToast('تعذر تحميل التقرير الشهري', false);
+        resetMonthlyReportCards();
+    }
 }
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -1961,6 +2137,12 @@ window.addEventListener("DOMContentLoaded", () => {
         document.body.classList.remove("dark-mode");
         setThemeIcon(false);
         console.warn("Theme storage unavailable:", error);
+    }
+
+    const monthlyMonthInput = document.getElementById('monthlyReportMonthInput');
+    if (monthlyMonthInput) {
+        monthlyMonthInput.value = getCurrentMonthValue();
+        monthlyMonthInput.addEventListener('change', loadMonthlyReport);
     }
 
     switchTab("pos");
