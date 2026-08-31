@@ -2194,18 +2194,25 @@ body.dark-mode .modal-barcode { color: #fff !important; }
     }
     #posTable.inline-style-13 th.inline-style-15,
     #posTable.inline-style-13 td.inline-style-15 {
-        padding: 4px 2px !important;
-        font-size: 10.5px !important;
+        padding: 5px 3px !important;
+        font-size: 12px !important;
         word-break: break-word !important;
-        line-height: 1.25 !important;
+        line-height: 1.3 !important;
     }
     #posTable.inline-style-13 th.inline-style-15:first-child,
     #posTable.inline-style-13 td.inline-style-15:first-child {
-        width: 9% !important;
+        width: 30% !important;
     }
     #posTable.inline-style-13 th.inline-style-15:last-child,
     #posTable.inline-style-13 td.inline-style-15:last-child {
         width: 12% !important;
+    }
+    #posTable .pos-qty-btn {
+        padding: 2px 6px !important;
+        font-size: 12px !important;
+    }
+    #posTable .quantity-controls {
+        gap: 5px !important;
     }
     .inline-style-9 { font-size: 15px !important; }
     .inline-style-8, .inline-style-10 { font-size: 15px !important; }
@@ -2303,18 +2310,25 @@ body.dark-mode .modal-barcode { color: #fff !important; }
     }
     .shakak-table th,
     .shakak-table td {
-        padding: 4px 2px !important;
-        font-size: 10.5px !important;
+        padding: 5px 3px !important;
+        font-size: 12px !important;
         word-break: break-word !important;
-        line-height: 1.25 !important;
+        line-height: 1.3 !important;
     }
     .shakak-table th:first-child,
     .shakak-table td:first-child {
-        width: 9% !important;
+        width: 30% !important;
     }
     .shakak-table th:last-child,
     .shakak-table td:last-child {
         width: 12% !important;
+    }
+    .shakak-table .quantity-controls {
+        gap: 5px !important;
+    }
+    .shakak-table .quantity-controls button {
+        padding: 2px 6px !important;
+        font-size: 12px !important;
     }
 
     /* المبلغ المدفوع و المتبقي جمب بعض بدل تحت بعض */

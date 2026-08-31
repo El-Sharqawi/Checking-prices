@@ -1908,8 +1908,6 @@ function renderPosTable() {
 
         row.innerHTML = `
 
-            <td class="inline-style-27">${index + 1}</td>
-
             <td class="inline-style-28">${escapeHtml(item.name)}</td>
 
             <td class="inline-style-27">
@@ -2232,7 +2230,6 @@ function renderShakakTable() {
         grandTotal += itemTotal;
         const row = document.createElement("tr");
         row.innerHTML = `
-            <td>${index + 1}</td>
             <td class="shakak-name-cell">${escapeHtml(item.name)}</td>
             <td><div class="quantity-controls">
                 <button type="button" onclick="updateShakakQty('${escapeHtml(item.id)}', -1)">-</button>
