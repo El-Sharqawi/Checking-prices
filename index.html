@@ -101,15 +101,15 @@
 
                     <tr class="inline-style-14">
 
-                        <th class="inline-style-15">الاسم</th>
+                        <th class="inline-style-15 col-name">الاسم</th>
 
-                        <th class="inline-style-15">الكمية</th>
+                        <th class="inline-style-15 col-qty">الكمية</th>
 
-                        <th class="inline-style-15">سعر الوحدة</th>
+                        <th class="inline-style-15 col-price">السعر</th>
 
-                        <th class="inline-style-15">الإجمالي</th>
+                        <th class="inline-style-15 col-total">الإجمالي</th>
 
-                        <th class="inline-style-15">حذف</th>
+                        <th class="inline-style-15 col-del">حذف</th>
 
                     </tr>
 
@@ -169,7 +169,7 @@
             </div>
             <div class="table-scroll">
                 <table class="shakak-table" id="shakakTable">
-                    <thead><tr><th>المنتج</th><th>الكمية</th><th>سعر الوحدة</th><th>الاجمالي</th><th>حذف</th></tr></thead>
+                    <thead><tr><th class="col-name">المنتج</th><th class="col-qty">الكمية</th><th class="col-price">السعر</th><th class="col-total">الإجمالي</th><th class="col-del">حذف</th></tr></thead>
                     <tbody id="shakakTableBody"></tbody>
                 </table>
             </div>
@@ -184,9 +184,9 @@
                 </div>
             </div>
             <div class="shakak-payment-summary">
-                <div>الاجمالي: <strong id="shakakSummaryTotal">0.00</strong></div>
-                <div>المدفوع: <strong id="shakakSummaryPaid">0.00</strong></div>
-                <div>المتبقي: <strong id="shakakSummaryDebt">0.00</strong></div>
+                <div>الاجمالي: <strong id="shakakSummaryTotal" class="amount-total">0.00</strong></div>
+                <div>المدفوع: <strong id="shakakSummaryPaid" class="amount-paid">0.00</strong></div>
+                <div>المتبقي: <strong id="shakakSummaryDebt" class="amount-remain">0.00</strong></div>
             </div>
             <div class="shakak-actions">
 <button type="button" onclick="saveShakakRecord()" class="btn-save-shakak" id="saveShakakBtn">حفظ</button>

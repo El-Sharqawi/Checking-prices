@@ -2392,8 +2392,8 @@ function renderDebtTransactionDetails(customer) {
             return `<div class="debt-transaction payment-transaction">
                 <strong>سداد</strong>
                 <span>${escapeHtml(transaction.date || "-")} ${escapeHtml(transaction.time || "")}</span>
-                <span>المبلغ: ${Number(transaction.amount || 0).toFixed(2)} جنيه</span>
-                <span>المتبقي: ${Number(transaction.remainingDebt || 0).toFixed(2)} جنيه</span>
+                <span>المبلغ: <strong class="amount-paid">${Number(transaction.amount || 0).toFixed(2)}</strong> جنيه</span>
+                <span>المتبقي: <strong class="amount-remain">${Number(transaction.remainingDebt || 0).toFixed(2)}</strong> جنيه</span>
             </div>`;
         }
 
@@ -2405,9 +2405,9 @@ function renderDebtTransactionDetails(customer) {
         return `<div class="debt-transaction sale-transaction">
             <strong>شكك</strong>
             <span>${escapeHtml(transaction.date || "-")} ${escapeHtml(transaction.time || "")}</span>
-            <span>الإجمالي: ${Number(transaction.total || 0).toFixed(2)} جنيه</span>
-            <span>المدفوع: ${Number(transaction.paid || 0).toFixed(2)} جنيه</span>
-            <span>الباقي: ${Number(transaction.debtAdded || 0).toFixed(2)} جنيه</span>
+            <span>الإجمالي: <strong class="amount-total">${Number(transaction.total || 0).toFixed(2)}</strong> جنيه</span>
+            <span>المدفوع: <strong class="amount-paid">${Number(transaction.paid || 0).toFixed(2)}</strong> جنيه</span>
+            <span>الباقي: <strong class="amount-remain">${Number(transaction.debtAdded || 0).toFixed(2)}</strong> جنيه</span>
             ${itemsHtml ? `<ul>${itemsHtml}</ul>` : ""}
         </div>`;
     }).join("");
