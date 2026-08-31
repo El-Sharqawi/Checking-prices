@@ -2201,11 +2201,12 @@ body.dark-mode .modal-barcode { color: #fff !important; }
     }
     #posTable.inline-style-13 th.inline-style-15:first-child,
     #posTable.inline-style-13 td.inline-style-15:first-child {
-        width: 30% !important;
+        width: 26% !important;
     }
     #posTable.inline-style-13 th.inline-style-15:last-child,
     #posTable.inline-style-13 td.inline-style-15:last-child {
-        width: 12% !important;
+        width: 15% !important;
+        white-space: nowrap !important;
     }
     #posTable .pos-qty-btn {
         padding: 2px 6px !important;
@@ -2317,11 +2318,12 @@ body.dark-mode .modal-barcode { color: #fff !important; }
     }
     .shakak-table th:first-child,
     .shakak-table td:first-child {
-        width: 30% !important;
+        width: 26% !important;
     }
     .shakak-table th:last-child,
     .shakak-table td:last-child {
-        width: 12% !important;
+        width: 15% !important;
+        white-space: nowrap !important;
     }
     .shakak-table .quantity-controls {
         gap: 5px !important;
