@@ -141,7 +141,7 @@ h2 {
 }
 
 .form-group {
-    margin-bottom: 16px;
+    margin-bottom: 3px;
 }
 
 label {
@@ -154,10 +154,10 @@ label {
 
 input {
     width: 100%;
-    padding: 12px 14px;
+    padding: 12px 10px;
     border: 2px solid var(--border-color);
     border-radius: 12px;
-    font-size: 15px;
+    font-size: 10px;
     outline: none;
     background-color: var(--input-bg);
     color: var(--text-main);
@@ -189,10 +189,10 @@ input:focus {
     align-items: center;
     justify-content: center;
     gap: 6px;
-    font-weight: 700;
-    font-size: 13px;
-    height: 48px;
-    box-shadow: 0 4px 12px rgba(41, 128, 185, .2);
+    font-weight: 600;
+    font-size: 12px;
+    height: 40px;
+    box-shadow: 0 4px 12px rgba(41, 128, 185, .2) !important;
     white-space: nowrap;
 }
 
@@ -560,7 +560,7 @@ input:focus {
 
 .pos-container {
     background: var(--card-bg);
-    padding: 20px;
+    padding: 2px;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, .05);
 }
@@ -617,11 +617,6 @@ input:focus {
         padding: 8px;
         align-items: flex-start;
     }
-    .container {
-        margin-top: 8px;
-        padding: 18px;
-        padding-top: 50px !important;
-    }
     .tabs {
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 7px;
@@ -631,10 +626,6 @@ input:focus {
         font-size: 11px;
         padding: 10px 4px;
         min-height: 48px;
-    }
-    .product-card {
-        gap: 8px;
-        padding: 10px;
     }
     .product-thumb {
         width: 52px;
@@ -892,10 +883,8 @@ input:focus {
 }
 
 .quantity-controls {
-    display: flex;
+    display: block;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
 }
 
 .quantity-controls button {
@@ -920,14 +909,19 @@ input:focus {
     width: 100%;
 }
 
+#shakakDate, #shakakTime {
+    padding: 5px !important;
+    font-size: 12px;
+}
+
 #shakakRemainingAmount {
     font-weight: 900;
 }
 
 .shakak-payment-summary {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: 3px;
     margin: 8px 0 18px;
     padding: 12px;
     border: 1px solid var(--border-color);
@@ -1036,11 +1030,11 @@ input:focus {
 }
 
 @media(max-width: 520px) {
-    .shakak-date-time-grid,
+    /* .shakak-date-time-grid,
     .shakak-payment-grid,
     .shakak-payment-summary {
-        grid-template-columns: 1fr;
-    }
+        grid-template-columns: 2fr;
+    } */
 
     .pos-search-row,
     .shakak-actions,
@@ -1667,9 +1661,9 @@ input:focus {
 
 .inline-style-26 { color: #dc2626; font-weight: bold; }
 
-.inline-style-27 { padding: 10px; border: 1px solid var(--border-color); }
+.inline-style-27 { border: 1px solid var(--border-color); }
 
-.inline-style-28 { padding: 10px; border: 1px solid var(--border-color); text-align: right; }
+.inline-style-28 { border: 1px solid var(--border-color); text-align: center; }
 
 .inline-style-29 { display: flex; align-items: center; justify-content: center; gap: 8px; }
 
@@ -1679,7 +1673,7 @@ input:focus {
 
 .inline-style-32 { padding: 2px 8px; background: #22c55e; color: white; border: none; border-radius: 4px; cursor: pointer; }
 
-.inline-style-33 { padding: 10px; border: 1px solid var(--border-color); font-weight: bold; }
+.inline-style-33 { border: 1px solid var(--border-color); font-weight: bold; }
 
 .inline-style-34 { background: #dc2626; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; }
 
@@ -1991,7 +1985,7 @@ body.dark-mode .refresh-btn {
 .btn-pay-debt {
     border: 1px solid var(--app-button-border) !important;
     border-radius: 16px !important;
-    padding: 8px 12px !important;
+    padding: 5px 2px !important;
     min-height: 38px;
     box-shadow: none;
 }
@@ -2000,10 +1994,10 @@ body.dark-mode .refresh-btn {
 .btn-save { background: #3b82a6; }
 .btn-edit { background: #17805f; }
 .btn-delete, .btn-delete-selected { background: #a83b4e; }
-.btn-clear-shakak { background: #a83b4e; }
+.btn-clear-shakak { background: #a83b4e;}
 .btn-save-shakak, .btn-open-debt-payment { background: #2f8a62; }
 .btn-select-all { background: #64748b; }
-.btn-back-section { background: var(--app-button-bg); color: var(--app-button-text); cursor: pointer; }
+.btn-back-section { background: var(--qr-bg-final) !important; color: #fff; cursor: pointer;}
 .btn-save:hover:not(:disabled), .btn-edit:hover:not(:disabled), .btn-delete:hover:not(:disabled),
 .btn-clear-shakak:hover:not(:disabled), .btn-save-shakak:hover:not(:disabled),
 .btn-open-debt-payment:hover:not(:disabled), .btn-select-all:hover:not(:disabled),
@@ -2011,6 +2005,13 @@ body.dark-mode .refresh-btn {
     filter: brightness(.96);
     transform: translateY(-1px);
     box-shadow: 0 7px 16px rgba(15,23,42,.12);
+}
+
+.btn-back-section:hover {
+    background: #063632;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 7px 16px rgba(15,23,42,.12) !important;
 }
 
 /* QR buttons remain visually distinct */
@@ -2137,7 +2138,7 @@ body.dark-mode .pos-qty-btn {
     width: 100%;
     max-width: 1100px;
     min-height: auto;
-    margin: 20px auto;
+    margin: 5px auto;
     padding: 22px;
     background: var(--card-bg);
     border: 2px solid rgba(255, 255, 255, .1);
@@ -2212,9 +2213,7 @@ body.dark-mode .modal-barcode { color: #fff !important; }
         padding: 2px 6px !important;
         font-size: 12px !important;
     }
-    #posTable .quantity-controls {
-        gap: 5px !important;
-    }
+
     .inline-style-9 { font-size: 15px !important; }
     .inline-style-8, .inline-style-10 { font-size: 15px !important; }
     .inline-style-10 { font-size: 17px !important; }
@@ -2239,11 +2238,6 @@ body.dark-mode .modal-barcode { color: #fff !important; }
         font-size: 13px !important;
     }
 
-    #searchSection .product-card {
-        padding: 8px !important;
-        gap: 8px !important;
-        margin-bottom: 7px !important;
-    }
     #searchSection .product-thumb {
         width: 42px !important;
         height: 42px !important;
@@ -2267,8 +2261,8 @@ body.dark-mode .modal-barcode { color: #fff !important; }
     }
     #searchSection .btn-edit,
     #searchSection .btn-delete {
-        padding: 4px 9px !important;
-        font-size: 10.5px !important;
+        padding: 1px 8px !important;
+        font-size: 8.5px !important;
     }
 
     /* ---------- 3) شاشة Note: صف البحث + QR جمب بعض 70/30 ---------- */
@@ -2290,14 +2284,14 @@ body.dark-mode .modal-barcode { color: #fff !important; }
         flex: 0 0 auto !important;
         width: auto !important;
         min-width: 0 !important;
-        padding: 9px 10px !important;
+        padding: 5px 5px !important;
         font-size: 12px !important;
-        gap: 4px !important;
+        gap: 2px !important;
     }
 
     /* حقل اسم العميل مش عايز يبقى ماخد نص الشاشة */
     #shakakCustomerName {
-        padding: 9px 8px !important;
+        padding: 6px 8px !important;
         font-size: 13px !important;
     }
 
@@ -2306,19 +2300,17 @@ body.dark-mode .modal-barcode { color: #fff !important; }
         overflow-x: visible !important;
         margin-bottom: 12px !important;
     }
-    .shakak-table {
-        table-layout: fixed !important;
-    }
     .shakak-table th,
     .shakak-table td {
-        padding: 5px 3px !important;
+        padding: 1px 1px !important;
         font-size: 12px !important;
         word-break: break-word !important;
         line-height: 1.3 !important;
     }
     .shakak-table th:first-child,
     .shakak-table td:first-child {
-        width: 26% !important;
+        width: 20% !important;
+        vertical-align: middle;
     }
     .shakak-table th:last-child,
     .shakak-table td:last-child {
@@ -2336,7 +2328,7 @@ body.dark-mode .modal-barcode { color: #fff !important; }
     /* المبلغ المدفوع و المتبقي جمب بعض بدل تحت بعض */
     .shakak-payment-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        gap: 8px !important;
+        gap: 5px !important;
     }
     .shakak-payment-grid input {
         padding: 9px 8px !important;
