@@ -38,7 +38,7 @@
 
     <div class="tabs">
 
-        <button type="button" class="tab-btn" onclick="switchTab('pos')">البيع السريع ⚡</button>
+        <button type="button" class="tab-btn active" onclick="switchTab('pos')">البيع السريع ⚡</button>
 
         <button type="button" class="tab-btn" onclick="switchTab('add')">إضافة منتج 🔹</button>
 
@@ -93,35 +93,7 @@
 
         <div id="pos-reader" class="inline-style-11"></div>
 
-        <div class="inline-style-12">
-
-            <table id="posTable" class="inline-style-13">
-
-                <thead>
-
-                    <tr class="inline-style-14">
-
-                        <th class="inline-style-15 col-name">الاسم</th>
-
-                        <th class="inline-style-15 col-qty">الكمية</th>
-
-                        <th class="inline-style-15 col-price">السعر</th>
-
-                        <th class="inline-style-15 col-total">الإجمالي</th>
-
-                        <th class="inline-style-15 col-del">حذف</th>
-
-                    </tr>
-
-                </thead>
-
-                <tbody id="posTableBody">
-
-                </tbody>
-
-            </table>
-
-        </div>
+        <div class="cart-list" id="posTableBody"></div>
 
         <div class="pos-actions">
             <button type="button" onclick="completePosSale()" class="pos-action-btn pos-sale-btn inline-style-18">
@@ -167,20 +139,12 @@
                 <div class="shakak-total-line">عدد المنتجات: <span id="shakakItemCount">0</span></div>
                 <div class="shakak-grand-total">الإجمالي: <span id="shakakGrandTotal">0.00</span></div>
             </div>
-            <div class="table-scroll">
-                <table class="shakak-table" id="shakakTable">
-                    <thead><tr><th class="col-name">المنتج</th><th class="col-qty">الكمية</th><th class="col-price">السعر</th><th class="col-total">الإجمالي</th><th class="col-del">حذف</th></tr></thead>
-                    <tbody id="shakakTableBody"></tbody>
-                </table>
-            </div>
+            <div class="cart-list" id="shakakTableBody"></div>
+            <input type="hidden" id="shakakRemainingAmount" value="0.00">
             <div class="shakak-payment-grid">
-                <div class="form-group">
+                <div class="form-group shakak-paid-group">
                     <label for="shakakPaidAmount">المبلغ المدفوع</label>
                     <input type="number" id="shakakPaidAmount" min="0" step="0.01" value="0" inputmode="decimal" oninput="updateShakakPaymentSummary()">
-                </div>
-                <div class="form-group">
-                    <label for="shakakRemainingAmount">المتبقي</label>
-                    <input type="number" id="shakakRemainingAmount" value="0.00" readonly>
                 </div>
             </div>
             <div class="shakak-payment-summary">
@@ -297,7 +261,6 @@
     <div id="reportsSection" class="section-content">
         <div class="daily-report-container">
             <div class="daily-report-header">
-                <h3 class="section-title">التقرير اليومي</h3>
                 <div class="daily-report-header-row">
                     <div class="daily-report-day-box"><span>اليوم</span><strong id="reportWeekday">اليوم</strong></div>
                     <div class="daily-report-date-picker">
@@ -321,15 +284,8 @@
             </div>
 
             <div class="daily-report-sales">
-                <div class="daily-report-sales-title">المنتجات التي تم بيعها</div>
-                <div class="table-scroll">
-                    <table class="daily-report-table">
-                        <thead>
-                            <tr><th>المنتج</th><th>السعر</th><th>الكمية</th><th>الإجمالي</th><th>الوقت</th><th>النوع</th><th>العميل</th></tr>
-                        </thead>
-                        <tbody id="dailyReportTableBody"></tbody>
-                    </table>
-                </div>
+                <div class="daily-report-sales-title">المبيعات</div>
+                <div class="report-list" id="dailyReportTableBody"></div>
                 <div id="dailyReportEmpty" class="daily-report-empty inline-style-19">لا توجد مبيعات مسجلة في هذا اليوم.</div>
             </div>
         </div>

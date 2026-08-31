@@ -1676,6 +1676,8 @@ document.addEventListener("DOMContentLoaded", () => {
     setupShakakCustomerAutocomplete();
     initializeShakakDateTime();
     initializeDailyReport();
+    renderPosTable();
+    renderShakakTable();
 
     ["shakakPaidAmount", "shakakRemainingAmount"].forEach(id => {
         const input=document.getElementById(id);
@@ -1876,76 +1878,47 @@ function addProductToPosCart(foundProduct) {
 
 }
 
+function renderCartItem(item, itemTotal, minusHandler, plusHandler, removeHandler) {
+    const id = escapeHtml(item.id);
+    return `
+        <article class="cart-item">
+            <div class="cart-item-top">
+                <div class="cart-item-name">${escapeHtml(item.name)}</div>
+                <button type="button" class="pos-remove-btn" aria-label="حذف المنتج" onclick="${removeHandler}('${id}')">×</button>
+            </div>
+            <div class="cart-item-bottom">
+                <div class="quantity-controls">
+                    <button type="button" class="pos-qty-btn" onclick="${minusHandler}('${id}', -1)">−</button>
+                    <span class="quantity-value">${item.quantity}</span>
+                    <button type="button" class="pos-qty-btn" onclick="${plusHandler}('${id}', 1)">+</button>
+                </div>
+                <div class="cart-item-prices">
+                    <span class="cart-unit">${(Number(item.price) || 0).toFixed(2)}</span>
+                    <span class="cart-line-total">${itemTotal.toFixed(2)}</span>
+                </div>
+            </div>
+        </article>`;
+}
+
 function renderPosTable() {
-
-    const tbody = document.getElementById("posTableBody");
-
+    const list = document.getElementById("posTableBody");
     const countSpan = document.getElementById("posItemCount");
-
     const grandTotalSpan = document.getElementById("posGrandTotal");
-
-    if (!tbody) return;
-
-    tbody.innerHTML = "";
+    if (!list) return;
 
     let grandTotal = 0;
-
-    if (countSpan) {
-
-        countSpan.textContent = posCart.length;
-
+    if (!posCart.length) {
+        list.innerHTML = '<div class="cart-empty">أضف منتجاً للبدء</div>';
+    } else {
+        list.innerHTML = posCart.map(item => {
+            const itemTotal = (Number(item.price) || 0) * (Number(item.quantity) || 0);
+            grandTotal += itemTotal;
+            return renderCartItem(item, itemTotal, "updatePosQty", "updatePosQty", "removePosItem");
+        }).join("");
     }
 
-    posCart.call ? null : null;
-
-    posCart.forEach((item, index) => {
-
-        const itemTotal = item.price * item.quantity;
-
-        grandTotal += itemTotal;
-
-        const row = document.createElement("tr");
-
-        row.innerHTML = `
-
-            <td class="inline-style-28">${escapeHtml(item.name)}</td>
-
-            <td class="inline-style-27">
-
-                <div class="quantity-controls">
-
-                    <button type="button" class="pos-qty-btn" onclick="updatePosQty('${item.id}', -1)">-</button>
-
-                    <span class="quantity-value">${item.quantity}</span>
-
-                    <button type="button" class="pos-qty-btn" onclick="updatePosQty('${item.id}', 1)">+</button>
-
-                </div>
-
-            </td>
-
-            <td class="inline-style-27">${item.price.toFixed(2)}</td>
-
-            <td class="inline-style-33">${itemTotal.toFixed(2)}</td>
-
-            <td class="inline-style-27">
-
-                <button type="button" class="pos-remove-btn" onclick="removePosItem('${item.id}')">×</button>
-
-            </td>
-
-        `;
-
-        tbody.appendChild(row);
-
-    });
-
-    if (grandTotalSpan) {
-
-        grandTotalSpan.textContent = grandTotal.toFixed(2);
-
-    }
-
+    if (countSpan) countSpan.textContent = posCart.length;
+    if (grandTotalSpan) grandTotalSpan.textContent = grandTotal.toFixed(2);
 }
 
 function updatePosQty(id, change) {
@@ -2218,29 +2191,21 @@ function addProductToShakakCart(foundProduct) {
 }
 
 function renderShakakTable() {
-    const tbody = document.getElementById("shakakTableBody");
+    const list = document.getElementById("shakakTableBody");
     const count = document.getElementById("shakakItemCount");
     const total = document.getElementById("shakakGrandTotal");
-    if (!tbody) return;
-    tbody.innerHTML = "";
+    if (!list) return;
 
     let grandTotal = 0;
-    shakakCart.forEach((item, index) => {
-        const itemTotal = (Number(item.price) || 0) * (Number(item.quantity) || 0);
-        grandTotal += itemTotal;
-        const row = document.createElement("tr");
-        row.innerHTML = `
-            <td class="shakak-name-cell">${escapeHtml(item.name)}</td>
-            <td><div class="quantity-controls">
-                <button type="button" onclick="updateShakakQty('${escapeHtml(item.id)}', -1)">-</button>
-                <span>${item.quantity}</span>
-                <button type="button" onclick="updateShakakQty('${escapeHtml(item.id)}', 1)">+</button>
-            </div></td>
-            <td>${(Number(item.price) || 0).toFixed(2)}</td>
-            <td><strong>${itemTotal.toFixed(2)}</strong></td>
-            <td><button type="button" class="pos-remove-btn" aria-label="حذف المنتج" onclick="removeShakakItem('${escapeHtml(item.id)}')">×</button></td>`;
-        tbody.appendChild(row);
-    });
+    if (!shakakCart.length) {
+        list.innerHTML = '<div class="cart-empty">أضف منتجاً للفاتورة</div>';
+    } else {
+        list.innerHTML = shakakCart.map(item => {
+            const itemTotal = (Number(item.price) || 0) * (Number(item.quantity) || 0);
+            grandTotal += itemTotal;
+            return renderCartItem(item, itemTotal, "updateShakakQty", "updateShakakQty", "removeShakakItem");
+        }).join("");
+    }
 
     if (count) count.textContent = shakakCart.length;
     if (total) total.textContent = grandTotal.toFixed(2);
@@ -2354,7 +2319,7 @@ async function saveShakakRecord() {
         console.error("Save shakak error:", error);
         showToast("تعذر الحفظ", false);
     } finally {
-        if (saveButton) { saveButton.disabled = false; saveButton.textContent = "Save Note"; }
+        if (saveButton) { saveButton.disabled = false; saveButton.textContent = "حفظ"; }
     }
 }
 
@@ -2542,7 +2507,7 @@ async function completePosSale() {
     } finally {
         if (saleButton) {
             saleButton.disabled = false;
-            saleButton.innerHTML = " بيع";
+            saleButton.innerHTML = "بيع 💸";
         }
     }
 }
@@ -2561,9 +2526,9 @@ function renderReportCalendar(){const c=document.getElementById("reportCalendar"
 function initializeDailyReport(){const h=document.getElementById("reportDate"),d=document.getElementById("reportDateDisplay");if(!h||!d)return;h.value=getLocalDateValue();dailyReportDateManuallyChanged=false;syncReportDateDisplay();d.addEventListener("click",openReportCalendar);d.addEventListener("focus",openReportCalendar);document.getElementById("reportPrevDay")?.addEventListener("click",()=>shiftReportDay(-1));document.getElementById("reportNextDay")?.addEventListener("click",()=>shiftReportDay(1));document.addEventListener("click",e=>{const control=document.querySelector(".report-date-control"),c=document.getElementById("reportCalendar");if(control&&c&&!control.contains(e.target))closeReportCalendar();});loadDailyReport();}
 function formatArabicReportDate(v){return new Intl.DateTimeFormat("ar-EG",{weekday:"long"}).format(parseDateValue(v));}
 function formatReportMoney(v){return Number(v||0).toFixed(2);}
-function formatReportTime(v){const m=String(v||"").match(/^(\d{1,2}):(\d{2})/);if(!m)return String(v||"-");let h=Number(m[1]);const ap=h>=12?"PM":"AM";h=h%12||12;return `${String(h).padStart(2,"0")}:${m[2]} ${ap}`;}
+function formatReportTime(v){const m=String(v||"").match(/^(\d{1,2}):(\d{2})/);if(!m)return String(v||"-");let h=Number(m[1]);const ap=h>=12?"م":"ص";h=h%12||12;return `${h}:${m[2]} ${ap}`;}
 async function loadDailyReport(){const h=document.getElementById("reportDate"),date=(h?.value||getLocalDateValue());if(h&&!/^\d{4}-\d{2}-\d{2}$/.test(h.value))h.value=getLocalDateValue();const safeDate=h?.value||date,w=document.getElementById("reportWeekday");if(w)w.textContent=formatArabicReportDate(safeDate);syncReportDateDisplay();if(!firebaseReady||!db){renderDailyReport([],[]);return;}try{const [cs,ks]=await Promise.all([db.collection("daily_sales").where("date","==",safeDate).get(),db.collection("shakak_records").where("date","==",safeDate).get()]);const cash=[],credit=[];cs.forEach(doc=>cash.push({id:doc.id,...doc.data(),reportType:"كاش"}));ks.forEach(doc=>credit.push({id:doc.id,...doc.data(),reportType:"شكك"}));renderDailyReport(cash,credit);}catch(error){console.error("Daily report error:",error);showToast("تعذر تحميل التقرير",false);renderDailyReport([],[]);}}
-function renderDailyReport(cashSales,creditSales){const cashTotal=cashSales.reduce((s,x)=>s+Number(x.total||0),0),creditTotal=creditSales.reduce((s,x)=>s+Number(x.total||0),0),totalSales=cashTotal+creditTotal,allSales=[...cashSales,...creditSales].sort((a,b)=>String(a.time||"").localeCompare(String(b.time||""))),stats={};allSales.forEach(s=>(Array.isArray(s.items)?s.items:[]).forEach(i=>{const k=String(i.productId||i.name||"");if(!stats[k])stats[k]={name:i.name||"بدون اسم",quantity:0};stats[k].quantity+=Number(i.quantity||0);}));const vals=Object.values(stats).sort((a,b)=>b.quantity-a.quantity);setReportText("reportTotalSales",totalSales.toFixed(2));setReportText("reportCashSales",cashTotal.toFixed(2));setReportText("reportCreditSales",creditTotal.toFixed(2));setReportText("reportTopProduct",vals.length?`${vals[0].name} (${vals[0].quantity})`:"-");const tbody=document.getElementById("dailyReportTableBody"),empty=document.getElementById("dailyReportEmpty");if(!tbody)return;tbody.innerHTML="";allSales.forEach(s=>(Array.isArray(s.items)?s.items:[]).forEach(i=>{const row=document.createElement("tr"),customer=s.reportType==="شكك"?(s.customerName||"-"):"-",cls=s.reportType==="كاش"?"report-type-cash":"report-type-credit";row.innerHTML=`<td>${escapeHtml(i.name||"بدون اسم")}</td><td>${Number(i.price||0).toFixed(2)}</td><td>${Number(i.quantity||0)}</td><td>${Number(i.total||0).toFixed(2)}</td><td class="report-time-cell">${escapeHtml(formatReportTime(s.time))}</td><td><span class="report-type-badge ${cls}">${escapeHtml(s.reportType||"-")}</span></td><td>${escapeHtml(customer)}</td>`;tbody.appendChild(row);}));if(empty)empty.style.display=allSales.length?"none":"block";}
+function renderDailyReport(cashSales,creditSales){const cashTotal=cashSales.reduce((s,x)=>s+Number(x.total||0),0),creditTotal=creditSales.reduce((s,x)=>s+Number(x.total||0),0),totalSales=cashTotal+creditTotal,allSales=[...cashSales,...creditSales].sort((a,b)=>String(a.time||"").localeCompare(String(b.time||""))),stats={};allSales.forEach(s=>(Array.isArray(s.items)?s.items:[]).forEach(i=>{const k=String(i.productId||i.name||"");if(!stats[k])stats[k]={name:i.name||"بدون اسم",quantity:0};stats[k].quantity+=Number(i.quantity||0);}));const vals=Object.values(stats).sort((a,b)=>b.quantity-a.quantity);setReportText("reportTotalSales",totalSales.toFixed(2));setReportText("reportCashSales",cashTotal.toFixed(2));setReportText("reportCreditSales",creditTotal.toFixed(2));setReportText("reportTopProduct",vals.length?`${vals[0].name} (${vals[0].quantity})`:"-");const list=document.getElementById("dailyReportTableBody"),empty=document.getElementById("dailyReportEmpty");if(!list)return;list.innerHTML="";allSales.forEach(s=>(Array.isArray(s.items)?s.items:[]).forEach(i=>{const customer=s.reportType==="شكك"?(s.customerName||""):"",cls=s.reportType==="كاش"?"report-type-cash":"report-type-credit";list.insertAdjacentHTML("beforeend",`<article class="report-item"><div class="report-item-top"><div class="report-item-name">${escapeHtml(i.name||"بدون اسم")}</div><span class="report-type-badge ${cls}">${escapeHtml(s.reportType||"-")}</span></div><div class="report-item-mid"><span>${Number(i.quantity||0)} × ${Number(i.price||0).toFixed(2)}</span><strong class="cart-line-total">${Number(i.total||0).toFixed(2)}</strong></div><div class="report-item-meta"><span>${escapeHtml(formatReportTime(s.time))}</span>${customer?`<span>${escapeHtml(customer)}</span>`:""}</div></article>`);}));if(empty)empty.style.display=allSales.length?"none":"block";}
 function setReportText(id, value) {
     const el = document.getElementById(id);
     if (el) el.textContent = value;
