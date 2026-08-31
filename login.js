@@ -140,18 +140,17 @@ function playBeep() {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         
-        osc.type = "sine";
+        osc.type = "square";
         osc.connect(gain);
         gain.connect(audioCtx.destination);
         
-        osc.frequency.setValueAtTime(587.33, now); // تردد D5 لنغمة نقية
-        osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+        osc.frequency.setValueAtTime(2000, now); 
         
-        gain.gain.setValueAtTime(0.12, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08); // مدة قصيرة جداً وحادة
         
         osc.start(now);
-        osc.stop(now + 0.2);
+        osc.stop(now + 0.08);
         
         osc.addEventListener("ended", () => {
             try { audioCtx.close(); } catch (e) {}
