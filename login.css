@@ -1752,17 +1752,6 @@ button:not(:disabled):active {
     border-radius: 13px;
 }
 
-.tab-btn:hover {
-    background: var(--button-hover);
-    color: var(--button-hover-text);
-    box-shadow: 0 7px 16px rgba(15, 23, 42, .16);
-}
-
-.tab-btn.active {
-    background: var(--primary);
-    color: #fff;
-}
-
 .btn-qr-scan,
 .pos-scan-btn,
 .shakak-scan-btn {
@@ -2084,6 +2073,13 @@ body.dark-mode .pos-qty-btn {
     transform: none !important;
     outline: none;
 }
+
+.tab-btn:hover {
+    background: #1e293b;
+    color: #ffffff;
+    box-shadow: 0 7px 16px rgba(15, 23, 42, .16);
+}
+
 .debt-details {
     display: block !important;
     max-height: 0;
@@ -2179,17 +2175,4 @@ body.dark-mode .modal-barcode { color: #fff !important; }
     .theme-toggle, .refresh-btn { top: 10px !important; }
     .refresh-btn { right: 8px !important; }
     .theme-toggle { left: 8px !important; }
-}
-
-
-/* Mobile fixes added */
-@media (max-width: 520px){
-  body{padding:8px;align-items:flex-start;}
-  .container{max-width:100%;padding:14px !important;border-radius:16px;}
-  h2{font-size:clamp(28px,7vw,40px);line-height:1.2;}
-  .tabs{display:grid !important;grid-template-columns:repeat(3,1fr);gap:8px;}
-  .tab-btn{min-height:58px;font-size:15px;padding:8px;}
-  table{font-size:14px;}
-  .table-responsive{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-  input,select,button{font-size:16px;}
 }
