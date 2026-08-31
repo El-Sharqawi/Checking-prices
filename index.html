@@ -93,7 +93,20 @@
 
         <div id="pos-reader" class="inline-style-11"></div>
 
-        <div class="cart-list" id="posTableBody"></div>
+        <div class="lux-table-wrap">
+            <table class="lux-table" id="posTable">
+                <thead>
+                    <tr>
+                        <th>المنتج</th>
+                        <th>الكمية</th>
+                        <th>السعر</th>
+                        <th>الإجمالي</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="posTableBody"></tbody>
+            </table>
+        </div>
 
         <div class="pos-actions">
             <button type="button" onclick="completePosSale()" class="pos-action-btn pos-sale-btn inline-style-18">
@@ -139,7 +152,20 @@
                 <div class="shakak-total-line">عدد المنتجات: <span id="shakakItemCount">0</span></div>
                 <div class="shakak-grand-total">الإجمالي: <span id="shakakGrandTotal">0.00</span></div>
             </div>
-            <div class="cart-list" id="shakakTableBody"></div>
+            <div class="lux-table-wrap">
+                <table class="lux-table" id="shakakTable">
+                    <thead>
+                        <tr>
+                            <th>المنتج</th>
+                            <th>الكمية</th>
+                            <th>السعر</th>
+                            <th>الإجمالي</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="shakakTableBody"></tbody>
+                </table>
+            </div>
             <input type="hidden" id="shakakRemainingAmount" value="0.00">
             <div class="shakak-payment-grid">
                 <div class="form-group shakak-paid-group">
@@ -285,7 +311,19 @@
 
             <div class="daily-report-sales">
                 <div class="daily-report-sales-title">المبيعات</div>
-                <div class="report-list" id="dailyReportTableBody"></div>
+                <div class="lux-table-wrap">
+                    <table class="lux-table lux-report-table">
+                        <thead>
+                            <tr>
+                                <th>المنتج</th>
+                                <th>الكمية</th>
+                                <th>الإجمالي</th>
+                                <th>النوع</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dailyReportTableBody"></tbody>
+                    </table>
+                </div>
                 <div id="dailyReportEmpty" class="daily-report-empty inline-style-19">لا توجد مبيعات مسجلة في هذا اليوم.</div>
             </div>
         </div>

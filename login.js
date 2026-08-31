@@ -1878,26 +1878,24 @@ function addProductToPosCart(foundProduct) {
 
 }
 
-function renderCartItem(item, itemTotal, minusHandler, plusHandler, removeHandler) {
+function renderCartRow(item, itemTotal, qtyHandler, removeHandler) {
     const id = escapeHtml(item.id);
     return `
-        <article class="cart-item">
-            <div class="cart-item-top">
-                <div class="cart-item-name">${escapeHtml(item.name)}</div>
-                <button type="button" class="pos-remove-btn" aria-label="حذف المنتج" onclick="${removeHandler}('${id}')">×</button>
-            </div>
-            <div class="cart-item-bottom">
+        <tr>
+            <td class="lux-name">${escapeHtml(item.name)}</td>
+            <td>
                 <div class="quantity-controls">
-                    <button type="button" class="pos-qty-btn" onclick="${minusHandler}('${id}', -1)">−</button>
+                    <button type="button" class="pos-qty-btn" onclick="${qtyHandler}('${id}', -1)">−</button>
                     <span class="quantity-value">${item.quantity}</span>
-                    <button type="button" class="pos-qty-btn" onclick="${plusHandler}('${id}', 1)">+</button>
+                    <button type="button" class="pos-qty-btn" onclick="${qtyHandler}('${id}', 1)">+</button>
                 </div>
-                <div class="cart-item-prices">
-                    <span class="cart-unit">${(Number(item.price) || 0).toFixed(2)}</span>
-                    <span class="cart-line-total">${itemTotal.toFixed(2)}</span>
-                </div>
-            </div>
-        </article>`;
+            </td>
+            <td class="lux-price">${(Number(item.price) || 0).toFixed(2)}</td>
+            <td class="lux-total">${itemTotal.toFixed(2)}</td>
+            <td>
+                <button type="button" class="pos-remove-btn" aria-label="حذف المنتج" onclick="${removeHandler}('${id}')">×</button>
+            </td>
+        </tr>`;
 }
 
 function renderPosTable() {
@@ -1908,12 +1906,12 @@ function renderPosTable() {
 
     let grandTotal = 0;
     if (!posCart.length) {
-        list.innerHTML = '<div class="cart-empty">أضف منتجاً للبدء</div>';
+        list.innerHTML = '<tr class="lux-empty-row"><td colspan="5">أضف منتجاً للبدء</td></tr>';
     } else {
         list.innerHTML = posCart.map(item => {
             const itemTotal = (Number(item.price) || 0) * (Number(item.quantity) || 0);
             grandTotal += itemTotal;
-            return renderCartItem(item, itemTotal, "updatePosQty", "updatePosQty", "removePosItem");
+            return renderCartRow(item, itemTotal, "updatePosQty", "removePosItem");
         }).join("");
     }
 
@@ -2198,12 +2196,12 @@ function renderShakakTable() {
 
     let grandTotal = 0;
     if (!shakakCart.length) {
-        list.innerHTML = '<div class="cart-empty">أضف منتجاً للفاتورة</div>';
+        list.innerHTML = '<tr class="lux-empty-row"><td colspan="5">أضف منتجاً للفاتورة</td></tr>';
     } else {
         list.innerHTML = shakakCart.map(item => {
             const itemTotal = (Number(item.price) || 0) * (Number(item.quantity) || 0);
             grandTotal += itemTotal;
-            return renderCartItem(item, itemTotal, "updateShakakQty", "updateShakakQty", "removeShakakItem");
+            return renderCartRow(item, itemTotal, "updateShakakQty", "removeShakakItem");
         }).join("");
     }
 
@@ -2528,7 +2526,7 @@ function formatArabicReportDate(v){return new Intl.DateTimeFormat("ar-EG",{weekd
 function formatReportMoney(v){return Number(v||0).toFixed(2);}
 function formatReportTime(v){const m=String(v||"").match(/^(\d{1,2}):(\d{2})/);if(!m)return String(v||"-");let h=Number(m[1]);const ap=h>=12?"م":"ص";h=h%12||12;return `${h}:${m[2]} ${ap}`;}
 async function loadDailyReport(){const h=document.getElementById("reportDate"),date=(h?.value||getLocalDateValue());if(h&&!/^\d{4}-\d{2}-\d{2}$/.test(h.value))h.value=getLocalDateValue();const safeDate=h?.value||date,w=document.getElementById("reportWeekday");if(w)w.textContent=formatArabicReportDate(safeDate);syncReportDateDisplay();if(!firebaseReady||!db){renderDailyReport([],[]);return;}try{const [cs,ks]=await Promise.all([db.collection("daily_sales").where("date","==",safeDate).get(),db.collection("shakak_records").where("date","==",safeDate).get()]);const cash=[],credit=[];cs.forEach(doc=>cash.push({id:doc.id,...doc.data(),reportType:"كاش"}));ks.forEach(doc=>credit.push({id:doc.id,...doc.data(),reportType:"شكك"}));renderDailyReport(cash,credit);}catch(error){console.error("Daily report error:",error);showToast("تعذر تحميل التقرير",false);renderDailyReport([],[]);}}
-function renderDailyReport(cashSales,creditSales){const cashTotal=cashSales.reduce((s,x)=>s+Number(x.total||0),0),creditTotal=creditSales.reduce((s,x)=>s+Number(x.total||0),0),totalSales=cashTotal+creditTotal,allSales=[...cashSales,...creditSales].sort((a,b)=>String(a.time||"").localeCompare(String(b.time||""))),stats={};allSales.forEach(s=>(Array.isArray(s.items)?s.items:[]).forEach(i=>{const k=String(i.productId||i.name||"");if(!stats[k])stats[k]={name:i.name||"بدون اسم",quantity:0};stats[k].quantity+=Number(i.quantity||0);}));const vals=Object.values(stats).sort((a,b)=>b.quantity-a.quantity);setReportText("reportTotalSales",totalSales.toFixed(2));setReportText("reportCashSales",cashTotal.toFixed(2));setReportText("reportCreditSales",creditTotal.toFixed(2));setReportText("reportTopProduct",vals.length?`${vals[0].name} (${vals[0].quantity})`:"-");const list=document.getElementById("dailyReportTableBody"),empty=document.getElementById("dailyReportEmpty");if(!list)return;list.innerHTML="";allSales.forEach(s=>(Array.isArray(s.items)?s.items:[]).forEach(i=>{const customer=s.reportType==="شكك"?(s.customerName||""):"",cls=s.reportType==="كاش"?"report-type-cash":"report-type-credit";list.insertAdjacentHTML("beforeend",`<article class="report-item"><div class="report-item-top"><div class="report-item-name">${escapeHtml(i.name||"بدون اسم")}</div><span class="report-type-badge ${cls}">${escapeHtml(s.reportType||"-")}</span></div><div class="report-item-mid"><span>${Number(i.quantity||0)} × ${Number(i.price||0).toFixed(2)}</span><strong class="cart-line-total">${Number(i.total||0).toFixed(2)}</strong></div><div class="report-item-meta"><span>${escapeHtml(formatReportTime(s.time))}</span>${customer?`<span>${escapeHtml(customer)}</span>`:""}</div></article>`);}));if(empty)empty.style.display=allSales.length?"none":"block";}
+function renderDailyReport(cashSales,creditSales){const cashTotal=cashSales.reduce((s,x)=>s+Number(x.total||0),0),creditTotal=creditSales.reduce((s,x)=>s+Number(x.total||0),0),totalSales=cashTotal+creditTotal,allSales=[...cashSales,...creditSales].sort((a,b)=>String(a.time||"").localeCompare(String(b.time||""))),stats={};allSales.forEach(s=>(Array.isArray(s.items)?s.items:[]).forEach(i=>{const k=String(i.productId||i.name||"");if(!stats[k])stats[k]={name:i.name||"بدون اسم",quantity:0};stats[k].quantity+=Number(i.quantity||0);}));const vals=Object.values(stats).sort((a,b)=>b.quantity-a.quantity);setReportText("reportTotalSales",totalSales.toFixed(2));setReportText("reportCashSales",cashTotal.toFixed(2));setReportText("reportCreditSales",creditTotal.toFixed(2));setReportText("reportTopProduct",vals.length?`${vals[0].name} (${vals[0].quantity})`:"-");const list=document.getElementById("dailyReportTableBody"),empty=document.getElementById("dailyReportEmpty");if(!list)return;list.innerHTML="";allSales.forEach(s=>(Array.isArray(s.items)?s.items:[]).forEach(i=>{const customer=s.reportType==="شكك"?(s.customerName||""):"",cls=s.reportType==="كاش"?"report-type-cash":"report-type-credit";list.insertAdjacentHTML("beforeend",`<tr><td class="lux-name">${escapeHtml(i.name||"بدون اسم")}<small>${escapeHtml(formatReportTime(s.time))}${customer?" · "+escapeHtml(customer):""}</small></td><td>${Number(i.quantity||0)}</td><td class="lux-total">${Number(i.total||0).toFixed(2)}</td><td><span class="report-type-badge ${cls}">${escapeHtml(s.reportType||"-")}</span></td></tr>`);}));if(empty)empty.style.display=allSales.length?"none":"block";}
 function setReportText(id, value) {
     const el = document.getElementById(id);
     if (el) el.textContent = value;

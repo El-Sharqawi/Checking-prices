@@ -2773,64 +2773,100 @@ input {
     color: #e11d48;
 }
 
-.cart-list,
-.report-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+.lux-table-wrap {
+    overflow: hidden;
+    border-radius: 16px;
+    background: var(--stats-bg);
+    border: 1px solid var(--border-color);
     margin-bottom: 14px;
 }
 
-.cart-item,
-.report-item {
-    background: var(--stats-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 14px;
-    padding: 10px 12px;
+.lux-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    background: transparent;
 }
 
-.cart-item-top,
-.report-item-top,
-.cart-item-bottom,
-.report-item-mid,
-.report-item-meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+.lux-table thead th {
+    background: transparent !important;
+    color: var(--text-muted) !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    letter-spacing: .2px;
+    text-align: center !important;
+    vertical-align: middle !important;
+    white-space: nowrap !important;
+    padding: 11px 6px !important;
+    border: 0 !important;
 }
 
-.cart-item-top,
-.report-item-top {
-    margin-bottom: 8px;
-}
-
-.cart-item-name,
-.report-item-name {
-    font-weight: 800;
-    font-size: 14px;
-    text-align: right;
-    flex: 1;
+.lux-table tbody td {
+    text-align: center !important;
+    vertical-align: middle !important;
+    padding: 11px 5px !important;
+    border: 0 !important;
+    border-top: 1px solid rgba(148, 163, 184, .16) !important;
+    font-size: 13px !important;
+    font-weight: 700;
+    word-break: normal !important;
+    overflow-wrap: anywhere;
     line-height: 1.35;
 }
 
-.cart-item-prices {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
+.lux-table th:nth-child(1),
+.lux-table td:nth-child(1) { width: 30%; }
+.lux-table th:nth-child(2),
+.lux-table td:nth-child(2) { width: 26%; }
+.lux-table th:nth-child(3),
+.lux-table td:nth-child(3) { width: 16%; }
+.lux-table th:nth-child(4),
+.lux-table td:nth-child(4) { width: 18%; }
+.lux-table th:nth-child(5),
+.lux-table td:nth-child(5) { width: 10%; }
+
+.lux-table .lux-name {
+    font-weight: 800;
 }
 
-.cart-unit {
+.lux-table .lux-name small {
+    display: block;
+    margin-top: 3px;
+    font-size: 11px;
+    font-weight: 600;
     color: var(--text-muted);
-    font-size: 13px;
-    font-weight: 700;
 }
 
-.cart-line-total {
-    color: #e11d48;
-    font-size: 15px;
-    font-weight: 900;
+.lux-table .lux-price {
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
 }
+
+.lux-table .lux-total {
+    color: #e11d48;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+}
+
+.lux-table .lux-empty-row td {
+    color: var(--text-muted);
+    font-weight: 700;
+    padding: 22px 10px !important;
+    border-top: 0 !important;
+}
+
+.lux-table tbody tr:hover td {
+    background: rgba(37, 99, 235, .04);
+}
+
+.lux-report-table th:nth-child(1),
+.lux-report-table td:nth-child(1) { width: 42%; }
+.lux-report-table th:nth-child(2),
+.lux-report-table td:nth-child(2) { width: 16%; }
+.lux-report-table th:nth-child(3),
+.lux-report-table td:nth-child(3) { width: 20%; }
+.lux-report-table th:nth-child(4),
+.lux-report-table td:nth-child(4) { width: 22%; }
 
 .cart-empty,
 .daily-report-empty {
@@ -3007,4 +3043,32 @@ body.dark-mode .quantity-controls {
     #shakakSection .pos-search-row { align-items: stretch !important; }
     #shakakSection .shakak-scan-btn,
     #shakakSection #shakakSearchInput { height: 46px !important; min-height: 46px !important; }
+
+    #posTable.inline-style-13,
+    #posTable,
+    .shakak-table,
+    .lux-table {
+        table-layout: fixed !important;
+        width: 100% !important;
+    }
+    .lux-table thead th,
+    .lux-table tbody td,
+    #posTable th,
+    #posTable td,
+    .shakak-table th,
+    .shakak-table td {
+        padding: 10px 4px !important;
+        font-size: 12px !important;
+        border: 0 !important;
+        word-break: normal !important;
+        text-align: center !important;
+        vertical-align: middle !important;
+    }
+    .lux-table thead th {
+        font-size: 11px !important;
+        border-bottom: 1px solid rgba(148,163,184,.16) !important;
+    }
+    .lux-table tbody td {
+        border-top: 1px solid rgba(148,163,184,.16) !important;
+    }
 }
