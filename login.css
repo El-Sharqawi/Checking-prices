@@ -53,14 +53,14 @@ button:disabled {
 
 .container {
     width: 100%;
-    max-width: 620px;
+    max-width: 540px;
     background: var(--card-bg);
-    padding: 25px;
-    border-radius: 22px;
-    box-shadow: 0 20px 40px -10px rgba(41, 128, 185, .15);
-    border: 2px solid rgba(255, 255, 255, .1);
+    padding: 18px 18px 20px;
+    border-radius: 18px;
+    box-shadow: 0 16px 32px -14px rgba(41, 128, 185, .18);
+    border: 1px solid rgba(255, 255, 255, .08);
     position: relative;
-    padding-top: 50px !important;
+    padding-top: 46px !important;
 }
 
 h2 {
@@ -583,10 +583,11 @@ input:focus {
 }
 
 .pos-container {
-    background: var(--card-bg);
-    padding: 2px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, .05);
+    background: rgba(255, 255, 255, .82);
+    padding: 10px;
+    border-radius: 14px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, .05);
+    border: 1px solid rgba(148, 163, 184, .15);
 }
 
 #posSearchInput {
@@ -1881,23 +1882,73 @@ button:not(:disabled):active {
 .pos-actions,
 .shakak-actions {
     display: flex;
-    justify-content: flex-end;
-    gap: 10px;
+    align-items: center;
+    gap: 12px;
+}
+
+.pos-actions {
+    justify-content: space-between;
+    direction: rtl;
+    margin-top: 8px;
+}
+
+.pos-shakak-btn,
+.pos-sale-btn {
+    min-width: 92px;
+    min-height: 40px;
+    padding: 8px 16px;
+    border-radius: 12px;
+    font-size: .92rem;
+    font-weight: 800 !important;
+    letter-spacing: .1px;
+    border: 1px solid transparent;
+    transition: transform .22s ease, box-shadow .22s ease, filter .22s ease, background .22s ease, border-color .22s ease;
+    animation: posButtonFloat .7s ease both;
+}
+
+.pos-shakak-btn {
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    color: #fff !important;
+    box-shadow: 0 10px 22px rgba(217, 119, 6, .28);
+    border-color: rgba(255,255,255,.25);
+}
+
+.pos-shakak-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 12px 24px rgba(217, 119, 6, .38);
+    filter: brightness(1.04);
 }
 
 .pos-sale-btn {
-    background: #166534 !important;
+    background: linear-gradient(135deg, #166534, #0f5132) !important;
     color: #fff !important;
     border: 0 !important;
-    border-radius: 100px;
-    font-weight: 900 !important;
+    box-shadow: 0 10px 22px rgba(22, 101, 52, .25);
 }
 
 .pos-sale-btn:hover:not(:disabled) {
-    background: #053d1b !important;
+    background: linear-gradient(135deg, #1f7a42, #0d3b29) !important;
     color: #fff !important;
-    box-shadow: 0 9px 18px rgba(22, 101, 52, .25);
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 12px 24px rgba(22, 101, 52, .32);
     font-weight: 900 !important;
+}
+
+.pos-shakak-btn:active,
+.pos-sale-btn:active {
+    transform: translateY(0) scale(.98);
+}
+
+@keyframes posButtonFloat {
+    0% {
+        opacity: 0;
+        transform: translateY(6px) scale(.96);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .btn-edit:hover:not(:disabled) {

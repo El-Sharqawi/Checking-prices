@@ -2563,6 +2563,44 @@ function removePosItem(id) {
 
 }
 
+function movePosCartToShakak() {
+    if (!posCart.length) {
+        showToast("الفاتورة فارغة", false);
+        return;
+    }
+
+    const customerInput = document.getElementById("shakakCustomerName");
+    const paidInput = document.getElementById("shakakPaidAmount");
+
+    posCart.forEach(item => {
+        const existing = shakakCart.find(product => product.id === item.id);
+        if (existing) {
+            existing.quantity += Number(item.quantity) || 0;
+        } else {
+            shakakCart.push({
+                id: item.id,
+                name: item.name,
+                price: Number(item.price) || 0,
+                quantity: Number(item.quantity) || 0
+            });
+        }
+    });
+
+    posCart = [];
+    renderPosTable();
+    renderShakakTable();
+    initializeShakakDateTime(true);
+
+    if (paidInput) paidInput.value = "0";
+    if (customerInput) {
+        customerInput.focus();
+        customerInput.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    switchTab("shakak");
+    showToast("تم نقل المنتجات إلى الشكك");
+}
+
 let shakakCart = [];
 let shakakSelectedIndex = -1;
 
