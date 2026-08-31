@@ -1665,11 +1665,101 @@ function setupBarcodeLookupOnAddForm() {
     });
 }
 
+let scannerFlashEnabled = false;
+
+function ensureScannerFlashButton(viewport) {
+    if (!viewport) return null;
+    let flashBtn = viewport.querySelector(".scanner-flash-btn");
+    if (flashBtn) return flashBtn;
+
+    flashBtn = document.createElement("button");
+    flashBtn.type = "button";
+    flashBtn.className = "scanner-flash-btn";
+    flashBtn.textContent = "تشغيل الفلاش";
+    flashBtn.setAttribute("aria-label", "تشغيل أو إيقاف الفلاش");
+    flashBtn.style.position = "absolute";
+    flashBtn.style.right = "14px";
+    flashBtn.style.bottom = "14px";
+    flashBtn.style.zIndex = "5";
+    flashBtn.style.border = "none";
+    flashBtn.style.borderRadius = "999px";
+    flashBtn.style.background = "rgba(15, 23, 42, 0.8)";
+    flashBtn.style.color = "#fff";
+    flashBtn.style.padding = "8px 14px";
+    flashBtn.style.fontSize = "13px";
+    flashBtn.style.fontWeight = "700";
+    flashBtn.style.cursor = "pointer";
+    flashBtn.style.boxShadow = "0 6px 14px rgba(0,0,0,0.25)";
+    flashBtn.style.display = "none";
+    flashBtn.addEventListener("click", async () => {
+        await toggleScannerFlash();
+    });
+    viewport.style.position = "relative";
+    viewport.appendChild(flashBtn);
+    return flashBtn;
+}
+
+function updateScannerFlashButtonState() {
+    const flashButtons = document.querySelectorAll(".scanner-flash-btn");
+    flashButtons.forEach(button => {
+        const isOn = scannerFlashEnabled && activeScanner;
+        button.textContent = isOn ? "إطفاء الفلاش" : "تشغيل الفلاش";
+        button.style.background = isOn ? "rgba(251, 191, 36, 0.95)" : "rgba(15, 23, 42, 0.8)";
+        button.style.color = isOn ? "#111827" : "#fff";
+        button.style.display = activeScanner ? "block" : "none";
+    });
+}
+
+async function toggleScannerFlash() {
+    if (!activeScanner) {
+        scannerFlashEnabled = false;
+        updateScannerFlashButtonState();
+        return;
+    }
+
+    const canToggleTorch = typeof activeScanner.getRunningTrackCameraCapabilities === "function";
+    if (!canToggleTorch) {
+        showToast("الفلاش غير مدعوم على هذه الكاميرا", false);
+        return;
+    }
+
+    const capabilities = activeScanner.getRunningTrackCameraCapabilities();
+    const supportsTorch = capabilities && typeof capabilities.torch !== "undefined" && capabilities.torch !== null;
+
+    if (!supportsTorch) {
+        showToast("الفلاش غير مدعوم على هذه الكاميرا", false);
+        return;
+    }
+
+    scannerFlashEnabled = !scannerFlashEnabled;
+
+    try {
+        if (typeof activeScanner.applyVideoConstraints === "function") {
+            await activeScanner.applyVideoConstraints({
+                advanced: [{ torch: scannerFlashEnabled }]
+            });
+        } else {
+            scannerFlashEnabled = !scannerFlashEnabled;
+            showToast("الفلاش غير متاح في هذا المتصفح", false);
+            return;
+        }
+
+        updateScannerFlashButtonState();
+    } catch (error) {
+        console.error("Scanner flash toggle error:", error);
+        scannerFlashEnabled = !scannerFlashEnabled;
+        showToast("تعذر تبديل الفلاش", false);
+        updateScannerFlashButtonState();
+    }
+}
+
 async function toggleScanner(elementId, inputTargetId, isSearch = false) {
 
     const viewport = document.getElementById(elementId);
 
     if (!viewport) return;
+
+    ensureScannerFlashButton(viewport);
 
     if (typeof Html5Qrcode === "undefined") {
 
@@ -1687,6 +1777,8 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
 
     }
 
+    scannerFlashEnabled = false;
+    updateScannerFlashButtonState();
     viewport.style.display = "block";
 
     try {
@@ -1851,6 +1943,9 @@ async function stopCurrentScanner() {
     if (searchReader) searchReader.style.display = "none";
     if (shakakReader) shakakReader.style.display = "none";
     if (posReader) posReader.style.display = "none";
+
+    scannerFlashEnabled = false;
+    updateScannerFlashButtonState();
 
     void activeElementId;
 
