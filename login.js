@@ -1713,6 +1713,8 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
                     if (decodedProduct) {
                         addProductToShakakCart(decodedProduct);
                         targetInput.value = "";
+                    } else {
+                        showToast("المنتج غير مسجل", false);
                     }
                 }
 
@@ -1727,7 +1729,7 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
                         switchTab("add");
                         const barcodeInput = document.getElementById("productBarcode");
                         if (barcodeInput) barcodeInput.value = scannedCode;
-                        showToast("المنتج غير مسجل — جاري جلب البيانات");
+                        showToast("المنتج غير مسجل", false);
                         await lookupAndFillProductFromBarcode(scannedCode, { forceName: true });
                     }
                     return;
@@ -1735,7 +1737,12 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
 
                 if (inputTargetId === "productBarcode") {
                     await stopCurrentScanner();
-                    showToast("تمت القراءة");
+                    const decodedProduct = findLocalProductByBarcode(scannedCode);
+                    if (decodedProduct) {
+                        showToast("تمت القراءة");
+                    } else {
+                        showToast("المنتج غير مسجل", false);
+                    }
                     await lookupAndFillProductFromBarcode(scannedCode, { forceName: false });
                     return;
                 }
