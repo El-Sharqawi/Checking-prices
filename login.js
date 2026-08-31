@@ -125,8 +125,6 @@ let selectedShakakCustomerId = null;
 let selectedDebtCustomerId = null;
 let selectedDebtCustomerData = null;
 
-let isSaving = false;
-
 let confirmCallback = null;
 
 let activeScanner = null;
@@ -144,27 +142,33 @@ function playBeep() {
         const audioCtx = new AudioContextClass();
 
         const now = audioCtx.currentTime;
+
         const osc = audioCtx.createOscillator();
+
         const gain = audioCtx.createGain();
 
-        osc.type = "square";
-        osc.frequency.setValueAtTime(2200, now);
-        osc.frequency.exponentialRampToValueAtTime(2600, now + 0.06);
-        osc.frequency.setValueAtTime(2600, now + 0.06);
-        osc.frequency.exponentialRampToValueAtTime(1800, now + 0.16);
-
-        gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.exponentialRampToValueAtTime(0.18, now + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+        osc.type = "sine";
 
         osc.connect(gain);
+
         gain.connect(audioCtx.destination);
 
+        osc.frequency.setValueAtTime(523.25, now);
+
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+
+        gain.gain.setValueAtTime(0.15, now);
+
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
         osc.start(now);
-        osc.stop(now + 0.16);
+
+        osc.stop(now + 0.25);
 
         osc.addEventListener("ended", () => {
+
             try { audioCtx.close(); } catch (e) {}
+
         });
 
     } catch (e) {
@@ -189,7 +193,7 @@ function showToast(msg, isSuccess = true) {
 
     toast.className = "show";
 
-    playBeepSound();
+    playBeep();
 
     clearTimeout(showToast.timer);
 
@@ -223,35 +227,28 @@ function getProductById(id) {
 
 }
 
+function normalizeProductName(value) {
+    return String(value || "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function isDuplicateProductName(name, ignoreId = "") {
+    const normalized = normalizeProductName(name);
+    if (!normalized) return false;
+
+    return allProductsCache.some(product => {
+        const currentId = String(product.id || "");
+        const currentName = normalizeProductName(product.name || "");
+        return currentId !== ignoreId && currentName === normalized;
+    });
+}
+
 function getUpdateById(id) {
 
     return allPriceUpdatesCache.find(update => update.id === id) || null;
 
 }
 
-function setSaveButtonState(saving) {
 
-    const btn = document.getElementById("saveProductBtn");
-
-    if (!btn) return;
-
-    btn.disabled = saving;
-
-    btn.classList.toggle("is-saving", saving);
-
-    if (saving) {
-
-        btn.dataset.originalText = btn.textContent.trim();
-
-        btn.textContent = "حفظ...";
-
-    } else {
-
-        btn.textContent = btn.dataset.originalText || "حفظ المنتج";
-
-    }
-
-}
 
 function getImageAsDataUrl(file) {
 
@@ -651,6 +648,11 @@ async function saveProduct() {
 
     }
 
+    if (isDuplicateProductName(name, editingId)) {
+        showToast("هذا المنتج موجود", false);
+        return;
+    }
+
     try {
 
         const imageFile =
@@ -705,7 +707,11 @@ async function saveProduct() {
 
         console.error("Save product error:", error);
 
-        showToast("تعذر الحفظ", false);
+        if (error && error.message === "DUPLICATE_PRODUCT_NAME") {
+            showToast("هذا المنتج موجود", false);
+        } else {
+            showToast("تعذر الحفظ", false);
+        }
 
     }
 
@@ -724,6 +730,10 @@ async function updateExistingProduct(id, name, price, barcode, newImage) {
     }
 
     const old = oldSnapshot.data() || {};
+
+    if (isDuplicateProductName(name, id)) {
+        throw new Error("DUPLICATE_PRODUCT_NAME");
+    }
 
     const oldPrice = Number(old.price);
 
@@ -1420,7 +1430,7 @@ function closeProductModal() {
 
 function displayPriceUpdates(updates) {
 
-    const list = document.getElementById("updatesList");
+    const list = document.getElementById("priceUpdatesModalList") || document.getElementById("updatesList");
 
     if (!list) return;
 
@@ -1645,9 +1655,9 @@ async function lookupAndFillProductFromBarcode(barcode, options = {}) {
         if (imageUrlField) {
             imageUrlField.value = local.image && !String(local.image).startsWith("data:") ? local.image : "";
         }
-        if (imageName && local.image) imageName.textContent = "الصورة موجودة للمنتج المسجل.";
-        setBarcodeLookupStatus("المنتج مسجل عندك بالفعل. تقدر تعدّله أو تغيّر السعر.", "warn");
-        showToast("المنتج موجود في قائمتك");
+        if (imageName && local.image) imageName.textContent = "الصورة موجودة";
+        setBarcodeLookupStatus("هذا المنتج موجود", "warn");
+        showToast("هذا المنتج موجود", false);
         return;
     }
 
@@ -1660,7 +1670,7 @@ async function lookupAndFillProductFromBarcode(barcode, options = {}) {
         ]);
 
         if (!offResult && suggestedPrice == null) {
-            setBarcodeLookupStatus("مفيش بيانات جاهزة للباركود ده. اكتب الاسم وسعر المحل بنفسك.", "error");
+            setBarcodeLookupStatus("لا توجد بيانات", "error");
             return;
         }
 
@@ -1669,25 +1679,22 @@ async function lookupAndFillProductFromBarcode(barcode, options = {}) {
         }
         if (offResult?.image && imageUrlField) {
             imageUrlField.value = offResult.image;
-            if (imageName) imageName.textContent = "تم جلب صورة المنتج من الباركود.";
+            if (imageName) imageName.textContent = "تم جلب الصورة";
         }
         if (suggestedPrice != null && priceInput && !priceInput.value.trim()) {
             priceInput.value = String(suggestedPrice);
-            setBarcodeLookupStatus(
-                `اتجاب الاسم${offResult?.name ? `: ${offResult.name}` : ""}. السعر المقترح ${suggestedPrice} ج.م — راجعه لأنه مش سعر محلك.`,
-                "success"
-            );
+            setBarcodeLookupStatus(`السعر المقترح: ${suggestedPrice} ج.م`, "success");
             return;
         }
 
         if (offResult?.name) {
-            setBarcodeLookupStatus("اتجاب الاسم. السعر اكتبه أنت لأن سعر المحل مش بيتسحب تلقائي.", "success");
+            setBarcodeLookupStatus("تم جلب الاسم", "success");
         } else {
-            setBarcodeLookupStatus("الاسم مش موجود في قاعدة البيانات. اكتبه يدوي. السعر كمان من عندك.", "warn");
+            setBarcodeLookupStatus("اكتب الاسم والسعر", "warn");
         }
     } catch (error) {
         console.error("Barcode lookup error:", error);
-        setBarcodeLookupStatus("تعذر جلب البيانات. اكتب الاسم والسعر يدوي.", "error");
+        setBarcodeLookupStatus("تعذر الجلب", "error");
     }
 }
 
@@ -1740,7 +1747,6 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
 
     }
 
-    playBeepSound();
     viewport.style.display = "block";
 
     try {
@@ -1929,6 +1935,24 @@ function closeMonthlyReportModal() {
     }
 }
 
+function openPriceUpdatesModal() {
+    const modal = document.getElementById('priceUpdatesModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+    const list = document.getElementById('priceUpdatesModalList');
+    if (list && list.innerHTML.trim() === '') {
+        displayPriceUpdates(allPriceUpdatesCache || []);
+    }
+}
+
+function closePriceUpdatesModal() {
+    const modal = document.getElementById('priceUpdatesModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
 function getCurrentMonthValue(date = new Date()) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
@@ -1986,13 +2010,20 @@ function getRecordType(record) {
     if (!record || typeof record !== 'object') return 'cash';
 
     const type = String(record.saleType || record.type || record.paymentType || record.mode || '').trim().toLowerCase();
+    const remaining = Number(record.remaining || record.debtAdded || record.balance || 0);
+    const total = getRecordTotal(record);
+    const paid = Number(record.paidAmount || record.paid || record.cash || record.received || 0);
+    const hasCustomer = Boolean(record.customerName || record.customerKey || record.customerId);
+
     if (type.includes('credit') || type.includes('شقق') || type.includes('آجل') || type.includes('debt')) return 'credit';
     if (type.includes('cash') || type.includes('نقد') || type.includes('كاش')) return 'cash';
 
-    const paid = Number(record.paidAmount || record.cash || record.received || 0);
-    const total = getRecordTotal(record);
+    if (hasCustomer && (remaining > 0 || (paid > 0 && total > 0 && paid < total))) return 'credit';
+    if (typeof record.collectionName === 'string' && /shakak|credit|debt/.test(record.collectionName.toLowerCase())) return 'credit';
+
     if (paid > 0 && total > 0 && paid >= total) return 'cash';
     if (paid > 0 && total > 0 && paid < total) return 'credit';
+    if (remaining > 0 && total > 0) return 'credit';
 
     return 'cash';
 }
@@ -2056,12 +2087,11 @@ function resetMonthlyReportCards() {
     if (tbody) tbody.innerHTML = '';
     if (empty) empty.hidden = false;
 
-    ['monthlyReportTotal', 'monthlyReportSalesCount', 'monthlyReportProductsSold', 'monthlyReportCash', 'monthlyReportCredit', 'monthlyReportTopProduct']
+    ['monthlyReportTotal', 'monthlyReportCash', 'monthlyReportCredit']
         .forEach((id) => {
             const el = document.getElementById(id);
             if (el) {
-                el.textContent = id === 'monthlyReportSalesCount' || id === 'monthlyReportProductsSold' ? '0' : '0.00';
-                if (id === 'monthlyReportTopProduct') el.textContent = '-';
+                el.textContent = '0.00';
             }
         });
 }
@@ -2142,6 +2172,7 @@ async function loadMonthlyReport() {
             const productSummaryMap = {};
 
             rows.forEach((row) => {
+                const rowType = row.type === 'credit' ? 'شكك' : 'كاش';
                 const items = Array.isArray(row.items) && row.items.length ? row.items : [{ name: row.name || 'منتج', quantity: row.quantity || 1, total: row.total || 0 }];
                 items.forEach((item) => {
                     const name = String(item.name || 'منتج').trim() || 'منتج';
@@ -2149,18 +2180,22 @@ async function loadMonthlyReport() {
                     const safeQty = isNaN(quantity) ? 0 : quantity;
                     if (safeQty <= 0) return;
                     const itemTotal = Number(item.total || item.amount || 0);
-                    if (!productSummaryMap[name]) {
-                        productSummaryMap[name] = { quantity: 0, total: 0 };
+                    const summaryKey = `${name}::${rowType}`;
+                    if (!productSummaryMap[summaryKey]) {
+                        productSummaryMap[summaryKey] = { name, quantity: 0, total: 0, type: rowType };
                     }
-                    productSummaryMap[name].quantity += safeQty;
-                    productSummaryMap[name].total += isNaN(itemTotal) ? 0 : itemTotal;
+                    productSummaryMap[summaryKey].quantity += safeQty;
+                    productSummaryMap[summaryKey].total += isNaN(itemTotal) ? 0 : itemTotal;
                 });
             });
 
             Object.entries(productSummaryMap)
                 .sort((a, b) => b[1].quantity - a[1].quantity)
-                .forEach(([name, stats]) => {
-                    productRows.push(`<tr><td>${escapeHtml(name)}</td><td>${stats.quantity}</td><td>${formatCurrency(stats.total)}</td><td>مبيعات</td></tr>`);
+                .forEach(([, stats]) => {
+                    const isCash = String(stats.type || 'كاش') === 'كاش';
+                    const typeClass = isCash ? 'monthly-report-type-cash' : 'monthly-report-type-credit';
+                    const typeText = isCash ? 'كاش' : 'شكك';
+                    productRows.push(`<tr><td>${escapeHtml(stats.name)}</td><td>${stats.quantity}</td><td>${formatCurrency(stats.total)}</td><td><span class="${typeClass}">${escapeHtml(typeText)}</span></td></tr>`);
                 });
 
             tbody.innerHTML = productRows.join('');
@@ -2169,11 +2204,8 @@ async function loadMonthlyReport() {
         if (empty) empty.hidden = productRows.length > 0;
 
         document.getElementById('monthlyReportTotal').textContent = formatCurrency(summary.total);
-        document.getElementById('monthlyReportSalesCount').textContent = String(summary.salesCount);
-        document.getElementById('monthlyReportProductsSold').textContent = String(summary.productsSold);
         document.getElementById('monthlyReportCash').textContent = formatCurrency(summary.cash);
         document.getElementById('monthlyReportCredit').textContent = formatCurrency(summary.credit);
-        document.getElementById('monthlyReportTopProduct').textContent = summary.topProduct;
     } catch (error) {
         console.error('Monthly report error:', error);
         showToast('تعذر تحميل التقرير الشهري', false);
@@ -2223,34 +2255,25 @@ function playBeepSound() {
 
     try {
 
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        if (!AudioContextClass) return;
-
-        const audioCtx = new AudioContextClass();
-        const now = audioCtx.currentTime;
         const oscillator = audioCtx.createOscillator();
+
         const gainNode = audioCtx.createGain();
 
-        oscillator.type = "square";
-        oscillator.frequency.setValueAtTime(2200, now);
-        oscillator.frequency.exponentialRampToValueAtTime(2600, now + 0.06);
-        oscillator.frequency.setValueAtTime(2600, now + 0.06);
-        oscillator.frequency.exponentialRampToValueAtTime(1800, now + 0.16);
+        oscillator.type = "sine";
 
-        gainNode.gain.setValueAtTime(0.0001, now);
-        gainNode.gain.exponentialRampToValueAtTime(0.18, now + 0.01);
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+        oscillator.frequency.setValueAtTime(1000, audioCtx.currentTime);
+
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
 
         oscillator.connect(gainNode);
+
         gainNode.connect(audioCtx.destination);
 
-        oscillator.start(now);
-        oscillator.stop(now + 0.16);
+        oscillator.start();
 
-        oscillator.onended = () => {
-            try { audioCtx.close(); } catch (e) {}
-        };
+        oscillator.stop(audioCtx.currentTime + 0.15);
 
     } catch (e) {
 
@@ -2869,7 +2892,6 @@ async function saveShakakRecord() {
     const saleEntry = { type: "sale", recordId: saleRef.id, date, time, items, total, paid, debtAdded: remaining };
 
     try {
-        if (saveButton) { saveButton.disabled = true; saveButton.textContent = "حفظ..."; }
         await db.runTransaction(async transaction => {
             const customerSnapshot = await transaction.get(customerRef);
             const oldData = customerSnapshot.exists ? (customerSnapshot.data() || {}) : {};
@@ -2909,8 +2931,6 @@ async function saveShakakRecord() {
     } catch (error) {
         console.error("Save shakak error:", error);
         showToast("تعذر الحفظ", false);
-    } finally {
-        if (saveButton) { saveButton.disabled = false; saveButton.textContent = "حفظ"; }
     }
 }
 
@@ -3075,11 +3095,6 @@ async function completePosSale() {
     const total = Number(items.reduce((sum, item) => sum + item.total, 0).toFixed(2));
 
     try {
-        if (saleButton) {
-            saleButton.disabled = true;
-            saleButton.textContent = "حفظ...";
-        }
-
         await db.collection("daily_sales").add({
             type: "cash",
             date: saleDate,
@@ -3095,11 +3110,6 @@ async function completePosSale() {
     } catch (error) {
         console.error("Complete POS sale error:", error);
         showToast("تعذر البيع", false);
-    } finally {
-        if (saleButton) {
-            saleButton.disabled = false;
-            saleButton.innerHTML = "بيع 💸";
-        }
     }
 }
 
