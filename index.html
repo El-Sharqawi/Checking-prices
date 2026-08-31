@@ -9,6 +9,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <meta name="theme-color" content="#2980b9">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Moka Mohamed">
+    <link rel="manifest" href="manifest.json">
 
     <title>Moka Mohamed</title>
 
@@ -31,6 +34,7 @@
     <button type="button" class="refresh-btn" id="refreshBtn" onclick="refreshApp()" aria-label="تحديث" title="تحديث">↻</button>
 
     <button type="button" class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" aria-label="تغيير الوضع" title="تغيير الوضع">☀️</button>
+    <button type="button" class="shortcuts-help-btn" id="shortcutsHelpBtn" onclick="toggleShortcutsHelp()" aria-label="اختصارات الكيبورد" title="اختصارات الكيبورد">⌨</button>
 
     <h2>لوحة تحكم المنتجات</h2>
 
@@ -38,17 +42,17 @@
 
     <div class="tabs">
 
-        <button type="button" class="tab-btn active" onclick="switchTab('pos')">البيع السريع ⚡</button>
+        <button type="button" class="tab-btn active" onclick="switchTab('pos')" title="Alt+1">البيع السريع ⚡</button>
 
-        <button type="button" class="tab-btn" onclick="switchTab('add')">إضافة منتج 🔹</button>
+        <button type="button" class="tab-btn" onclick="switchTab('add')" title="Alt+2">إضافة منتج 🔹</button>
 
-        <button type="button" class="tab-btn" onclick="switchTab('search')">تعديل / حذف ✏️</button>
+        <button type="button" class="tab-btn" onclick="switchTab('search')" title="Alt+3">تعديل / حذف ✏️</button>
 
-        <button type="button" class="tab-btn" onclick="switchTab('shakak')">Note 📘</button>
+        <button type="button" class="tab-btn" onclick="switchTab('shakak')" title="Alt+4">Note 📘</button>
 
-        <button type="button" class="tab-btn" onclick="switchTab('debts')">العملاء 💬</button>
+        <button type="button" class="tab-btn" onclick="switchTab('debts')" title="Alt+5">العملاء 💬</button>
 
-        <button type="button" class="tab-btn" onclick="switchTab('reports')">التقرير اليومي 📊</button>
+        <button type="button" class="tab-btn" onclick="switchTab('reports')" title="Alt+6">التقرير اليومي 📊</button>
 
     </div>
 
@@ -92,6 +96,7 @@
 </div>
 
         <div id="pos-reader" class="inline-style-11"></div>
+        <button type="button" class="torch-btn" data-for="pos-reader" hidden onclick="toggleScannerTorch()">فلاش</button>
 
         <div class="lux-table-wrap">
             <table class="lux-table" id="posTable">
@@ -148,6 +153,7 @@
                 </button>
             </div>
             <div id="shakak-reader" class="viewport"></div>
+            <button type="button" class="torch-btn" data-for="shakak-reader" hidden onclick="toggleScannerTorch()">فلاش</button>
             <div class="invoice-grand-total-container shakak-total-box">
                 <div class="shakak-total-line">عدد المنتجات: <span id="shakakItemCount">0</span></div>
                 <div class="shakak-grand-total">الإجمالي: <span id="shakakGrandTotal">0.00</span></div>
@@ -234,7 +240,7 @@
 
             <div class="barcode-container">
 
-                <input type="text" id="productBarcode" placeholder="امسح الرمز أو اكتبه..." autocomplete="off">
+                <input type="text" id="productBarcode" placeholder="امسح الرمز أو اكتبه..." autocomplete="off" inputmode="numeric">
 
                 <button type="button" class="btn-qr-scan" onclick="toggleScanner('reader', 'productBarcode')">
 
@@ -250,9 +256,14 @@
 
             </div>
 
+            <p id="barcodeLookupStatus" class="barcode-lookup-status" aria-live="polite"></p>
+
         </div>
 
+        <input type="hidden" id="productImageUrl" value="">
+
         <div id="reader" class="viewport"></div>
+        <button type="button" class="torch-btn" data-for="reader" hidden onclick="toggleScannerTorch()">فلاش</button>
 
         <button type="button" class="btn-save" id="saveProductBtn" onclick="saveProduct()">
 
@@ -341,13 +352,10 @@
 
             </div>
 
-            <div class="stat-card">
-
-                <span>أعلى سعر</span>
-
-                <strong id="statMax">0 ج.م</strong>
-
-            </div>
+            <button type="button" class="stat-card stat-card-clickable" onclick="switchTab('monthlyReport')" aria-label="فتح التقرير الشهري">
+                <span>التقرير الشهري</span>
+                <strong aria-hidden="true">📅</strong>
+            </button>
 
             <button type="button" class="stat-card stat-card-clickable" onclick="switchTab('priceUpdates')" aria-label="فتح الأسعار الجديدة">
                 <span>الأسعار الجديدة</span>
@@ -389,11 +397,76 @@
         </div>
 
         <div id="searchReader" class="viewport"></div>
+        <button type="button" class="torch-btn" data-for="searchReader" hidden onclick="toggleScannerTorch()">فلاش</button>
 
         <div id="resultsList"></div>
 
     </div>
 
+</div>
+
+<div id="monthlyReportSection" class="section-content">
+    <div class="price-updates-header">
+        <button type="button" class="btn-back-section" onclick="switchTab('search')">رجوع</button>
+        <h3 class="section-title">التقرير الشهري</h3>
+    </div>
+    <div class="daily-report-container monthly-report-container">
+        <div class="daily-report-header">
+            <div class="daily-report-header-row monthly-report-header-row">
+                <div class="daily-report-day-box">
+                    <span>الشهر</span>
+                    <strong id="monthlyReportLabel">الشهر</strong>
+                </div>
+                <div class="daily-report-date-picker">
+                    <label>اختيار الشهر</label>
+                    <div class="report-date-control monthly-month-control">
+                        <button type="button" class="report-day-nav" id="monthlyPrevBtn" aria-label="الشهر السابق">→</button>
+                        <input type="text" id="monthlyReportDisplay" readonly autocomplete="off" aria-label="الشهر الحالي">
+                        <button type="button" class="report-day-nav" id="monthlyNextBtn" aria-label="الشهر التالي">←</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="daily-report-summary">
+            <div class="report-stat-card report-total-card"><span>إجمالي المبيعات</span><strong id="monthlyTotalSales">0.00</strong></div>
+            <div class="report-stat-card report-cash-card"><span>مبيعات كاش</span><strong id="monthlyCashSales">0.00</strong></div>
+            <div class="report-stat-card report-credit-card"><span>مبيعات شكك</span><strong id="monthlyCreditSales">0.00</strong></div>
+            <div class="report-stat-card report-top-card"><span>عدد الفواتير</span><strong id="monthlyInvoiceCount">0</strong></div>
+        </div>
+        <div class="monthly-top-line">أكثر منتج مبيعًا: <strong id="monthlyTopProduct">-</strong></div>
+        <div class="daily-report-sales">
+            <div class="daily-report-sales-title">المنتجات خلال الشهر</div>
+            <div class="lux-table-wrap">
+                <table class="lux-table lux-report-table">
+                    <thead>
+                        <tr>
+                            <th>المنتج</th>
+                            <th>الكمية</th>
+                            <th>الإجمالي</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monthlyProductsTableBody"></tbody>
+                </table>
+            </div>
+            <div id="monthlyProductsEmpty" class="daily-report-empty inline-style-19">لا توجد مبيعات مسجلة في هذا الشهر.</div>
+        </div>
+        <div class="daily-report-sales monthly-days-block">
+            <div class="daily-report-sales-title">تفاصيل الأيام</div>
+            <div class="lux-table-wrap">
+                <table class="lux-table lux-report-table">
+                    <thead>
+                        <tr>
+                            <th>اليوم</th>
+                            <th>كاش</th>
+                            <th>شكك</th>
+                            <th>الإجمالي</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monthlyDaysTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div id="priceUpdatesSection" class="section-content">
@@ -440,6 +513,25 @@
 
     </div>
 
+</div>
+
+<div id="shortcutsModal" class="modal" onclick="toggleShortcutsHelp(false)">
+    <div class="modal-content shortcuts-content" onclick="event.stopPropagation()">
+        <span class="close-modal" onclick="toggleShortcutsHelp(false)">&times;</span>
+        <h3 class="confirm-title">اختصارات الكيبورد</h3>
+        <ul class="shortcuts-list">
+            <li><kbd>Alt</kbd> + <kbd>1</kbd> البيع السريع</li>
+            <li><kbd>Alt</kbd> + <kbd>2</kbd> إضافة منتج</li>
+            <li><kbd>Alt</kbd> + <kbd>3</kbd> تعديل / حذف</li>
+            <li><kbd>Alt</kbd> + <kbd>4</kbd> Note</li>
+            <li><kbd>Alt</kbd> + <kbd>5</kbd> العملاء</li>
+            <li><kbd>Alt</kbd> + <kbd>6</kbd> التقرير اليومي</li>
+            <li><kbd>F8</kbd> تشغيل / إيقاف السكانر</li>
+            <li><kbd>F9</kbd> تشغيل / إيقاف الفلاش</li>
+            <li><kbd>Ctrl</kbd> + <kbd>S</kbd> حفظ / بيع حسب الشاشة</li>
+            <li><kbd>Esc</kbd> إغلاق السكانر أو النافذة</li>
+        </ul>
+    </div>
 </div>
 
 <div id="toast" role="status" aria-live="polite"></div>

@@ -608,7 +608,9 @@ async function saveProduct() {
 
                 : null;
 
-        const newImage = await getImageAsDataUrl(imageFile);
+        const imageUrlField = document.getElementById("productImageUrl");
+        const lookedUpImageUrl = imageUrlField ? imageUrlField.value.trim() : "";
+        const newImage = (await getImageAsDataUrl(imageFile)) || lookedUpImageUrl || null;
 
         if (editingId) {
             await updateExistingProduct(editingId, name, priceRaw, barcode, newImage);
@@ -755,6 +757,11 @@ function resetFormFields() {
     if (image) image.value = "";
 
     if (imageName) imageName.textContent = "";
+
+    const imageUrl = document.getElementById("productImageUrl");
+    if (imageUrl) imageUrl.value = "";
+
+    setBarcodeLookupStatus("");
 
 }
 
@@ -1456,6 +1463,177 @@ function updateImageFileName(input) {
 
 }
 
+function setBarcodeLookupStatus(message, type = "") {
+    const el = document.getElementById("barcodeLookupStatus");
+    if (!el) return;
+    el.textContent = message || "";
+    el.className = "barcode-lookup-status" + (type ? ` is-${type}` : "");
+}
+
+function normalizeBarcode(value) {
+    return String(value || "").replace(/\s+/g, "").trim();
+}
+
+function isLookupBarcode(value) {
+    const code = normalizeBarcode(value);
+    if (!code || code === "بدون باركود") return false;
+    return /^\d{8,14}$/.test(code);
+}
+
+function findLocalProductByBarcode(barcode) {
+    const code = normalizeBarcode(barcode);
+    if (!code) return null;
+    return allProductsCache.find(product => normalizeBarcode(product.barcode) === code) || null;
+}
+
+function pickOpenFoodFactsName(product) {
+    return String(
+        product.product_name_ar ||
+        product.product_name_en ||
+        product.product_name ||
+        product.generic_name_ar ||
+        product.generic_name ||
+        ""
+    ).trim();
+}
+
+async function fetchOpenFoodFactsProduct(barcode) {
+    const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json?fields=product_name,product_name_ar,product_name_en,generic_name,generic_name_ar,brands,image_url,image_front_url,quantity`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("OFF_HTTP");
+    const data = await response.json();
+    if (Number(data.status) !== 1 || !data.product) return null;
+    const product = data.product;
+    const name = pickOpenFoodFactsName(product);
+    const brand = String(product.brands || "").split(",")[0].trim();
+    const quantity = String(product.quantity || "").trim();
+    let displayName = name;
+    if (brand && name && !name.toLowerCase().includes(brand.toLowerCase())) {
+        displayName = `${brand} ${name}`;
+    } else if (!displayName && brand) {
+        displayName = brand;
+    }
+    if (quantity && displayName && !displayName.includes(quantity)) {
+        displayName = `${displayName} ${quantity}`.trim();
+    }
+    return {
+        name: displayName,
+        image: product.image_front_url || product.image_url || ""
+    };
+}
+
+async function fetchSuggestedEgpPrice(barcode) {
+    const url = `https://prices.openfoodfacts.org/api/v1/prices?product_code=${encodeURIComponent(barcode)}&size=50`;
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const data = await response.json();
+    const items = Array.isArray(data.items) ? data.items : [];
+    const egp = items
+        .map(item => ({
+            price: Number(item.price),
+            currency: String(item.currency || "").toUpperCase(),
+            country: String(item.country || item.location_osm_country_code || "").toUpperCase()
+        }))
+        .filter(item => Number.isFinite(item.price) && item.price > 0 && (item.currency === "EGP" || item.country === "EG"));
+    if (!egp.length) return null;
+    const prices = egp.map(item => item.price).sort((a, b) => a - b);
+    return Number(prices[Math.floor(prices.length / 2)].toFixed(2));
+}
+
+async function lookupAndFillProductFromBarcode(barcode, options = {}) {
+    const code = normalizeBarcode(barcode);
+    const forceName = Boolean(options.forceName);
+    const nameInput = document.getElementById("productName");
+    const priceInput = document.getElementById("productPrice");
+    const imageName = document.getElementById("imageFileName");
+    const imageUrlField = document.getElementById("productImageUrl");
+    const editingId = document.getElementById("editingId")?.value.trim();
+
+    if (!isLookupBarcode(code)) {
+        setBarcodeLookupStatus("");
+        return;
+    }
+
+    const local = findLocalProductByBarcode(code);
+    if (local && local.id !== editingId) {
+        if (nameInput && (!nameInput.value.trim() || forceName)) nameInput.value = local.name || "";
+        if (priceInput && (!priceInput.value.trim() || forceName)) priceInput.value = local.price ?? "";
+        if (imageUrlField) {
+            imageUrlField.value = local.image && !String(local.image).startsWith("data:") ? local.image : "";
+        }
+        if (imageName && local.image) imageName.textContent = "الصورة موجودة للمنتج المسجل.";
+        setBarcodeLookupStatus("المنتج مسجل عندك بالفعل. تقدر تعدّله أو تغيّر السعر.", "warn");
+        showToast("المنتج موجود في قائمتك");
+        return;
+    }
+
+    setBarcodeLookupStatus("جاري البحث عن بيانات المنتج...", "loading");
+
+    try {
+        const [offResult, suggestedPrice] = await Promise.all([
+            fetchOpenFoodFactsProduct(code).catch(() => null),
+            fetchSuggestedEgpPrice(code).catch(() => null)
+        ]);
+
+        if (!offResult && suggestedPrice == null) {
+            setBarcodeLookupStatus("مفيش بيانات جاهزة للباركود ده. اكتب الاسم وسعر المحل بنفسك.", "error");
+            return;
+        }
+
+        if (offResult?.name && nameInput && (!nameInput.value.trim() || forceName)) {
+            nameInput.value = offResult.name;
+        }
+        if (offResult?.image && imageUrlField) {
+            imageUrlField.value = offResult.image;
+            if (imageName) imageName.textContent = "تم جلب صورة المنتج من الباركود.";
+        }
+        if (suggestedPrice != null && priceInput && !priceInput.value.trim()) {
+            priceInput.value = String(suggestedPrice);
+            setBarcodeLookupStatus(
+                `اتجاب الاسم${offResult?.name ? `: ${offResult.name}` : ""}. السعر المقترح ${suggestedPrice} ج.م — راجعه لأنه مش سعر محلك.`,
+                "success"
+            );
+            return;
+        }
+
+        if (offResult?.name) {
+            setBarcodeLookupStatus("اتجاب الاسم. السعر اكتبه أنت لأن سعر المحل مش بيتسحب تلقائي.", "success");
+        } else {
+            setBarcodeLookupStatus("الاسم مش موجود في قاعدة البيانات. اكتبه يدوي. السعر كمان من عندك.", "warn");
+        }
+    } catch (error) {
+        console.error("Barcode lookup error:", error);
+        setBarcodeLookupStatus("تعذر جلب البيانات. اكتب الاسم والسعر يدوي.", "error");
+    }
+}
+
+function setupBarcodeLookupOnAddForm() {
+    const input = document.getElementById("productBarcode");
+    if (!input || input.dataset.lookupReady === "1") return;
+    input.dataset.lookupReady = "1";
+    let timer = null;
+    const runLookup = () => {
+        const code = normalizeBarcode(input.value);
+        if (!isLookupBarcode(code)) {
+            setBarcodeLookupStatus("");
+            return;
+        }
+        lookupAndFillProductFromBarcode(code, { forceName: false });
+    };
+    input.addEventListener("input", () => {
+        clearTimeout(timer);
+        timer = setTimeout(runLookup, 700);
+    });
+    input.addEventListener("change", runLookup);
+    input.addEventListener("keydown", event => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            clearTimeout(timer);
+            runLookup();
+        }
+    });
+}
+
 async function toggleScanner(elementId, inputTargetId, isSearch = false) {
 
     const viewport = document.getElementById(elementId);
@@ -1502,6 +1680,17 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
 
         };
 
+        if (typeof Html5QrcodeSupportedFormats !== "undefined") {
+            config.formatsToSupport = [
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.QR_CODE
+            ];
+        }
+
         await activeScanner.start(
 
             { facingMode: "environment" },
@@ -1510,22 +1699,45 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
 
             async decodedText => {
 
+                const scannedCode = String(decodedText || "").trim();
                 const targetInput = document.getElementById(inputTargetId);
 
                 if (targetInput) {
 
-                    targetInput.value = decodedText;
+                    targetInput.value = scannedCode;
 
                 }
 
                 if (inputTargetId === "shakakSearchInput") {
-                    const decodedProduct = allProductsCache.find(product =>
-                        String(product.barcode || "").trim() === String(decodedText).trim()
-                    );
+                    const decodedProduct = findLocalProductByBarcode(scannedCode);
                     if (decodedProduct) {
                         addProductToShakakCart(decodedProduct);
                         targetInput.value = "";
                     }
+                }
+
+                if (inputTargetId === "posSearchInput") {
+                    const decodedProduct = findLocalProductByBarcode(scannedCode);
+                    await stopCurrentScanner();
+                    if (decodedProduct) {
+                        addProductToPosCart(decodedProduct);
+                        if (targetInput) targetInput.value = "";
+                        showToast("تمت القراءة");
+                    } else {
+                        switchTab("add");
+                        const barcodeInput = document.getElementById("productBarcode");
+                        if (barcodeInput) barcodeInput.value = scannedCode;
+                        showToast("المنتج غير مسجل — جاري جلب البيانات");
+                        await lookupAndFillProductFromBarcode(scannedCode, { forceName: true });
+                    }
+                    return;
+                }
+
+                if (inputTargetId === "productBarcode") {
+                    await stopCurrentScanner();
+                    showToast("تمت القراءة");
+                    await lookupAndFillProductFromBarcode(scannedCode, { forceName: false });
+                    return;
                 }
 
                 if (isSearch) {
@@ -1594,11 +1806,13 @@ async function stopCurrentScanner() {
 
     const searchReader = document.getElementById("searchReader");
     const shakakReader = document.getElementById("shakak-reader");
+    const posReader = document.getElementById("pos-reader");
 
     if (reader) reader.style.display = "none";
 
     if (searchReader) searchReader.style.display = "none";
     if (shakakReader) shakakReader.style.display = "none";
+    if (posReader) posReader.style.display = "none";
 
     void activeElementId;
 
@@ -1672,6 +1886,7 @@ let currentSelectedIndex = -1;
 
 document.addEventListener("DOMContentLoaded", () => {
     setupAutoSelectProductFields();
+    setupBarcodeLookupOnAddForm();
     setupShakakAutocomplete();
     setupShakakCustomerAutocomplete();
     initializeShakakDateTime();
