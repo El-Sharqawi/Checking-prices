@@ -1740,6 +1740,7 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
 
     }
 
+    playBeepSound();
     viewport.style.display = "block";
 
     try {
@@ -2228,33 +2229,28 @@ function playBeepSound() {
 
         const audioCtx = new AudioContextClass();
         const now = audioCtx.currentTime;
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
 
-        const playTone = (frequency, startAt, duration, volume, waveType = "sawtooth") => {
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
+        oscillator.type = "square";
+        oscillator.frequency.setValueAtTime(2200, now);
+        oscillator.frequency.exponentialRampToValueAtTime(2600, now + 0.06);
+        oscillator.frequency.setValueAtTime(2600, now + 0.06);
+        oscillator.frequency.exponentialRampToValueAtTime(1800, now + 0.16);
 
-            oscillator.type = waveType;
-            oscillator.frequency.setValueAtTime(frequency, startAt);
-            oscillator.frequency.linearRampToValueAtTime(frequency + 450, startAt + duration);
+        gainNode.gain.setValueAtTime(0.0001, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.18, now + 0.01);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
 
-            gainNode.gain.setValueAtTime(0.0001, startAt);
-            gainNode.gain.linearRampToValueAtTime(volume, startAt + 0.008);
-            gainNode.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
 
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
+        oscillator.start(now);
+        oscillator.stop(now + 0.16);
 
-            oscillator.start(startAt);
-            oscillator.stop(startAt + duration);
-        };
-
-        playTone(2200, now, 0.07, 0.12, "sawtooth");
-        playTone(2600, now + 0.04, 0.06, 0.14, "sawtooth");
-        playTone(3000, now + 0.09, 0.05, 0.12, "square");
-
-        setTimeout(() => {
+        oscillator.onended = () => {
             try { audioCtx.close(); } catch (e) {}
-        }, 220);
+        };
 
     } catch (e) {
 
@@ -2446,6 +2442,8 @@ function updateActiveSuggestion(items) {
 }
 
 function addProductToPosCart(foundProduct) {
+
+    playBeepSound();
 
     const existingCartItem = posCart.find(item => item.id === foundProduct.id);
 
@@ -2776,6 +2774,7 @@ function updateShakakActiveSuggestion(items) {
 }
 
 function addProductToShakakCart(foundProduct) {
+    playBeepSound();
     const existing = shakakCart.find(item => item.id === foundProduct.id);
     if (existing) existing.quantity += 1;
     else shakakCart.push({ id: foundProduct.id, name: foundProduct.name, price: Number(foundProduct.price) || 0, quantity: 1 });
