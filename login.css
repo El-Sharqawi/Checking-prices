@@ -1894,13 +1894,13 @@ button:not(:disabled):active {
 
 .pos-shakak-btn,
 .pos-sale-btn {
-    min-width: 92px;
-    min-height: 40px;
-    padding: 8px 16px;
-    border-radius: 12px;
-    font-size: .92rem;
+    min-width: 82px;
+    min-height: 36px;
+    padding: 6px 14px;
+    border-radius: 10px;
+    font-size: .82rem;
     font-weight: 800 !important;
-    letter-spacing: .1px;
+    letter-spacing: .04em;
     border: 1px solid transparent;
     transition: transform .22s ease, box-shadow .22s ease, filter .22s ease, background .22s ease, border-color .22s ease;
     animation: posButtonFloat .7s ease both;
@@ -3023,9 +3023,10 @@ body.dark-mode .quantity-controls {
 .btn-save-shakak,
 .pos-sale-btn,
 .btn-save {
-    min-height: 48px !important;
-    border-radius: 14px !important;
-    font-size: 16px !important;
+    min-height: 36px !important;
+    border-radius: 10px !important;
+    font-size: 14px !important;
+    padding: 8px 14px !important;
 }
 
 .daily-report-header-row {

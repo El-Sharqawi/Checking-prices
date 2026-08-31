@@ -132,49 +132,36 @@ let activeScanner = null;
 let activeScannerElementId = null;
 
 function playBeep() {
-
     try {
-
         const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-
         if (!AudioContextClass) return;
-
         const audioCtx = new AudioContextClass();
-
         const now = audioCtx.currentTime;
-
         const osc = audioCtx.createOscillator();
-
         const gain = audioCtx.createGain();
-
+        
         osc.type = "sine";
-
         osc.connect(gain);
-
         gain.connect(audioCtx.destination);
-
-        osc.frequency.setValueAtTime(523.25, now);
-
-        osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
-
-        gain.gain.setValueAtTime(0.15, now);
-
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-
+        
+        osc.frequency.setValueAtTime(587.33, now); // تردد D5 لنغمة نقية
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+        
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        
         osc.start(now);
-
-        osc.stop(now + 0.25);
-
+        osc.stop(now + 0.2);
+        
         osc.addEventListener("ended", () => {
-
             try { audioCtx.close(); } catch (e) {}
-
         });
-
     } catch (e) {
-
     }
+}
 
+function playBeepSound() {
+    playBeep();
 }
 
 function showToast(msg, isSuccess = true) {
