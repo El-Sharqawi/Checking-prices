@@ -704,27 +704,58 @@ async function updateExistingProduct(id, name, price, barcode, newImage) {
 
         batch.update(productRef, updatedData);
 
-        const updateRef = db.collection("price_updates_list").doc();
+        const latestProductUpdate = [...allPriceUpdatesCache]
+            .filter(item => item.productId === id)
+            .sort((a, b) => {
+                const aTime = a.timestamp && a.timestamp.toMillis ? a.timestamp.toMillis() : Number(a.updateId || 0);
+                const bTime = b.timestamp && b.timestamp.toMillis ? b.timestamp.toMillis() : Number(b.updateId || 0);
+                return bTime - aTime;
+            })[0];
 
-        batch.set(updateRef, {
+        if (latestProductUpdate && latestProductUpdate.id) {
 
-            updateId: Date.now(),
+            const updateRef = db.collection("price_updates_list").doc(latestProductUpdate.id);
 
-            productId: id,
+            batch.update(updateRef, {
 
-            name,
+                name,
 
-            image: updatedData.image,
+                image: updatedData.image,
 
-            oldPrice: String(old.price ?? ""),
+                oldPrice: String(old.price ?? ""),
 
-            price,
+                price,
 
-            barcode,
+                barcode,
 
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
 
-        });
+            });
+
+        } else {
+
+            const updateRef = db.collection("price_updates_list").doc();
+
+            batch.set(updateRef, {
+
+                updateId: Date.now(),
+
+                productId: id,
+
+                name,
+
+                image: updatedData.image,
+
+                oldPrice: String(old.price ?? ""),
+
+                price,
+
+                barcode,
+
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+
+            });
+        }
 
         await batch.commit();
 
@@ -1729,7 +1760,7 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
                         switchTab("add");
                         const barcodeInput = document.getElementById("productBarcode");
                         if (barcodeInput) barcodeInput.value = scannedCode;
-                        showToast("المنتج غير مسجل", false);
+                        showToast("عفوا هذا المنتج غير مسجل", false);
                         await lookupAndFillProductFromBarcode(scannedCode, { forceName: true });
                     }
                     return;
