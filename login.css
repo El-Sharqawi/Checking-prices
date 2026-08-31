@@ -2670,7 +2670,7 @@ body.dark-mode {
 }
 
 body {
-    background: #000;
+    background: var(--bg-body);
     align-items: flex-start;
     padding: 12px;
 }

@@ -189,7 +189,7 @@ function showToast(msg, isSuccess = true) {
 
     toast.className = "show";
 
-    playBeep();
+    playBeepSound();
 
     clearTimeout(showToast.timer);
 
@@ -2442,8 +2442,6 @@ function updateActiveSuggestion(items) {
 
 function addProductToPosCart(foundProduct) {
 
-    playBeepSound();
-
     const existingCartItem = posCart.find(item => item.id === foundProduct.id);
 
     if (existingCartItem) {
@@ -2773,7 +2771,6 @@ function updateShakakActiveSuggestion(items) {
 }
 
 function addProductToShakakCart(foundProduct) {
-    playBeepSound();
     const existing = shakakCart.find(item => item.id === foundProduct.id);
     if (existing) existing.quantity += 1;
     else shakakCart.push({ id: foundProduct.id, name: foundProduct.name, price: Number(foundProduct.price) || 0, quantity: 1 });
