@@ -228,10 +228,32 @@ function smoothScrollFocusedInput(input) {
     }, 300);
 }
 
+function bindMobileFocusScrollToAllFields() {
+    const selectors = "input, textarea, select";
+    const fields = document.querySelectorAll(selectors);
+
+    fields.forEach((field) => {
+        if (!field || field.dataset.mobileScrollBound === "true") return;
+        field.dataset.mobileScrollBound = "true";
+        field.addEventListener("focus", () => smoothScrollFocusedInput(field), { passive: true });
+    });
+}
+
+bindMobileFocusScrollToAllFields();
+
 document.addEventListener("focusin", (event) => {
     const input = event.target;
     if (!(input instanceof HTMLElement)) return;
     smoothScrollFocusedInput(input);
+});
+
+const mobileFocusScrollObserver = new MutationObserver(() => {
+    bindMobileFocusScrollToAllFields();
+});
+
+mobileFocusScrollObserver.observe(document.body, {
+    childList: true,
+    subtree: true
 });
 
 function escapeHtml(value) {
