@@ -2270,16 +2270,16 @@ button:not(:disabled):active {
 }
 
 .pos-shakak-btn {
-    background: #000;
+    background: linear-gradient(135deg, #1c031e, #cc25eb) !important;
     color: #fff !important;
-    box-shadow: 0 10px 22px rgba(217, 119, 6, .28);
+    box-shadow: 0 5px 12px #7100854f;
     border-color: rgba(255,255,255,.25);
 }
 
 .pos-shakak-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+    background: linear-gradient(135deg, #000000, #700085bf) !important;
     transform: translateY(-3px) scale(1.01);
-    box-shadow: 0 12px 24px rgba(217, 119, 6, .38);
+    box-shadow: 0 2px 24px #71008500;
     filter: brightness(1.04);
 }
 
