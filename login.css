@@ -532,15 +532,15 @@ input:focus {
 
 .modal-content {
     background: var(--card-bg);
-    padding: 18px 16px 16px;
-    border-radius: 18px;
-    width: min(88vw, 330px);
-    max-width: 330px;
-    min-height: 360px;
+    padding: 30px 24px 22px;
+    border-radius: 22px;
+    width: min(92vw, 380px);
+    max-width: 380px;
+    min-height: 420px;
     text-align: center;
     position: relative;
-    box-shadow: 0 18px 40px rgba(0, 0, 0, .26);
-    border: 1.5px solid var(--border-color);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, .3);
+    border: 2px solid var(--border-color);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -549,10 +549,11 @@ input:focus {
 }
 
 .price-updates-modal-content {
-    width: min(90vw, 440px);
-    max-width: 440px;
-    padding: 16px 14px 18px;
-    min-height: auto;
+    width: min(90vw, 620px);
+    max-width: 620px;
+    padding: 18px 16px 20px;
+    max-height: 78vh;
+    overflow: hidden;
 }
 
 .price-updates-modal-content .monthly-report-header h3 {
@@ -561,96 +562,162 @@ input:focus {
 }
 
 .price-updates-modal-content .updates-list {
-    max-height: 360px;
+    max-height: 62vh;
+    overflow-y: auto;
+    padding-right: 6px;
 }
 
 #priceUpdatesModalList,
 #priceUpdatesSection .updates-list {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 10px;
+    width: 100%;
 }
 
-#priceUpdatesModalList .product-card,
-#priceUpdatesSection .product-card {
-    min-height: 188px;
-    padding: 10px 8px 12px;
-    border-width: 1.5px;
+.price-update-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0;
+    margin: 0 !important;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+    box-sizing: border-box;
 }
 
-#priceUpdatesModalList .product-thumb,
-#priceUpdatesSection .product-thumb {
-    height: 88px;
-    border-radius: 10px;
+.price-update-row:hover {
+    border-color: rgba(41, 128, 185, 0.45);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+    transform: translateY(-1px);
+}
+
+.price-update-left {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    min-width: 0;
+    flex: 1 1 auto;
+    width: 100%;
+}
+
+.price-update-thumb {
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
+    flex-shrink: 0;
+    border-radius: 8px;
     background: #fff;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    padding: 4px;
+    box-sizing: border-box;
 }
 
-#priceUpdatesModalList .product-info,
-#priceUpdatesSection .product-info {
-    justify-content: center;
-    text-align: center;
-    gap: 3px;
+.price-update-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
 }
 
-#priceUpdatesModalList .product-info h4,
-#priceUpdatesSection .product-info h4 {
+.price-update-name {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text-main);
+    line-height: 1.35;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+.price-update-line {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+}
+
+.price-update-old {
+    color: #94a3b8;
+    text-decoration: line-through;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.price-update-arrow {
+    color: var(--text-muted);
+    font-weight: 900;
     font-size: 14px;
-    line-height: 1.3;
+}
+
+.price-update-new {
+    color: #10b981;
+    font-size: 16px;
     font-weight: 900;
 }
 
-#priceUpdatesModalList .price-update-line,
-#priceUpdatesSection .price-update-line {
-    margin-top: 5px;
-    justify-content: center;
-    gap: 6px;
-    flex-wrap: nowrap;
-}
-
-#priceUpdatesModalList .price-update-old,
-#priceUpdatesSection .price-update-old {
-    font-size: 13px;
-}
-
-#priceUpdatesModalList .price-update-new,
-#priceUpdatesSection .price-update-new {
-    font-size: 17px;
-}
-
-#priceUpdatesModalList .price-update-barcode,
-#priceUpdatesSection .price-update-barcode {
+.price-update-barcode {
     font-size: 11px;
-    margin-top: 3px;
+    color: var(--text-muted);
+    text-align: right;
+    line-height: 1.4;
+}
+
+.price-update-delete {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 999px;
+    background: rgba(220, 38, 38, 0.08);
+    color: #dc2626;
+    font-size: 18px;
+    font-weight: 800;
+    cursor: pointer;
+    margin-inline-start: auto;
 }
 
 @media (max-width: 520px) {
-    #priceUpdatesModalList,
-    #priceUpdatesSection .updates-list {
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
+    .price-updates-modal-content {
+        width: min(92vw, 560px);
+        padding: 16px 12px 18px;
     }
 
-    #priceUpdatesModalList .product-card,
-    #priceUpdatesSection .product-card {
-        min-height: 170px;
-        padding: 8px 6px 10px;
+    .price-update-row {
+        gap: 10px;
+        padding: 9px 10px;
     }
 
-    #priceUpdatesModalList .product-thumb,
-    #priceUpdatesSection .product-thumb {
-        height: 78px;
+    .price-update-thumb {
+        width: 46px;
+        height: 46px;
     }
 
-    #priceUpdatesModalList .product-info h4,
-    #priceUpdatesSection .product-info h4 {
+    .price-update-name {
+        font-size: 14px;
+    }
+
+    .price-update-old {
         font-size: 12px;
     }
 
-    #priceUpdatesModalList .price-update-old,
-    #priceUpdatesSection .price-update-old,
-    #priceUpdatesModalList .price-update-new,
-    #priceUpdatesSection .price-update-new {
-        font-size: 12px;
+    .price-update-new {
+        font-size: 15px;
+    }
+
+    .price-update-barcode {
+        font-size: 10.5px;
     }
 }
 
@@ -706,36 +773,35 @@ input:focus {
 }
 
 .modal-img {
-    width: 128px;
-    height: 128px;
+    width: 150px;
+    height: 150px;
     object-fit: contain;
     display: block;
-    margin: 12px auto 10px;
-    border-radius: 10px;
+    margin: 18px auto 12px;
+    border-radius: 12px;
     background: transparent;
     border: 1px solid var(--border-color);
-    padding: 7px;
+    padding: 8px;
     box-sizing: border-box;
 }
 
 .modal-name {
-    font-size: 20px;
+    font-size: 23px;
     font-weight: 900;
-    margin: 8px 0 6px;
+    margin: 10px 0;
     overflow-wrap: anywhere;
     width: 100%;
-    line-height: 1.3;
 }
 
 .modal-price {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 800;
     color: var(--success);
-    margin-bottom: 8px;
+    margin-bottom: 10px;
 }
 
 .modal-barcode {
-    font-size: 14px;
+    font-size: 17px;
     color: #000000;
     overflow-wrap: anywhere;
     font-weight: 500;

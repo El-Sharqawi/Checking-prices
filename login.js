@@ -1554,34 +1554,35 @@ function displayPriceUpdates(updates) {
 
         html += `
 
-            <div class="product-card" onclick="openUpdateModal('${id}')">
+            <div class="price-update-row" onclick="openUpdateModal('${id}')">
 
-                <img
+                <div class="price-update-left">
+                    <img
 
-                    src="${image}"
+                        src="${image}"
 
-                    class="product-thumb"
+                        class="price-update-thumb"
 
-                    alt="${name}"
+                        alt="${name}"
 
-                    loading="lazy"
+                        loading="lazy"
 
-                    onerror="this.src='https://via.placeholder.com/50?text=No+Img'"
+                        onerror="this.src='https://via.placeholder.com/50?text=No+Img'"
 
-                >
+                    >
 
-                <div class="product-info">
-                    <h4>${name}</h4>
-                    <p class="price-update-line">
-                        <span class="price-update-old">${oldPrice} ج.م</span>
-                        <span class="price-update-arrow">←</span>
-                        <strong class="price-update-new">${price} ج.م</strong>
-                    </p>
-                    <p class="product-barcode-txt price-update-barcode">الباركود: ${escapeHtml(update.barcode || "بدون باركود")}</p>
+                    <div class="price-update-main">
+                        <div class="price-update-name">${name}</div>
+                        <div class="price-update-line">
+                            <span class="price-update-old">${oldPrice} ج.م</span>
+                            <span class="price-update-arrow">←</span>
+                            <strong class="price-update-new">${price} ج.م</strong>
+                        </div>
+                        <div class="price-update-barcode">الباركود: ${escapeHtml(update.barcode || "بدون باركود")}</div>
+                    </div>
                 </div>
-                <div class="actions-group" onclick="event.stopPropagation()">
-                    <button type="button" class="pos-remove-btn" aria-label="حذف سجل السعر" onclick="deleteSingleUpdate('${id}')">×</button>
-                </div>
+
+                <button type="button" class="price-update-delete" aria-label="حذف سجل السعر" onclick="event.stopPropagation(); deleteSingleUpdate('${id}')">×</button>
 
             </div>
 
