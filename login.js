@@ -139,21 +139,18 @@ function playBeep() {
         const now = audioCtx.currentTime;
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        
+
         osc.type = "square";
         osc.connect(gain);
         gain.connect(audioCtx.destination);
-        
-        // تردد حاد وقوي
-        osc.frequency.setValueAtTime(2400, now); 
-        
-        // رفع مستوى الصوت (Gain) بشكل أكبر بكثير ليصبح عالي جداً
-        gain.gain.setValueAtTime(0.4, now); 
+
+        osc.frequency.setValueAtTime(2400, now);
+        gain.gain.setValueAtTime(0.4, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-        
+
         osc.start(now);
         osc.stop(now + 0.1);
-        
+
         osc.addEventListener("ended", () => {
             try { audioCtx.close(); } catch (e) {}
         });
@@ -192,6 +189,56 @@ function showToast(msg, isSuccess = true) {
     }, 3000);
 
 }
+
+let modalScrollLockCount = 0;
+
+function lockBodyScrollForModal() {
+    modalScrollLockCount += 1;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+}
+
+function unlockBodyScrollForModal() {
+    if (modalScrollLockCount > 0) {
+        modalScrollLockCount -= 1;
+    }
+    if (modalScrollLockCount === 0) {
+        document.body.style.overflow = "";
+        document.documentElement.style.overflow = "";
+    }
+}
+
+function smoothScrollFocusedInput(input) {
+    if (!input || !(input instanceof HTMLElement)) return;
+
+    const keysToWatch = [
+        "posSearchInput",
+        "searchInput",
+        "productBarcode",
+        "shakakSearchInput",
+        "shakakCustomerName",
+        "addProductQuickSearch"
+    ];
+
+    if (!keysToWatch.includes(input.id)) return;
+
+    requestAnimationFrame(() => {
+        const rect = input.getBoundingClientRect();
+        const shouldLift = rect.bottom > window.innerHeight - 180;
+
+        if (!shouldLift) return;
+
+        const nextTop = Math.max(window.scrollY + rect.top - 90, 0);
+        window.scrollTo({ top: nextTop, behavior: "smooth" });
+    });
+}
+
+document.addEventListener("focusin", (event) => {
+    const input = event.target;
+    if (!(input instanceof HTMLElement)) return;
+    if (input.tagName !== "INPUT" && input.tagName !== "TEXTAREA") return;
+    smoothScrollFocusedInput(input);
+});
 
 function escapeHtml(value) {
 
@@ -2012,6 +2059,7 @@ function openMonthlyReportModal() {
     }
     if (modal) {
         modal.style.display = 'flex';
+        lockBodyScrollForModal();
     }
     loadMonthlyReport();
 }
@@ -2021,12 +2069,14 @@ function closeMonthlyReportModal() {
     if (modal) {
         modal.style.display = 'none';
     }
+    unlockBodyScrollForModal();
 }
 
 function openPriceUpdatesModal() {
     const modal = document.getElementById('priceUpdatesModal');
     if (modal) {
         modal.style.display = 'flex';
+        lockBodyScrollForModal();
     }
     const list = document.getElementById('priceUpdatesModalList');
     if (list && list.innerHTML.trim() === '') {
@@ -2039,6 +2089,7 @@ function closePriceUpdatesModal() {
     if (modal) {
         modal.style.display = 'none';
     }
+    unlockBodyScrollForModal();
 }
 
 function getCurrentMonthValue(date = new Date()) {
@@ -2338,38 +2389,6 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 let posCart = [];
-
-function playBeepSound() {
-
-    try {
-
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-        const oscillator = audioCtx.createOscillator();
-
-        const gainNode = audioCtx.createGain();
-
-        oscillator.type = "sine";
-
-        oscillator.frequency.setValueAtTime(1000, audioCtx.currentTime);
-
-        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-
-        oscillator.connect(gainNode);
-
-        gainNode.connect(audioCtx.destination);
-
-        oscillator.start();
-
-        oscillator.stop(audioCtx.currentTime + 0.15);
-
-    } catch (e) {
-
-        console.log("AudioContext blocked or not supported", e);
-
-    }
-
-}
 
 let currentSelectedIndex = -1;
 

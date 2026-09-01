@@ -554,10 +554,34 @@ input:focus {
     padding: 18px 16px 20px;
     max-height: 78vh;
     overflow: hidden;
+    position: relative;
+}
+
+.price-updates-modal-content .monthly-report-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    position: static;
+    padding-right: 0;
+    min-height: auto;
 }
 
 .price-updates-modal-content .monthly-report-header h3 {
     font-size: 18px;
+    margin: 0;
+}
+
+.price-updates-modal-content .monthly-report-header .confirm-cancel-btn {
+    position: static;
+    width: auto;
+    min-width: 84px;
+    height: 38px;
+    padding: 0 14px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 900;
     margin: 0;
 }
 
@@ -910,7 +934,7 @@ input:focus {
     }
     .product-card {
         min-height: 170px;
-        padding: 8px 7px 10px;
+        padding: 7px 6px 9px;
         border-radius: 12px;
     }
     .product-thumb {
@@ -922,17 +946,21 @@ input:focus {
     }
     .product-info {
         gap: 2px;
+        min-width: 0;
     }
     .product-info h4 {
-        font-size: 12px;
-        line-height: 1.25;
+        font-size: 11px;
+        line-height: 1.2;
+        min-height: 2.4em;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
     .product-price-txt {
-        font-size: 11px;
+        font-size: 10.5px;
         margin-top: 2px;
     }
     .product-price-txt strong {
-        font-size: 13px;
+        font-size: 12px;
     }
     .actions-group {
         gap: 4px;
@@ -959,7 +987,7 @@ input:focus {
 
     .product-card {
         min-height: 165px;
-        padding: 8px 7px 10px;
+        padding: 7px 6px 9px;
     }
 
     .product-thumb {
@@ -967,15 +995,16 @@ input:focus {
     }
 
     .product-info h4 {
-        font-size: 11px;
+        font-size: 10.5px;
+        min-height: 2.2em;
     }
 
     .product-price-txt {
-        font-size: 10.5px;
+        font-size: 10px;
     }
 
     .product-price-txt strong {
-        font-size: 12px;
+        font-size: 11px;
     }
 }
 
@@ -2600,18 +2629,55 @@ body.dark-mode .pos-qty-btn {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
     margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.28);
+    position: static;
 }
 
 .monthly-report-header h3 {
     margin: 0;
     font-size: 1.5rem;
+    color: #0f172a;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    flex: 1;
+}
+
+.monthly-report-header .confirm-cancel-btn,
+.price-updates-modal-content .monthly-report-header .confirm-cancel-btn {
+    background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+    color: #fff;
+    border: 1px solid rgba(225, 29, 72, 0.4);
+    border-radius: 12px;
+    min-width: 92px;
+    height: 40px;
+    padding: 0 16px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    box-shadow: 0 12px 20px rgba(225, 29, 72, 0.18);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+    cursor: pointer;
+}
+
+.monthly-report-header .confirm-cancel-btn:hover,
+.price-updates-modal-content .monthly-report-header .confirm-cancel-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 16px 24px rgba(225, 29, 72, 0.24);
+    filter: brightness(1.04);
+}
+
+.monthly-report-header .confirm-cancel-btn:active,
+.price-updates-modal-content .monthly-report-header .confirm-cancel-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 8px 14px rgba(225, 29, 72, 0.18);
 }
 
 .monthly-report-controls {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: 10px;
     flex-wrap: wrap;
     margin-bottom: 18px;
@@ -2620,14 +2686,16 @@ body.dark-mode .pos-qty-btn {
 .monthly-report-month-picker {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: 8px;
-    background: #f5f9ff;
+    background: linear-gradient(180deg, #f8fbff 0%, #edf4ff 100%);
     border: 1px solid #dfeaf8;
     border-radius: 12px;
     padding: 8px 12px;
     color: #0e294d;
     font-weight: 700;
-    min-width: 170px;
+    min-width: 180px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
 }
 
 .monthly-report-month-picker input[type="month"] {
@@ -2641,17 +2709,30 @@ body.dark-mode .pos-qty-btn {
 
 .monthly-report-summary {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
     margin-bottom: 16px;
 }
 
 .monthly-report-stat {
-    background: #f5f9ff;
+    background: linear-gradient(180deg, #f8fbff 0%, #edf4ff 100%);
     border: 1px solid #dfeaf8;
     border-radius: 12px;
-    padding: 12px 14px;
+    padding: 12px 10px;
     text-align: center;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.45);
+}
+
+.monthly-report-stat:nth-child(1) {
+    background: linear-gradient(180deg, #eef6ff 0%, #dfeeff 100%);
+}
+
+.monthly-report-stat:nth-child(2) {
+    background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%);
+}
+
+.monthly-report-stat:nth-child(3) {
+    background: linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%);
 }
 
 .monthly-report-stat span {
@@ -2662,7 +2743,7 @@ body.dark-mode .pos-qty-btn {
 }
 
 .monthly-report-stat strong {
-    font-size: 1.2rem;
+    font-size: 1.05rem;
     color: #0e294d;
     display: block;
     overflow-wrap: anywhere;
@@ -2718,24 +2799,62 @@ body.dark-mode .pos-qty-btn {
 
 @media (max-width: 520px) {
     .monthly-report-modal-content {
-        padding: 18px 14px;
+        padding: 18px 12px 14px;
+        width: min(94vw, 520px);
+        max-height: 82vh;
     }
 
     .monthly-report-header {
-        align-items: flex-start;
-        flex-direction: column;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding-bottom: 10px;
+        margin-bottom: 12px;
     }
 
     .monthly-report-header h3 {
-        font-size: 1.3rem;
+        font-size: 15px;
+        flex: 10;
+    }
+
+    .monthly-report-header .confirm-cancel-btn,
+    .price-updates-modal-content .monthly-report-header .confirm-cancel-btn {
+        min-width: 58px;
+        height: 36px;
+        padding: 0 12px;
+        font-size: 12px;
+        border-radius: 110px;
     }
 
     .monthly-report-controls {
         width: 100%;
+        margin-bottom: 12px;
     }
 
     .monthly-report-month-picker {
-        width: 100%;
+        width: auto;
+        min-width: 160px;
+        flex: 1 1 auto;
+    }
+
+    .monthly-report-summary {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+    }
+
+    .monthly-report-stat {
+        padding: 8px 4px;
+        border-radius: 10px;
+    }
+
+    .monthly-report-stat span {
+        font-size: 0.68rem;
+        margin-bottom: 4px;
+    }
+
+    .monthly-report-stat strong {
+        font-size: 0.9rem;
     }
 }
 
@@ -2893,51 +3012,6 @@ body.dark-mode .modal-barcode { color: #fff !important; }
         font-size: 13px !important;
     }
 
-    #resultsList {
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-        gap: 8px !important;
-    }
-
-    .product-card {
-        min-height: 170px !important;
-        padding: 8px 7px 10px !important;
-        border-radius: 12px !important;
-    }
-
-    .product-thumb {
-        width: 100% !important;
-        height: 86px !important;
-        object-fit: contain !important;
-        display: block !important;
-        margin: 0 auto !important;
-        border-radius: 0 !important;
-        background: transparent !important;
-        border: none !important;
-    }
-
-    .product-info {
-        gap: 2px !important;
-    }
-
-    .product-info h4 {
-        font-size: 12px !important;
-        line-height: 1.25 !important;
-    }
-
-    .product-price-txt {
-        font-size: 11px !important;
-        margin-top: 2px !important;
-    }
-
-    .product-price-txt strong {
-        font-size: 13px !important;
-    }
-
-    @media (max-width: 420px) {
-        #resultsList {
-            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        }
-    }
     #searchSection .product-barcode-txt {
         font-size: 11px !important;
     }
