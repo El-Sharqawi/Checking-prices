@@ -3307,7 +3307,7 @@ body.dark-mode {
 }
 
 body {
-    background: var(--bg-body);
+    background: #007fff;
     align-items: flex-start;
     padding: 12px;
 }
