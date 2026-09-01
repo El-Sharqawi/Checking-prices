@@ -630,7 +630,7 @@ async function saveProduct() {
 
     if (!Number.isFinite(priceNumber) || priceNumber < 0) {
 
-        showToast("أدخل سعراً صحيحاً", false);
+        showToast("السعر غير صحيح", false);
 
         return;
 
@@ -659,7 +659,7 @@ async function saveProduct() {
             await updateExistingProduct(editingId, name, priceRaw, barcode, newImage);
             document.getElementById("editingId").value = "";
             resetFormFields();
-            if (saveButton) saveButton.textContent = "حفظ المنتج";
+            if (saveButton) saveButton.textContent = "حفظ";
             showToast("تم التعديل");
         } else {
 
@@ -859,7 +859,7 @@ function displayProducts(products) {
 
         list.innerHTML =
 
-            '<p class="inline-style-20">لا توجد منتجات.</p>';
+            '<p class="inline-style-20">لا توجد منتجات</p>';
 
         if (selectAllBtn) {
 
@@ -883,33 +883,15 @@ function displayProducts(products) {
 
         const price = escapeHtml(product.price ?? "0");
 
-        const barcode = escapeHtml(product.barcode || "بدون باركود");
-
         const image = product.image
 
             ? escapeHtml(product.image)
 
-            : "https://via.placeholder.com/60?text=No+Img";
+            : "https://via.placeholder.com/120?text=No+Img";
 
         html += `
 
-            <div class="product-card" onclick="openProductModal('${id}')">
-
-                <input
-
-                    type="checkbox"
-
-                    class="product-checkbox"
-
-                    data-id="${id}"
-
-                    onclick="event.stopPropagation()"
-
-                    onchange="toggleDeleteSelectedBtn()"
-
-                    aria-label="تحديد ${name}"
-
-                >
+            <div class="product-card" onclick="openProductModal('${id}')" title="${name}">
 
                 <img
 
@@ -921,7 +903,7 @@ function displayProducts(products) {
 
                     loading="lazy"
 
-                    onerror="this.src='https://via.placeholder.com/60?text=No+Img'"
+                    onerror="this.src='https://via.placeholder.com/120?text=No+Img'"
 
                 >
 
@@ -931,31 +913,9 @@ function displayProducts(products) {
 
                     <p class="product-price-txt">
 
-                        السعر: <strong>${price} ج.م</strong>
+                        <strong>${price} ج.م</strong>
 
                     </p>
-
-                    <p class="product-barcode-txt">
-
-                        الباركود: ${barcode}
-
-                    </p>
-
-                </div>
-
-                <div class="actions-group" onclick="event.stopPropagation()">
-
-                    <button type="button" class="btn-edit" onclick="editProduct('${id}')">
-
-                        تعديل
-
-                    </button>
-
-                    <button type="button" class="btn-delete" onclick="deleteProduct('${id}')">
-
-                        حذف
-
-                    </button>
 
                 </div>
 
@@ -1007,6 +967,106 @@ function searchProducts() {
 
     displayProducts(filtered);
 
+}
+
+function filterAddProductSearch() {
+
+    const input = document.getElementById("addProductQuickSearch");
+
+    const list = document.getElementById("addProductQuickResults");
+
+    if (!input || !list) return;
+
+    const q = input.value.trim().toLowerCase();
+
+    if (!q) {
+        list.innerHTML = "";
+        input.dataset.quickSelectedIndex = "-1";
+        return;
+    }
+
+    const filtered = allProductsCache
+        .filter(product => {
+            const name = String(product.name ?? "").toLowerCase();
+            const price = String(product.price ?? "").toLowerCase();
+            const barcode = String(product.barcode ?? "").toLowerCase();
+            return name.includes(q) || price.includes(q) || barcode.includes(q);
+        })
+        .slice(0, 8);
+
+    if (!filtered.length) {
+        list.innerHTML = '<div class="quick-empty">لا توجد منتجات</div>';
+        input.dataset.quickSelectedIndex = "-1";
+        return;
+    }
+
+    list.innerHTML = filtered.map((product, index) => `
+        <button type="button" class="quick-product-item${index === Number(input.dataset.quickSelectedIndex || 0) ? " active" : ""}" data-index="${index}" data-product-id="${product.id}" onclick="fillFromQuickProductSearch('${product.id}')">
+            <span>${escapeHtml(product.name || "بدون اسم")}</span>
+            <small>${escapeHtml(product.price ?? "0")} ج.م</small>
+        </button>
+    `).join("");
+
+    input.dataset.quickSelectedIndex = String(Number(input.dataset.quickSelectedIndex || 0));
+
+    if (!input.dataset.quickKeybound) {
+        input.dataset.quickKeybound = "1";
+        input.addEventListener("keydown", function (event) {
+            const items = Array.from(document.querySelectorAll(".quick-product-item"));
+            if (!items.length) return;
+
+            const currentIndex = Number(input.dataset.quickSelectedIndex || 0);
+
+            if (event.key === "ArrowDown") {
+                event.preventDefault();
+                const nextIndex = Math.min(currentIndex + 1, items.length - 1);
+                input.dataset.quickSelectedIndex = String(nextIndex);
+                items.forEach((item, index) => item.classList.toggle("active", index === nextIndex));
+                items[nextIndex].scrollIntoView({ block: "nearest", inline: "nearest" });
+            }
+
+            if (event.key === "ArrowUp") {
+                event.preventDefault();
+                const prevIndex = Math.max(currentIndex - 1, 0);
+                input.dataset.quickSelectedIndex = String(prevIndex);
+                items.forEach((item, index) => item.classList.toggle("active", index === prevIndex));
+                items[prevIndex].scrollIntoView({ block: "nearest", inline: "nearest" });
+            }
+
+            if (event.key === "Enter") {
+                const activeIndex = Number(input.dataset.quickSelectedIndex || 0);
+                const activeItem = items[activeIndex];
+                if (activeItem) {
+                    event.preventDefault();
+                    activeItem.click();
+                }
+            }
+
+            if (event.key === "Escape") {
+                list.innerHTML = "";
+                input.dataset.quickSelectedIndex = "-1";
+            }
+        });
+    }
+}
+
+function fillFromQuickProductSearch(id) {
+    const product = getProductById(id);
+    if (!product) return;
+
+    document.getElementById("editingId").value = product.id;
+    document.getElementById("productName").value = product.name || "";
+    document.getElementById("productPrice").value = product.price ?? "";
+    document.getElementById("productBarcode").value = product.barcode === "بدون باركود" ? "" : (product.barcode || "");
+    document.getElementById("productImageUrl").value = product.image || "";
+    document.getElementById("addProductQuickSearch").value = "";
+    document.getElementById("addProductQuickResults").innerHTML = "";
+
+    const saveBtn = document.getElementById("saveProductBtn");
+    if (saveBtn) saveBtn.textContent = "حفظ التعديل";
+
+    switchTab("add");
+    showToast("تم تحميل المنتج");
 }
 
 function setupAutoSelectProductFields() {
@@ -1111,6 +1171,14 @@ function runConfirmCallback() {
 
     }
 
+}
+
+function deleteProductFromModal() {
+    const modal = document.getElementById("productModal");
+    const productId = modal ? modal.dataset.productId : "";
+    if (!productId) return;
+    closeProductModal();
+    deleteProduct(productId);
 }
 
 function deleteProduct(id) {
@@ -1312,14 +1380,45 @@ async function deleteSelectedProducts() {
 }
 
 function openProductModal(id) {
-    const product=getProductById(id); if(!product){showToast("المنتج غير موجود.",false);return;}
-    const image=document.getElementById("modalImg"),name=document.getElementById("modalName"),price=document.getElementById("modalPrice"),barcode=document.getElementById("modalBarcode"),modal=document.getElementById("productModal");
-    if(image){image.src=product.image||"https://via.placeholder.com/130?text=No+Img";image.onerror=()=>{image.src="https://via.placeholder.com/130?text=No+Img";};}
-    if(name)name.textContent=product.name||"بدون اسم"; if(barcode)barcode.textContent="الباركود: "+(product.barcode||"بدون باركود");
-    const updates=allPriceUpdatesCache.filter(u=>u.productId===id).sort((a,b)=>{const t=x=>x.timestamp&&typeof x.timestamp.toMillis==="function"?x.timestamp.toMillis():Number(x.updateId||0);return t(b)-t(a);});
-    const latest=updates[0];
-    if(price){if(latest&&String(latest.price)===String(product.price))price.innerHTML=`<span class="modal-old-price">${escapeHtml(latest.oldPrice??"")} ج.م</span><span class="modal-new-price">${escapeHtml(product.price??"")} ج.م</span>`;else price.textContent=`${product.price??0} ج.م`;}
-    if(modal)modal.style.display="flex";
+    const product = getProductById(id);
+    if (!product) {
+        showToast("المنتج غير موجود", false);
+        return;
+    }
+
+    const image = document.getElementById("modalImg");
+    const name = document.getElementById("modalName");
+    const price = document.getElementById("modalPrice");
+    const barcode = document.getElementById("modalBarcode");
+    const modal = document.getElementById("productModal");
+
+    if (modal) modal.dataset.productId = id;
+
+    if (image) {
+        image.src = product.image || "https://via.placeholder.com/130?text=No+Img";
+        image.onerror = () => {
+            image.src = "https://via.placeholder.com/130?text=No+Img";
+        };
+    }
+
+    if (name) name.textContent = product.name || "بدون اسم";
+    if (barcode) barcode.textContent = "الباركود: " + (product.barcode || "بدون باركود");
+
+    const updates = allPriceUpdatesCache.filter(u => u.productId === id).sort((a, b) => {
+        const t = x => x.timestamp && typeof x.timestamp.toMillis === "function" ? x.timestamp.toMillis() : Number(x.updateId || 0);
+        return t(b) - t(a);
+    });
+    const latest = updates[0];
+
+    if (price) {
+        if (latest && String(latest.price) === String(product.price)) {
+            price.innerHTML = `<span class="modal-old-price">${escapeHtml(latest.oldPrice ?? "")} ج.م</span><span class="modal-new-price">${escapeHtml(product.price ?? "")} ج.م</span>`;
+        } else {
+            price.textContent = `${product.price ?? 0} ج.م`;
+        }
+    }
+
+    if (modal) modal.style.display = "flex";
 }
 
 function openUpdateModal(docId) {
@@ -1412,7 +1511,10 @@ function closeProductModal() {
 
     const modal = document.getElementById("productModal");
 
-    if (modal) modal.style.display = "none";
+    if (modal) {
+        modal.style.display = "none";
+        modal.dataset.productId = "";
+    }
 
 }
 
@@ -1805,11 +1907,8 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
                         if (targetInput) targetInput.value = "";
                         showToast("تمت القراءة");
                     } else {
-                        switchTab("add");
-                        const barcodeInput = document.getElementById("productBarcode");
-                        if (barcodeInput) barcodeInput.value = scannedCode;
-                        showToast("عفوًا، هذا المنتج غير مسجل", false);
-                        await lookupAndFillProductFromBarcode(scannedCode, { forceName: true });
+                        if (targetInput) targetInput.value = "";
+                        showToast("هذا المنتج غير متوفر", false);
                     }
                     return;
                 }
@@ -1820,7 +1919,8 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
                     if (decodedProduct) {
                         showToast("تمت القراءة");
                     } else {
-                        showToast("المنتج غير مسجل", false);
+                        if (targetInput) targetInput.value = "";
+                        showToast("هذا المنتج غير متوفر", false);
                     }
                     await lookupAndFillProductFromBarcode(scannedCode, { forceName: false });
                     return;
