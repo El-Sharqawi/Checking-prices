@@ -31,7 +31,7 @@ body.dark-mode {
 
 body {
     font-family: 'Tajawal', sans-serif;
-    background: #000 !important;
+    background: var(--bg-body);
     color: var(--text-main);
     margin: 0;
     padding: 15px;
