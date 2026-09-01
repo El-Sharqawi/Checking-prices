@@ -208,41 +208,29 @@ function unlockBodyScrollForModal() {
     }
 }
 
-function isMobileViewport() {
-    return window.matchMedia("(max-width: 768px)").matches;
-}
-
 function smoothScrollFocusedInput(input) {
     if (!input || !(input instanceof HTMLElement)) return;
-    if (!isMobileViewport()) return;
 
-    const keysToWatch = [
-        "posSearchInput",
-        "searchInput",
-        "productBarcode",
-        "shakakSearchInput",
-        "shakakCustomerName",
-        "addProductQuickSearch",
-        "debtsSearchInput"
-    ];
+    const allowedTags = ["INPUT", "TEXTAREA", "SELECT"];
+    if (!allowedTags.includes(input.tagName)) return;
 
-    if (!keysToWatch.includes(input.id)) return;
+    if (!window.matchMedia("(max-width: 768px)").matches) return;
 
-    requestAnimationFrame(() => {
+    setTimeout(() => {
+        if (document.activeElement !== input) return;
+
         const rect = input.getBoundingClientRect();
-        const shouldLift = rect.bottom > window.innerHeight - 180;
+        const isCovered = rect.top < 80 || rect.bottom > window.innerHeight - 120;
 
-        if (!shouldLift) return;
+        if (!isCovered) return;
 
-        const nextTop = Math.max(window.scrollY + rect.top - 90, 0);
-        window.scrollTo({ top: nextTop, behavior: "smooth" });
-    });
+        input.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 300);
 }
 
 document.addEventListener("focusin", (event) => {
     const input = event.target;
     if (!(input instanceof HTMLElement)) return;
-    if (input.tagName !== "INPUT" && input.tagName !== "TEXTAREA") return;
     smoothScrollFocusedInput(input);
 });
 
