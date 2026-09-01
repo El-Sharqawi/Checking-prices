@@ -532,15 +532,15 @@ input:focus {
 
 .modal-content {
     background: var(--card-bg);
-    padding: 30px 24px 22px;
-    border-radius: 22px;
-    width: min(92vw, 380px);
-    max-width: 380px;
-    min-height: 420px;
+    padding: 18px 16px 16px;
+    border-radius: 18px;
+    width: min(88vw, 330px);
+    max-width: 330px;
+    min-height: 360px;
     text-align: center;
     position: relative;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, .3);
-    border: 2px solid var(--border-color);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, .26);
+    border: 1.5px solid var(--border-color);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -549,9 +549,10 @@ input:focus {
 }
 
 .price-updates-modal-content {
-    width: 88%;
-    max-width: 460px;
-    padding: 18px 16px 20px;
+    width: min(90vw, 440px);
+    max-width: 440px;
+    padding: 16px 14px 18px;
+    min-height: auto;
 }
 
 .price-updates-modal-content .monthly-report-header h3 {
@@ -567,20 +568,20 @@ input:focus {
 #priceUpdatesSection .updates-list {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
+    gap: 10px;
 }
 
 #priceUpdatesModalList .product-card,
 #priceUpdatesSection .product-card {
-    min-height: 200px;
-    padding: 12px 10px 14px;
+    min-height: 188px;
+    padding: 10px 8px 12px;
     border-width: 1.5px;
 }
 
 #priceUpdatesModalList .product-thumb,
 #priceUpdatesSection .product-thumb {
-    height: 96px;
-    border-radius: 12px;
+    height: 88px;
+    border-radius: 10px;
     background: #fff;
 }
 
@@ -588,49 +589,68 @@ input:focus {
 #priceUpdatesSection .product-info {
     justify-content: center;
     text-align: center;
-    gap: 4px;
+    gap: 3px;
 }
 
 #priceUpdatesModalList .product-info h4,
 #priceUpdatesSection .product-info h4 {
-    font-size: 16px;
+    font-size: 14px;
     line-height: 1.3;
     font-weight: 900;
 }
 
 #priceUpdatesModalList .price-update-line,
 #priceUpdatesSection .price-update-line {
-    margin-top: 6px;
+    margin-top: 5px;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
     flex-wrap: nowrap;
 }
 
 #priceUpdatesModalList .price-update-old,
 #priceUpdatesSection .price-update-old {
-    font-size: 15px;
+    font-size: 13px;
 }
 
 #priceUpdatesModalList .price-update-new,
 #priceUpdatesSection .price-update-new {
-    font-size: 20px;
+    font-size: 17px;
 }
 
 #priceUpdatesModalList .price-update-barcode,
 #priceUpdatesSection .price-update-barcode {
-    font-size: 12px;
-    margin-top: 4px;
+    font-size: 11px;
+    margin-top: 3px;
 }
 
 @media (max-width: 520px) {
     #priceUpdatesModalList,
     #priceUpdatesSection .updates-list {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
     }
 
     #priceUpdatesModalList .product-card,
     #priceUpdatesSection .product-card {
-        min-height: 178px;
+        min-height: 170px;
+        padding: 8px 6px 10px;
+    }
+
+    #priceUpdatesModalList .product-thumb,
+    #priceUpdatesSection .product-thumb {
+        height: 78px;
+    }
+
+    #priceUpdatesModalList .product-info h4,
+    #priceUpdatesSection .product-info h4 {
+        font-size: 12px;
+    }
+
+    #priceUpdatesModalList .price-update-old,
+    #priceUpdatesSection .price-update-old,
+    #priceUpdatesModalList .price-update-new,
+    #priceUpdatesSection .price-update-new {
+        font-size: 12px;
     }
 }
 
@@ -686,35 +706,36 @@ input:focus {
 }
 
 .modal-img {
-    width: 150px;
-    height: 150px;
+    width: 128px;
+    height: 128px;
     object-fit: contain;
     display: block;
-    margin: 18px auto 12px;
-    border-radius: 12px;
+    margin: 12px auto 10px;
+    border-radius: 10px;
     background: transparent;
     border: 1px solid var(--border-color);
-    padding: 8px;
+    padding: 7px;
     box-sizing: border-box;
 }
 
 .modal-name {
-    font-size: 23px;
+    font-size: 20px;
     font-weight: 900;
-    margin: 10px 0;
+    margin: 8px 0 6px;
     overflow-wrap: anywhere;
     width: 100%;
+    line-height: 1.3;
 }
 
 .modal-price {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 800;
     color: var(--success);
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
 
 .modal-barcode {
-    font-size: 17px;
+    font-size: 14px;
     color: #000000;
     overflow-wrap: anywhere;
     font-weight: 500;
