@@ -217,10 +217,22 @@ function smoothScrollFocusedInput(input) {
         "productBarcode",
         "shakakSearchInput",
         "shakakCustomerName",
-        "addProductQuickSearch"
+        "addProductQuickSearch",
+        "debtsSearchInput"
     ];
 
     if (!keysToWatch.includes(input.id)) return;
+
+    if (window.matchMedia("(max-width: 520px)").matches) {
+        requestAnimationFrame(() => {
+            input.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+                inline: "nearest"
+            });
+        });
+        return;
+    }
 
     requestAnimationFrame(() => {
         const rect = input.getBoundingClientRect();
