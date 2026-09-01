@@ -208,8 +208,13 @@ function unlockBodyScrollForModal() {
     }
 }
 
+function isMobileViewport() {
+    return window.matchMedia("(max-width: 768px)").matches;
+}
+
 function smoothScrollFocusedInput(input) {
     if (!input || !(input instanceof HTMLElement)) return;
+    if (!isMobileViewport()) return;
 
     const keysToWatch = [
         "posSearchInput",
@@ -222,17 +227,6 @@ function smoothScrollFocusedInput(input) {
     ];
 
     if (!keysToWatch.includes(input.id)) return;
-
-    if (window.matchMedia("(max-width: 520px)").matches) {
-        requestAnimationFrame(() => {
-            input.scrollIntoView({
-                behavior: "smooth",
-                block: "center",
-                inline: "nearest"
-            });
-        });
-        return;
-    }
 
     requestAnimationFrame(() => {
         const rect = input.getBoundingClientRect();
