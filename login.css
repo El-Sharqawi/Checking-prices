@@ -11,6 +11,12 @@
     --success: #10b981;
     --hover-bg: #f1f5f9;
     --table-header-bg: #f1f5f9;
+    --app-button-bg: #e8edf3;
+    --app-button-text: #263241;
+    --app-button-border: #d6dee8;
+    --app-button-hover: #dde5ee;
+    --qr-bg-final: #0f766e;
+    --qr-bg-dark: #155e75;
 }
 
 body.dark-mode {
@@ -23,6 +29,10 @@ body.dark-mode {
     --stats-bg: #1e293b;
     --hover-bg: #334155;
     --table-header-bg: #1e293b;
+    --app-button-bg: #253449;
+    --app-button-text: #f8fafc;
+    --app-button-border: #3a4a61;
+    --app-button-hover: #30415a;
 }
 
 * {
@@ -40,6 +50,16 @@ body {
     justify-content: center;
     align-items: center;
     transition: background .3s ease, color .3s ease;
+}
+
+@media (max-width: 768px) {
+    body {
+        padding-bottom: 50vh;
+    }
+
+    .container {
+        padding-bottom: 24px;
+    }
 }
 
 button, input {
@@ -1102,6 +1122,20 @@ input:focus {
     margin-top: 2px;
 }
 
+@media (max-width: 768px) {
+    .pos-autocomplete-results,
+    .shakak-customer-results {
+        max-height: 260px;
+    }
+
+    .pos-search-wrap .pos-autocomplete-results.open-above,
+    .shakak-customer-wrap .shakak-customer-results.open-above {
+        top: auto;
+        bottom: calc(100% + 4px);
+        border-radius: 8px 8px 0 0;
+    }
+}
+
 .shakak-customer-wrap {
     position: relative;
 }
@@ -1452,12 +1486,6 @@ body.dark-mode .amount-remain {
 }
 
 @media(max-width: 520px) {
-    /* .shakak-date-time-grid,
-    .shakak-payment-grid,
-    .shakak-payment-summary {
-        grid-template-columns: 2fr;
-    } */
-
     .pos-search-row,
     .shakak-actions,
     .debt-payment-actions,
@@ -2391,7 +2419,6 @@ button:not(:disabled):active {
     }
 }
 
-/* ===== Final UI refinements ===== */
 :root {
     --app-button-bg: #e8edf3;
     --app-button-text: #263241;
@@ -2412,7 +2439,6 @@ button {
     border-radius: 16px;
 }
 
-/* Header controls: icon only, no frame/background */
 .theme-toggle,
 .refresh-btn {
     width: 42px !important;
@@ -2442,7 +2468,6 @@ body.dark-mode .refresh-btn {
 }
 .refresh-btn { font-size: 30px !important; font-weight: 700 !important; }
 
-/* Unified application buttons */
 .tab-btn,
 .btn-save,
 .btn-edit,
@@ -2486,7 +2511,6 @@ body.dark-mode .refresh-btn {
     box-shadow: 0 7px 16px rgba(15,23,42,.12) !important;
 }
 
-/* QR buttons remain visually distinct */
 .btn-qr-scan, .pos-scan-btn, .shakak-scan-btn {
     background: var(--qr-bg-final) !important;
     color: #fff !important;
@@ -2498,7 +2522,6 @@ body.dark-mode .btn-qr-scan,
 body.dark-mode .pos-scan-btn,
 body.dark-mode .shakak-scan-btn { background: var(--qr-bg-dark) !important; }
 
-/* Quantity controls: black in light mode; high-contrast in dark */
 .quantity-controls button,
 .invoice-qty-controls button,
 .pos-qty-btn {
@@ -2516,7 +2539,6 @@ body.dark-mode .pos-qty-btn {
     border-radius: 9px !important;
 }
 
-/* Note delete matches POS delete */
 .pos-remove-btn {
     width: 34px;
     height: 34px;
@@ -2529,7 +2551,6 @@ body.dark-mode .pos-qty-btn {
     font-size: 22px !important;
 }
 
-/* Customer details: calm fixed button + soft open/close animation */
 .btn-open-debt-details {
     background: #64748b !important;
     color: #fff !important;
@@ -2572,7 +2593,6 @@ body.dark-mode .pos-qty-btn {
     padding-bottom: 10px !important;
 }
 
-/* Statistics cards: consistent gentle hover */
 .stat-card,
 .stat-card-clickable {
     transition: transform .24s ease, box-shadow .24s ease, border-color .24s ease, background .24s ease;
@@ -2858,7 +2878,6 @@ body.dark-mode .pos-qty-btn {
     }
 }
 
-/* Independent price updates screen */
 .price-updates-header {
     display: flex;
     align-items: center;
@@ -2872,7 +2891,6 @@ body.dark-mode .pos-qty-btn {
 .price-update-arrow { color: var(--text-muted); font-weight: 900; }
 .price-update-barcode { margin-top: 3px !important; }
 
-/* الأسعار الجديدة: شاشة مستقلة كاملة بدل ظهورها بجانب لوحة التحكم */
 #priceUpdatesSection {
     width: 100%;
     max-width: 1100px;
@@ -2904,26 +2922,18 @@ body.dark-mode .pos-qty-btn {
     }
 }
 
-/* Dark barcode readability */
 body.dark-mode .product-barcode-txt,
 body.dark-mode .price-update-barcode,
 body.dark-mode .modal-barcode { color: #fff !important; }
 
-/* Compact mobile three-card layout */
 @media (max-width: 520px) {
     .stats-grid { grid-template-columns: 1fr; }
     .theme-toggle, .refresh-btn { top: 10px !important; }
     .refresh-btn { right: 8px !important; }
     .theme-toggle { left: 8px !important; }
 }
-/* =====================================================================
-   تعديلات إضافية للموبايل (طلب العميل) — تصغير الجداول والكروت
-   وترتيبها بشكل أفضل على الشاشات الصغيرة، بدون المساس بشاشة سطح المكتب
-   أو بشاشة "إضافة منتج" أو شاشة "الأسعار الجديدة"
-   ===================================================================== */
 @media (max-width: 560px) {
 
-    /* ---------- 1) شاشة البيع السريع: جدول أوضح وأزرار كمية أفقية ---------- */
     .inline-style-12 {
         overflow-x: visible !important;
         margin-bottom: 14px !important;
@@ -2992,7 +3002,6 @@ body.dark-mode .modal-barcode { color: #fff !important; }
     .inline-style-8, .inline-style-10 { font-size: 15px !important; }
     .inline-style-10 { font-size: 17px !important; }
 
-    /* ---------- 2) شاشة تعديل / حذف: الكروت التلاتة جمب بعض ---------- */
     .stats-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
         gap: 6px !important;
@@ -3024,7 +3033,6 @@ body.dark-mode .modal-barcode { color: #fff !important; }
         font-size: 8.5px !important;
     }
 
-    /* ---------- 3) شاشة Note: تاريخ/وقت أوضح + QR بمحاذاة الحقل ---------- */
     #shakakSection .shakak-date-time-grid {
         gap: 8px !important;
         margin-bottom: 10px !important;
@@ -3069,13 +3077,11 @@ body.dark-mode .modal-barcode { color: #fff !important; }
         align-self: stretch !important;
     }
 
-    /* حقل اسم العميل مش عايز يبقى ماخد نص الشاشة */
     #shakakCustomerName {
         padding: 6px 8px !important;
         font-size: 13px !important;
     }
 
-    /* جدول منتجات الشكك: يظهر بالكامل */
     #shakakSection .table-scroll {
         overflow-x: visible !important;
         margin-bottom: 12px !important;
@@ -3111,7 +3117,6 @@ body.dark-mode .modal-barcode { color: #fff !important; }
         white-space: nowrap !important;
     }
 
-    /* المبلغ المدفوع و المتبقي جمب بعض بدل تحت بعض */
     .shakak-payment-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
         gap: 5px !important;
@@ -3121,7 +3126,6 @@ body.dark-mode .modal-barcode { color: #fff !important; }
         font-size: 13px !important;
     }
 
-    /* ---------- 4) شاشة العملاء: تصغير كل حاجة جوه ---------- */
     #debtsSection .debt-customer-card {
         padding: 10px !important;
         gap: 8px !important;
@@ -3163,7 +3167,6 @@ body.dark-mode .modal-barcode { color: #fff !important; }
         font-size: 13px !important;
     }
 
-    /* ---------- 5) شاشة التقرير اليومي: تاريخ أوضح وكروت أصغر ---------- */
     .daily-report-container {
         display: block !important;
         padding: 10px !important;
@@ -3256,7 +3259,6 @@ body.dark-mode .modal-barcode { color: #fff !important; }
         margin-bottom: 8px !important;
     }
 
-    /* جدول المبيعات: يظهر كامل الحقول */
     #reportsSection .table-scroll {
         overflow-x: visible !important;
     }
@@ -3280,9 +3282,6 @@ body.dark-mode .modal-barcode { color: #fff !important; }
     }
 }
 
-/* =====================================================================
-   طبقة الشكل الاحترافية — تتجاوز التعارضات السابقة
-   ===================================================================== */
 :root {
     --primary: #2563eb;
     --bg-body: #eef2f6;

@@ -208,52 +208,35 @@ function unlockBodyScrollForModal() {
     }
 }
 
-function smoothScrollFocusedInput(input) {
-    if (!input || !(input instanceof HTMLElement)) return;
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.innerWidth <= 768) {
+        const inputs = document.querySelectorAll('input, textarea, select');
 
-    const allowedTags = ["INPUT", "TEXTAREA", "SELECT"];
-    if (!allowedTags.includes(input.tagName)) return;
+        inputs.forEach(element => {
+            element.addEventListener('focus', function() {
+                setTimeout(() => {
+                    const rect = element.getBoundingClientRect();
+                    const outputHeight = window.innerHeight || document.documentElement.clientHeight;
+                    const spaceBelow = outputHeight - rect.bottom;
+                    const shouldOpenAbove = spaceBelow < 220;
 
-    if (!window.matchMedia("(max-width: 768px)").matches) return;
+                    const parent = element.closest('.pos-search-wrap, .shakak-customer-wrap');
+                    const dropdown = parent ? parent.querySelector('.pos-autocomplete-results, .shakak-customer-results') : null;
 
-    setTimeout(() => {
-        if (document.activeElement !== input) return;
+                    if (dropdown) {
+                        dropdown.classList.toggle('open-above', shouldOpenAbove);
+                        dropdown.style.top = shouldOpenAbove ? 'auto' : '100%';
+                        dropdown.style.bottom = shouldOpenAbove ? 'calc(100% + 4px)' : 'auto';
+                    }
 
-        const rect = input.getBoundingClientRect();
-        const isCovered = rect.top < 80 || rect.bottom > window.innerHeight - 120;
-
-        if (!isCovered) return;
-
-        input.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 300);
-}
-
-function bindMobileFocusScrollToAllFields() {
-    const selectors = "input, textarea, select";
-    const fields = document.querySelectorAll(selectors);
-
-    fields.forEach((field) => {
-        if (!field || field.dataset.mobileScrollBound === "true") return;
-        field.dataset.mobileScrollBound = "true";
-        field.addEventListener("focus", () => smoothScrollFocusedInput(field), { passive: true });
-    });
-}
-
-bindMobileFocusScrollToAllFields();
-
-document.addEventListener("focusin", (event) => {
-    const input = event.target;
-    if (!(input instanceof HTMLElement)) return;
-    smoothScrollFocusedInput(input);
-});
-
-const mobileFocusScrollObserver = new MutationObserver(() => {
-    bindMobileFocusScrollToAllFields();
-});
-
-mobileFocusScrollObserver.observe(document.body, {
-    childList: true,
-    subtree: true
+                    window.scrollTo({
+                        top: rect.top + window.scrollY - 200,
+                        behavior: 'smooth'
+                    });
+                }, 350);
+            });
+        });
+    }
 });
 
 function escapeHtml(value) {
@@ -422,7 +405,6 @@ function switchTab(tab) {
     const mainContainer = document.querySelector(".container");
     const priceUpdatesSection = document.getElementById("priceUpdatesSection");
 
-    // شاشة الأسعار الجديدة مستقلة بالكامل عن لوحة التحكم.
     if (mainContainer) {
         mainContainer.style.display = tab === "priceUpdates" ? "none" : "";
     }
