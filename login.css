@@ -2242,7 +2242,7 @@ button:not(:disabled):active {
 }
 
 .pos-shakak-btn {
-    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    background: linear-gradient(135deg, #1c031e, #cc25eb) !important;
     color: #fff !important;
     box-shadow: 0 10px 22px rgba(217, 119, 6, .28);
     border-color: rgba(255,255,255,.25);
