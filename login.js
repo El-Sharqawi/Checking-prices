@@ -121,10 +121,10 @@ let allProductsCache = [];
 let allPriceUpdatesCache = [];
 let allDebtCustomersCache = [];
 let allCustomersCache = [];
+let customerTransactionsCache = new Map();
 let selectedShakakCustomerId = null;
 let selectedDebtCustomerId = null;
 let selectedDebtCustomerData = null;
-
 let confirmCallback = null;
 
 let activeScanner = null;
@@ -160,6 +160,13 @@ function playBeep() {
 
 function playBeepSound() {
     playBeep();
+}
+
+function vibrateAfterScan() {
+    try {
+        if (typeof navigator.vibrate === "function") navigator.vibrate(100);
+    } catch (error) {
+    }
 }
 
 function showToast(msg, isSuccess = true) {
@@ -276,6 +283,16 @@ function isDuplicateProductName(name, ignoreId = "") {
     });
 }
 
+function isDuplicateProductBarcode(barcode, ignoreId = "") {
+    const normalizedBarcode = normalizeBarcode(barcode);
+    if (!normalizedBarcode || normalizedBarcode === "بدونباركود") return false;
+
+    return allProductsCache.some(product => {
+        const currentId = String(product.id || "");
+        return currentId !== ignoreId && normalizeBarcode(product.barcode) === normalizedBarcode;
+    });
+}
+
 function getUpdateById(id) {
 
     return allPriceUpdatesCache.find(update => update.id === id) || null;
@@ -298,10 +315,33 @@ function getImageAsDataUrl(file) {
 
         const reader = new FileReader();
 
-        reader.onload = event => resolve(event.target.result);
+        reader.onload = event => {
+            const image = new Image();
+
+            image.onload = () => {
+                const maxWidth = 400;
+                const scale = Math.min(1, maxWidth / image.naturalWidth);
+                const width = Math.max(1, Math.round(image.naturalWidth * scale));
+                const height = Math.max(1, Math.round(image.naturalHeight * scale));
+                const canvas = document.createElement("canvas");
+                const context = canvas.getContext("2d");
+
+                if (!context) {
+                    reject(new Error("تعذر ضغط صورة المنتج."));
+                    return;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                context.drawImage(image, 0, 0, width, height);
+                resolve(canvas.toDataURL("image/jpeg", 0.7));
+            };
+
+            image.onerror = () => reject(new Error("تعذر قراءة صورة المنتج."));
+            image.src = event.target.result;
+        };
 
         reader.onerror = () => reject(new Error("تعذر قراءة صورة المنتج."));
-
         reader.readAsDataURL(file);
 
     });
@@ -585,7 +625,7 @@ function initRealtimeListeners() {
                     totalDebt: Number(data.totalDebt || 0)
                 };
 
-                if (customer.customerName) {
+                if (customer.customerName && customer.totalDebt > 0.000001) {
                     allCustomersCache.push(customer);
                 }
 
@@ -634,7 +674,7 @@ function updateStats(products) {
 
     if (statMax) {
 
-        statMax.textContent = `${max} ج.م`;
+        statMax.textContent = `${formatCurrency(max)} ج.م`;
 
     }
 
@@ -686,6 +726,18 @@ async function saveProduct() {
         return;
     }
 
+    if (isDuplicateProductBarcode(barcode, editingId)) {
+        showToast("هذا الباركود مستخدم بالفعل لمنتج آخر", false);
+        return;
+    }
+
+    if (saveButton?.disabled) return;
+    if (saveButton) {
+        saveButton.disabled = true;
+        saveButton.classList.add("is-saving");
+        saveButton.textContent = editingId ? "جاري التعديل..." : "جاري الحفظ...";
+    }
+
     try {
 
         const imageFile =
@@ -704,7 +756,6 @@ async function saveProduct() {
             await updateExistingProduct(editingId, name, priceRaw, barcode, newImage);
             document.getElementById("editingId").value = "";
             resetFormFields();
-            if (saveButton) saveButton.textContent = "حفظ";
             showToast("تم التعديل");
         } else {
 
@@ -722,17 +773,9 @@ async function saveProduct() {
 
             };
 
+            await db.collection("products").add(newProduct);
             resetFormFields();
-
             showToast("تم الحفظ");
-
-            db.collection("products").add(newProduct).catch(err => {
-
-                console.error("Background save error:", err);
-
-                showToast("تعذر الحفظ", false);
-
-            });
 
         }
 
@@ -742,8 +785,20 @@ async function saveProduct() {
 
         if (error && error.message === "DUPLICATE_PRODUCT_NAME") {
             showToast("هذا المنتج موجود", false);
+        } else if (error && error.message === "DUPLICATE_PRODUCT_BARCODE") {
+            showToast("هذا الباركود مستخدم بالفعل لمنتج آخر", false);
         } else {
             showToast("تعذر الحفظ", false);
+        }
+
+    } finally {
+
+        if (saveButton) {
+            saveButton.disabled = false;
+            saveButton.classList.remove("is-saving");
+            saveButton.textContent = document.getElementById("editingId").value.trim()
+                ? "حفظ التعديل"
+                : "حفظ";
         }
 
     }
@@ -766,6 +821,10 @@ async function updateExistingProduct(id, name, price, barcode, newImage) {
 
     if (isDuplicateProductName(name, id)) {
         throw new Error("DUPLICATE_PRODUCT_NAME");
+    }
+
+    if (isDuplicateProductBarcode(barcode, id)) {
+        throw new Error("DUPLICATE_PRODUCT_BARCODE");
     }
 
     const oldPrice = Number(old.price);
@@ -808,50 +867,29 @@ async function updateExistingProduct(id, name, price, barcode, newImage) {
                 return bTime - aTime;
             })[0];
 
-        if (latestProductUpdate && latestProductUpdate.id) {
+        const updateRef = latestProductUpdate && latestProductUpdate.id
+            ? db.collection("price_updates_list").doc(latestProductUpdate.id)
+            : db.collection("price_updates_list").doc();
 
-            const updateRef = db.collection("price_updates_list").doc(latestProductUpdate.id);
+        batch.set(updateRef, {
 
-            batch.update(updateRef, {
+            updateId: Date.now(),
 
-                name,
+            productId: id,
 
-                image: updatedData.image,
+            name,
 
-                oldPrice: String(old.price ?? ""),
+            image: updatedData.image,
 
-                price,
+            oldPrice: String(old.price ?? ""),
 
-                barcode,
+            price,
 
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            barcode,
 
-            });
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
 
-        } else {
-
-            const updateRef = db.collection("price_updates_list").doc();
-
-            batch.set(updateRef, {
-
-                updateId: Date.now(),
-
-                productId: id,
-
-                name,
-
-                image: updatedData.image,
-
-                oldPrice: String(old.price ?? ""),
-
-                price,
-
-                barcode,
-
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-
-            });
-        }
+        });
 
         await batch.commit();
 
@@ -880,8 +918,6 @@ function resetFormFields() {
     const imagePreviewWrap = document.getElementById("imagePreviewWrap");
 
     if (name) name.value = "";
-
-    if (price) price.value = "";
 
     if (barcode) barcode.value = "";
 
@@ -934,7 +970,7 @@ function displayProducts(products) {
 
         const name = escapeHtml(product.name || "بدون اسم");
 
-        const price = escapeHtml(product.price ?? "0");
+        const price = escapeHtml(formatCurrency(product.price ?? 0));
 
         const image = product.image
 
@@ -984,6 +1020,14 @@ function displayProducts(products) {
 
 }
 
+function productMatchesQuery(product, query) {
+    const normalizedQuery = String(query || "").trim().toLowerCase();
+    if (!normalizedQuery) return true;
+
+    return [product.name, product.price, product.barcode]
+        .some(value => String(value ?? "").toLowerCase().includes(normalizedQuery));
+}
+
 function searchProducts() {
 
     const input = document.getElementById("searchInput");
@@ -998,25 +1042,7 @@ function searchProducts() {
 
     }
 
-    const filtered = allProductsCache.filter(product => {
-
-        const name = String(product.name ?? "").toLowerCase();
-
-        const price = String(product.price ?? "").toLowerCase();
-
-        const barcode = String(product.barcode ?? "").toLowerCase();
-
-        return (
-
-            name.includes(q) ||
-
-            price.includes(q) ||
-
-            barcode.includes(q)
-
-        );
-
-    });
+    const filtered = allProductsCache.filter(product => productMatchesQuery(product, q));
 
     displayProducts(filtered);
 
@@ -1039,12 +1065,7 @@ function filterAddProductSearch() {
     }
 
     const filtered = allProductsCache
-        .filter(product => {
-            const name = String(product.name ?? "").toLowerCase();
-            const price = String(product.price ?? "").toLowerCase();
-            const barcode = String(product.barcode ?? "").toLowerCase();
-            return name.includes(q) || price.includes(q) || barcode.includes(q);
-        })
+        .filter(product => productMatchesQuery(product, q))
         .slice(0, 8);
 
     if (!filtered.length) {
@@ -1056,7 +1077,7 @@ function filterAddProductSearch() {
     list.innerHTML = filtered.map((product, index) => `
         <button type="button" class="quick-product-item${index === Number(input.dataset.quickSelectedIndex || 0) ? " active" : ""}" data-index="${index}" data-product-id="${product.id}" onclick="fillFromQuickProductSearch('${product.id}')">
             <span>${escapeHtml(product.name || "بدون اسم")}</span>
-            <small>${escapeHtml(product.price ?? "0")} ج.م</small>
+            <small>${escapeHtml(formatCurrency(product.price ?? 0))} ج.م</small>
         </button>
     `).join("");
 
@@ -1133,49 +1154,6 @@ function setupAutoSelectProductFields() {
             });
         });
     });
-}
-
-function editProduct(id) {
-
-    const product = getProductById(id);
-
-    if (!product) {
-
-        showToast("المنتج غير موجود", false);
-
-        return;
-
-    }
-
-    document.getElementById("editingId").value = id;
-
-    document.getElementById("productName").value = product.name || "";
-
-    document.getElementById("productPrice").value = product.price ?? "";
-
-    document.getElementById("productBarcode").value =
-
-        product.barcode === "بدون باركود" ? "" : (product.barcode || "");
-
-    const saveBtn = document.getElementById("saveProductBtn");
-    if (saveBtn) saveBtn.textContent = "حفظ التعديل";
-
-    const imageName = document.getElementById("imageFileName");
-
-    if (imageName) {
-
-        imageName.textContent = product.image
-
-            ? "الصورة الحالية محفوظة  اختر صورة جديدة لاستبدالها."
-
-            : "";
-
-    }
-
-    switchTab("add");
-
-    showToast("تم تحميل المنتج");
-
 }
 
 function showConfirm(message, callback) {
@@ -1292,24 +1270,6 @@ function deleteProduct(id) {
 
 }
 
-function toggleSelectAll() {
-
-    const checkboxes = document.querySelectorAll(".product-checkbox");
-
-    if (!checkboxes.length) return;
-
-    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-
-    checkboxes.forEach(cb => {
-
-        cb.checked = !allChecked;
-
-    });
-
-    toggleDeleteSelectedBtn();
-
-}
-
 function toggleDeleteSelectedBtn() {
 
     const checked = document.querySelectorAll(".product-checkbox:checked");
@@ -1325,6 +1285,14 @@ function toggleDeleteSelectedBtn() {
     if (selectBtn) {
         if (showBulk) { selectBtn.style.display = "block"; selectBtn.textContent = checked.length === total.length ? "إلغاء الكل" : "تحديد الكل"; }
         else selectBtn.style.display = "none";
+    }
+}
+
+async function deleteFirestoreRefsInChunks(refs, chunkSize = 50) {
+    for (let index = 0; index < refs.length; index += chunkSize) {
+        const batch = db.batch();
+        refs.slice(index, index + chunkSize).forEach(ref => batch.delete(ref));
+        await batch.commit();
     }
 }
 
@@ -1353,30 +1321,14 @@ async function deleteSelectedProducts() {
         async () => {
 
             try {
-
-                if (checked.length > 500) {
-
-                    showToast("الحد الأقصى 500", false);
-
-                    return;
-
-                }
-
                 const productIds = checked
 
                     .map(cb => cb.getAttribute("data-id"))
 
                     .filter(Boolean);
 
-                const batch = db.batch();
-
-                productIds.forEach(id => {
-
-                    batch.delete(db.collection("products").doc(id));
-
-                });
-
-                await batch.commit();
+                const productRefs = productIds.map(id => db.collection("products").doc(id));
+                await deleteFirestoreRefsInChunks(productRefs);
 
                 const updateRefs = [];
 
@@ -1391,29 +1343,10 @@ async function deleteSelectedProducts() {
                         .get();
 
                     snapshot.forEach(doc => updateRefs.push(doc.ref));
-
                 }
 
                 if (updateRefs.length > 0) {
-
-                    if (updateRefs.length > 500) {
-
-                        console.warn(
-
-                            "Some price update records were not deleted because they exceed the 500-operation batch limit."
-
-                        );
-
-                    } else {
-
-                        const updateBatch = db.batch();
-
-                        updateRefs.forEach(ref => updateBatch.delete(ref));
-
-                        await updateBatch.commit();
-
-                    }
-
+                    await deleteFirestoreRefsInChunks(updateRefs);
                 }
 
                 showToast("تم الحذف", false);
@@ -1462,12 +1395,18 @@ function openProductModal(id) {
         return t(b) - t(a);
     });
     const latest = updates[0];
+    const updatedAt = document.getElementById("modalUpdatedAt");
+
+    if (updatedAt) {
+        updatedAt.textContent = latest ? formatPriceUpdateDateTime(latest) : "";
+        updatedAt.style.display = latest ? "" : "none";
+    }
 
     if (price) {
         if (latest && String(latest.price) === String(product.price)) {
-            price.innerHTML = `<span class="modal-old-price">${escapeHtml(latest.oldPrice ?? "")} ج.م</span><span class="modal-new-price">${escapeHtml(product.price ?? "")} ج.م</span>`;
+            price.innerHTML = `<span class="modal-old-price">${escapeHtml(formatCurrency(latest.oldPrice ?? 0))} ج.م</span><span class="modal-new-price">${escapeHtml(formatCurrency(product.price ?? 0))} ج.م</span>`;
         } else {
-            price.textContent = `${product.price ?? 0} ج.م`;
+            price.textContent = `${formatCurrency(product.price ?? 0)} ج.م`;
         }
     }
 
@@ -1517,14 +1456,13 @@ function openUpdateModal(docId) {
         name.textContent = update.name || "بدون اسم";
 
     }
-
     if (price) {
 
         price.innerHTML = "";
 
         const oldSpan = document.createElement("span");
 
-        oldSpan.textContent = `${update.oldPrice ?? ""} ج.م`;
+        oldSpan.textContent = `${formatCurrency(update.oldPrice ?? 0)} ج.م`;
 
         oldSpan.style.textDecoration = "line-through";
 
@@ -1534,7 +1472,7 @@ function openUpdateModal(docId) {
 
         const newSpan = document.createElement("span");
 
-        newSpan.textContent = `${update.price ?? ""} ج.م`;
+        newSpan.textContent = `${formatCurrency(update.price ?? 0)} ج.م`;
 
         newSpan.style.color = "#10b981";
 
@@ -1555,6 +1493,9 @@ function openUpdateModal(docId) {
             "الباركود: " + (update.barcode || "بدون باركود");
 
     }
+
+    const updatedAt = document.getElementById("modalUpdatedAt");
+    if (updatedAt) updatedAt.textContent = formatPriceUpdateDateTime(update);
 
     if (modal) modal.style.display = "flex";
 
@@ -1577,7 +1518,14 @@ function displayPriceUpdates(updates) {
 
     if (!list) return;
 
-    if (updates.length === 0) {
+    const latestByProduct = new Map();
+    updates.forEach(update => {
+        const key = update.productId || update.id;
+        if (!latestByProduct.has(key)) latestByProduct.set(key, update);
+    });
+    const uniqueUpdates = Array.from(latestByProduct.values());
+
+    if (uniqueUpdates.length === 0) {
 
         list.innerHTML =
 
@@ -1589,15 +1537,15 @@ function displayPriceUpdates(updates) {
 
     let html = "";
 
-    updates.forEach(update => {
+    uniqueUpdates.forEach(update => {
 
         const id = escapeHtml(update.id);
 
         const name = escapeHtml(update.name || "بدون اسم");
 
-        const oldPrice = escapeHtml(update.oldPrice ?? "");
+        const oldPrice = escapeHtml(formatCurrency(update.oldPrice ?? 0));
 
-        const price = escapeHtml(update.price ?? "");
+        const price = escapeHtml(formatCurrency(update.price ?? 0));
 
         const image = update.image
 
@@ -1632,6 +1580,7 @@ function displayPriceUpdates(updates) {
                             <strong class="price-update-new">${price} ج.م</strong>
                         </div>
                         <div class="price-update-barcode">الباركود: ${escapeHtml(update.barcode || "بدون باركود")}</div>
+                        <div class="price-update-date">${escapeHtml(formatPriceUpdateDateTime(update))}</div>
                     </div>
                 </div>
 
@@ -1932,6 +1881,7 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
         activeScanner = new Html5Qrcode(elementId);
 
         activeScannerElementId = elementId;
+        let scanHandled = false;
 
         const config = {
 
@@ -1968,8 +1918,13 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
 
             async decodedText => {
 
+                if (scanHandled) return;
+                scanHandled = true;
+
                 const scannedCode = String(decodedText || "").trim();
                 const targetInput = document.getElementById(inputTargetId);
+
+                await stopCurrentScanner();
 
                 if (targetInput) {
 
@@ -1980,17 +1935,19 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
                 if (inputTargetId === "shakakSearchInput") {
                     const decodedProduct = findLocalProductByBarcode(scannedCode);
                     if (decodedProduct) {
+                        vibrateAfterScan();
                         addProductToShakakCart(decodedProduct);
                         targetInput.value = "";
                     } else {
                         showToast("المنتج غير مسجل", false);
                     }
+                    return;
                 }
 
                 if (inputTargetId === "posSearchInput") {
                     const decodedProduct = findLocalProductByBarcode(scannedCode);
-                    await stopCurrentScanner();
                     if (decodedProduct) {
+                        vibrateAfterScan();
                         addProductToPosCart(decodedProduct);
                         if (targetInput) targetInput.value = "";
                         showToast("تمت القراءة");
@@ -2002,9 +1959,9 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
                 }
 
                 if (inputTargetId === "productBarcode") {
-                    await stopCurrentScanner();
                     const decodedProduct = findLocalProductByBarcode(scannedCode);
-                    if (decodedProduct) {
+                    if (decodedProduct || isLookupBarcode(scannedCode)) {
+                        vibrateAfterScan();
                         showToast("تمت القراءة");
                     } else {
                         if (targetInput) targetInput.value = "";
@@ -2016,13 +1973,12 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
 
                 if (isSearch) {
 
+                    if (scannedCode) vibrateAfterScan();
                     searchProducts();
 
                 }
 
                 showToast("تمت القراءة");
-
-                await stopCurrentScanner();
 
             },
 
@@ -2097,6 +2053,7 @@ function openMonthlyReportModal() {
     if (input && !input.value) {
         input.value = getCurrentMonthValue();
     }
+    syncMonthlyReportMonthDisplay();
     if (modal) {
         modal.style.display = 'flex';
         lockBodyScrollForModal();
@@ -2136,9 +2093,29 @@ function getCurrentMonthValue(date = new Date()) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
+function formatArabicMonth(monthValue) {
+    const match = String(monthValue || '').match(/^(\d{4})-(\d{2})$/);
+    if (!match) return 'الشهر';
+    const date = new Date(Number(match[1]), Number(match[2]) - 1, 1, 12);
+    return new Intl.DateTimeFormat('ar-EG', { month: 'long' }).format(date);
+}
+
+function syncMonthlyReportMonthDisplay() {
+    const input = document.getElementById('monthlyReportMonthInput');
+    const display = document.getElementById('monthlyReportMonthDisplay');
+    if (input && display) display.textContent = formatArabicMonth(input.value);
+}
+
 function formatCurrency(value) {
     const num = Number(value || 0);
-    return isNaN(num) ? '0.00' : num.toFixed(2);
+    return Number.isFinite(num)
+        ? num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        : '0.00';
+}
+
+function formatNumber(value) {
+    const num = Number(value || 0);
+    return Number.isFinite(num) ? num.toLocaleString("en-US") : "0";
 }
 
 function normalizeDateValue(value) {
@@ -2251,10 +2228,31 @@ function getMonthRowsFromSnapshot(snapshot, monthValue) {
     return rows;
 }
 
+function getMonthDateRange(monthValue) {
+    const match = String(monthValue || "").match(/^(\d{4})-(\d{2})$/);
+    if (!match) return null;
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    if (month < 1 || month > 12) return null;
+
+    const lastDay = new Date(year, month, 0).getDate();
+    return {
+        startDate: `${match[1]}-${match[2]}-01`,
+        endDate: `${match[1]}-${match[2]}-${String(lastDay).padStart(2, "0")}`
+    };
+}
+
 function safeQuery(db, collectionName, monthValue) {
     if (!db || !db.collection) return Promise.resolve([]);
 
-    return db.collection(collectionName).get()
+    const range = getMonthDateRange(monthValue);
+    if (!range) return Promise.resolve([]);
+
+    return db.collection(collectionName)
+        .where("date", ">=", range.startDate)
+        .where("date", "<=", range.endDate)
+        .get()
         .then((snapshot) => getMonthRowsFromSnapshot(snapshot, monthValue))
         .catch(() => []);
 }
@@ -2331,7 +2329,7 @@ async function loadMonthlyReport() {
     }
 
     const db = firebase.firestore();
-    const collections = ['daily_sales', 'shakak_records', 'sales', 'saleRecords', 'transactions', 'orders', 'records'];
+    const collections = ['daily_sales', 'shakak_records'];
 
     try {
         const results = await Promise.all(collections.map((name) => safeQuery(db, name, monthValue)));
@@ -2346,6 +2344,9 @@ async function loadMonthlyReport() {
         }
 
         const summary = buildMonthlyReportSummary(rows);
+
+            const monthlyTopProduct = document.getElementById('monthlyReportTopProduct');
+            if (monthlyTopProduct) monthlyTopProduct.textContent = summary.topProduct;
 
         if (tbody) {
             const productSummaryMap = {};
@@ -2372,7 +2373,7 @@ async function loadMonthlyReport() {
                 .sort((a, b) => b[1].quantity - a[1].quantity)
                 .forEach(([, stats]) => {
                     const isCash = String(stats.type || 'كاش') === 'كاش';
-                    const typeClass = isCash ? 'monthly-report-type-cash' : 'monthly-report-type-credit';
+                    const typeClass = isCash ? 'report-type-badge report-type-cash' : 'report-type-badge report-type-credit';
                     const typeText = isCash ? 'كاش' : 'شكك';
                     productRows.push(`<tr><td>${escapeHtml(stats.name)}</td><td>${stats.quantity}</td><td>${formatCurrency(stats.total)}</td><td><span class="${typeClass}">${escapeHtml(typeText)}</span></td></tr>`);
                 });
@@ -2407,7 +2408,23 @@ window.addEventListener("DOMContentLoaded", () => {
     const monthlyMonthInput = document.getElementById('monthlyReportMonthInput');
     if (monthlyMonthInput) {
         monthlyMonthInput.value = getCurrentMonthValue();
-        monthlyMonthInput.addEventListener('change', loadMonthlyReport);
+        monthlyMonthInput.addEventListener('change', () => {
+            syncMonthlyReportMonthDisplay();
+            loadMonthlyReport();
+        });
+        const monthlyMonthPicker = document.getElementById('monthlyReportMonthPicker');
+        const openMonthPicker = () => {
+            monthlyMonthInput.focus();
+            monthlyMonthInput.showPicker?.();
+        };
+        monthlyMonthPicker?.addEventListener('click', openMonthPicker);
+        monthlyMonthPicker?.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openMonthPicker();
+            }
+        });
+        syncMonthlyReportMonthDisplay();
     }
 
     switchTab("pos");
@@ -2497,7 +2514,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     <span class="inline-style-25">${escapeHtml(product.name)}</span>
 
-                    <span class="inline-style-26">${escapeHtml(product.price)} جنيه</span>
+                    <span class="inline-style-26">${escapeHtml(formatCurrency(product.price))} جنيه</span>
 
                 `;
 
@@ -2653,8 +2670,8 @@ function renderCartRow(item, itemTotal, qtyHandler, removeHandler) {
                     <button type="button" class="pos-qty-btn" onclick="${qtyHandler}('${id}', 1)">+</button>
                 </div>
             </td>
-            <td class="lux-price">${(Number(item.price) || 0).toFixed(2)}</td>
-            <td class="lux-total">${itemTotal.toFixed(2)}</td>
+            <td class="lux-price">${formatCurrency(item.price)}</td>
+            <td class="lux-total">${formatCurrency(itemTotal)}</td>
             <td>
                 <button type="button" class="pos-remove-btn" aria-label="حذف المنتج" onclick="${removeHandler}('${id}')">×</button>
             </td>
@@ -2679,7 +2696,7 @@ function renderPosTable() {
     }
 
     if (countSpan) countSpan.textContent = posCart.length;
-    if (grandTotalSpan) grandTotalSpan.textContent = grandTotal.toFixed(2);
+    if (grandTotalSpan) grandTotalSpan.textContent = formatCurrency(grandTotal);
 }
 
 function updatePosQty(id, change) {
@@ -2762,20 +2779,6 @@ function getLocalTimeValue(date = new Date()) {
     return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
-function formatDisplayTime(timeValue) {
-    if (!timeValue) return "-";
-    const match = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(String(timeValue).trim());
-    if (!match) return String(timeValue);
-
-    let hours = Number(match[1]);
-    const minutes = match[2];
-    const suffix = hours >= 12 ? "مساءً" : "صباحًا";
-    hours = hours % 12;
-    if (hours === 0) hours = 12;
-
-    return `${hours}:${minutes} ${suffix}`;
-}
-
 function initializeShakakDateTime(force = false) {
     const dateInput = document.getElementById("shakakDate");
     const timeInput = document.getElementById("shakakTime");
@@ -2802,9 +2805,9 @@ function updateShakakPaymentSummary() {
 
     if (paidInput && Number(paidInput.value) !== paid) paidInput.value = paid.toFixed(2);
     if (remainingInput) remainingInput.value = remaining.toFixed(2);
-    if (summaryTotal) summaryTotal.textContent = total.toFixed(2);
-    if (summaryPaid) summaryPaid.textContent = paid.toFixed(2);
-    if (summaryDebt) summaryDebt.textContent = remaining.toFixed(2);
+    if (summaryTotal) summaryTotal.textContent = formatCurrency(total);
+    if (summaryPaid) summaryPaid.textContent = formatCurrency(paid);
+    if (summaryDebt) summaryDebt.textContent = formatCurrency(remaining);
 }
 
 function setupShakakCustomerAutocomplete() {
@@ -2893,7 +2896,7 @@ function renderShakakCustomerSuggestions(query) {
         const item = document.createElement("div");
         item.className = "shakak-customer-suggestion-item";
         const debtText = Number(customer.totalDebt || 0) > 0.000001
-            ? `عليه ${Number(customer.totalDebt).toFixed(2)} جنيه`
+            ? `عليه ${formatCurrency(customer.totalDebt)} جنيه`
             : "بدون دين";
 
         item.innerHTML = `
@@ -2905,7 +2908,7 @@ function renderShakakCustomerSuggestions(query) {
             selectedShakakCustomerId = customer.id;
             results.style.display = "none";
             const currentDebt = Number(customer.totalDebt || 0);
-            input.title = currentDebt > 0 ? `الدين الحالي: ${currentDebt.toFixed(2)} جنيه` : "لا يوجد دين حالي";
+            input.title = currentDebt > 0 ? `الدين الحالي: ${formatCurrency(currentDebt)} جنيه` : "لا يوجد دين حالي";
         });
 
         results.appendChild(item);
@@ -2977,7 +2980,7 @@ function renderShakakSuggestions(query) {
     matched.forEach(product => {
         const item = document.createElement("div");
         item.className = "shakak-suggestion-item";
-        item.innerHTML = `<span>${escapeHtml(product.name || "بدون اسم")}</span><span class="suggestion-price">${escapeHtml(product.price ?? 0)} جنيه</span>`;
+        item.innerHTML = `<span>${escapeHtml(product.name || "بدون اسم")}</span><span class="suggestion-price">${escapeHtml(formatCurrency(product.price ?? 0))} جنيه</span>`;
         item.addEventListener("click", () => {
             addProductToShakakCart(product);
             input.value = "";
@@ -3021,7 +3024,7 @@ function renderShakakTable() {
     }
 
     if (count) count.textContent = shakakCart.length;
-    if (total) total.textContent = grandTotal.toFixed(2);
+    if (total) total.textContent = formatCurrency(grandTotal);
     updateShakakPaymentSummary();
 }
 
@@ -3042,18 +3045,29 @@ function normalizeCustomerName(name) {
     return String(name || "").trim().replace(/\s+/g, " ").toLowerCase();
 }
 
-function getCustomerDocId(name) {
-    const value = normalizeCustomerName(name);
-    let hash1 = 2166136261;
-    let hash2 = 16777619;
-    for (let i = 0; i < value.length; i++) {
-        const code = value.charCodeAt(i);
-        hash1 ^= code;
-        hash1 = Math.imul(hash1, 16777619);
-        hash2 ^= code + i;
-        hash2 = Math.imul(hash2, 2246822519);
-    }
-    return `customer_${(hash1 >>> 0).toString(36)}_${(hash2 >>> 0).toString(36)}`;
+function formatArabicTime12(value) {
+    if (!value) return "-";
+    const match = String(value).match(/^(\d{1,2}):(\d{2})/);
+    if (!match) return String(value);
+    let hours = Number(match[1]);
+    const minutes = match[2];
+    const period = hours >= 12 ? "مساءً" : "صباحاً";
+    hours = hours % 12 || 12;
+    return `${hours}:${minutes} ${period}`;
+}
+
+function formatArabicDate(value) {
+    if (!value) return "-";
+    const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return String(value);
+    const [, year, month, day] = match;
+    return `${day}/${month}/${year}`;
+}
+
+function formatPriceUpdateDateTime(update) {
+    const date = normalizeDateValue(update?.timestamp || update?.updatedAt || update?.updateId);
+    if (!date) return "تاريخ التعديل: غير متوفر";
+    return `آخر تعديل: ${formatArabicDate(getLocalDateValue(date))} - ${formatArabicTime12(getLocalTimeValue(date))}`;
 }
 
 async function saveShakakRecord() {
@@ -3073,12 +3087,23 @@ async function saveShakakRecord() {
     if (!date || !time) { showToast("تأكد من التاريخ والوقت", false); return; }
     if (!shakakCart.length || total <= 0) { showToast("أضف منتجاً", false); return; }
     if (!Number.isFinite(paid) || paid < 0 || paid > total) { showToast("قيمة الدفع غير صحيحة", false); return; }
+    if (saveButton?.disabled) return;
+    if (saveButton) {
+        saveButton.disabled = true;
+        saveButton.classList.add("is-saving");
+        saveButton.textContent = "جاري الحفظ...";
+    }
 
     const remaining = Number((total - paid).toFixed(2));
     const selectedCustomer = selectedShakakCustomerId
         ? allCustomersCache.find(customer => customer.id === selectedShakakCustomerId)
         : null;
-    const customerId = selectedCustomer ? selectedCustomer.id : getCustomerDocId(customerName);
+    const existingCustomer = selectedCustomer || allCustomersCache.find(
+        customer => customer.customerKey === normalizeCustomerName(customerName)
+    );
+    const customerId = existingCustomer
+        ? existingCustomer.id
+        : db.collection("debt_customers").doc().id;
     const customerRef = db.collection("debt_customers").doc(customerId);
     const saleRef = db.collection("shakak_records").doc();
     const items = shakakCart.map(item => ({
@@ -3089,6 +3114,7 @@ async function saveShakakRecord() {
         total: Number(((Number(item.price) || 0) * (Number(item.quantity) || 0)).toFixed(2))
     }));
     const saleEntry = { type: "sale", recordId: saleRef.id, date, time, items, total, paid, debtAdded: remaining };
+    const transactionRef = customerRef.collection("transactions").doc(saleRef.id);
 
     try {
         await db.runTransaction(async transaction => {
@@ -3098,11 +3124,14 @@ async function saveShakakRecord() {
             const newDebt = Number((oldDebt + remaining).toFixed(2));
 
             transaction.set(saleRef, {
+                customerId,
                 customerName,
                 customerKey: normalizeCustomerName(customerName),
                 date, time, items, total, paid, remaining,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
+
+            transaction.set(transactionRef, saleEntry);
 
             transaction.set(customerRef, {
                 customerName,
@@ -3110,8 +3139,7 @@ async function saveShakakRecord() {
                 totalDebt: newDebt,
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                 lastDate: date,
-                lastTime: time,
-                transactions: firebase.firestore.FieldValue.arrayUnion(saleEntry)
+                lastTime: time
             }, { merge: true });
         });
 
@@ -3130,12 +3158,40 @@ async function saveShakakRecord() {
     } catch (error) {
         console.error("Save shakak error:", error);
         showToast("تعذر الحفظ", false);
+    } finally {
+        if (saveButton) {
+            saveButton.disabled = false;
+            saveButton.classList.remove("is-saving");
+            saveButton.textContent = "حفظ";
+        }
     }
 }
 
 function filterDebtCustomers() { renderDebtCustomers(); }
 
-function renderDebtCustomers() {
+async function loadCustomerTransactions(customer) {
+    if (!db || !customer?.id) return Array.isArray(customer?.transactions) ? customer.transactions : [];
+
+    try {
+        const snapshot = await db.collection("debt_customers")
+            .doc(customer.id)
+            .collection("transactions")
+            .get();
+        const transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (transactions.length) {
+            customerTransactionsCache.set(customer.id, transactions);
+            return transactions;
+        }
+    } catch (error) {
+        console.error("Load customer transactions error:", error);
+    }
+
+    const legacyTransactions = Array.isArray(customer.transactions) ? customer.transactions : [];
+    customerTransactionsCache.set(customer.id, legacyTransactions);
+    return legacyTransactions;
+}
+
+async function renderDebtCustomers() {
     const list = document.getElementById("debtCustomersList");
     if (!list) return;
     const searchInput = document.getElementById("debtsSearchInput");
@@ -3143,188 +3199,100 @@ function renderDebtCustomers() {
     const customers = allDebtCustomersCache.filter(customer => !q || String(customer.customerName || "").toLowerCase().includes(q));
 
     if (!customers.length) { list.innerHTML = '<div class="empty-debts">لا يوجد عملاء مديونين حالياً.</div>'; return; }
-    list.innerHTML = customers.map(customer => {
-        const lastDate = customer.lastDate || "-";
-        const lastTime = formatDisplayTime(customer.lastTime);
-        const totalDebt = Number(customer.totalDebt || 0);
-
-        return `
-            <div class="debt-customer-card debt-customer-card-wrap">
-                <div class="debt-customer-info">
-                    <div class="debt-customer-row-header">
-                        <h4>${escapeHtml(customer.customerName || "بدون اسم")}</h4>
-                        <div class="debt-amount">${totalDebt.toFixed(2)} جنيه</div>
+    const customersWithTransactions = await Promise.all(customers.map(async customer => ({
+        customer,
+        transactions: await loadCustomerTransactions(customer)
+    })));
+    list.innerHTML = customersWithTransactions.map(({ customer, transactions }) => `
+        <div class="debt-customer-card">
+            <div class="debt-customer-info">
+                <h4>${escapeHtml(customer.customerName || "بدون اسم")}</h4>
+                <div id="debt-payment-${escapeHtml(customer.id)}" class="debt-payment-panel" hidden>
+                    <div class="debt-selected-name">العميل: <strong>${escapeHtml(customer.customerName || "")}</strong></div>
+                    <div class="debt-current-line">المبلغ الإجمالي: <strong>${formatCurrency(customer.totalDebt)}</strong> جنيه</div>
+                    <div class="form-group">
+                        <label for="debt-payment-input-${escapeHtml(customer.id)}">المبلغ المسدد</label>
+                        <input type="number" id="debt-payment-input-${escapeHtml(customer.id)}" min="0" step="0.01" placeholder="اكتب المبلغ..." inputmode="decimal">
                     </div>
-                    <div class="debt-meta">
-                        <span>آخر حركة: ${escapeHtml(lastDate)}</span>
-                        <span>${escapeHtml(lastTime)}</span>
-                    </div>
-                    <div class="debt-card-actions">
-                        <button type="button" class="btn-open-debt-payment" onclick="openDebtPayment('${escapeHtml(customer.id)}')">سداد</button>
-                        <button type="button" class="btn-open-debt-details" aria-expanded="false" onclick="openCustomerDrawer('${escapeHtml(customer.id)}')">تفاصيل</button>
+                    <div class="debt-payment-actions">
+                        <button type="button" onclick="cancelDebtPayment('${escapeHtml(customer.id)}')" class="btn-cancel-debt">إلغاء</button>
+                        <button type="button" onclick="payDebt('${escapeHtml(customer.id)}')" class="btn-pay-debt">تسجيل الدفع</button>
                     </div>
                 </div>
-            </div>`;
-    }).join("");
-}
-
-function renderCustomerDrawer(customer) {
-    const nameEl = document.getElementById("customerDrawerName");
-    const totalEl = document.getElementById("customerDrawerTotal");
-    const lastMovementEl = document.getElementById("customerDrawerLastMovement");
-    const movementCountEl = document.getElementById("customerDrawerMovementCount");
-    const salesEl = document.getElementById("customerDrawerSales");
-    const paymentsEl = document.getElementById("customerDrawerPayments");
-    const drawer = document.getElementById("customerDrawer");
-
-    if (!customer || !drawer || !nameEl || !totalEl || !lastMovementEl || !movementCountEl || !salesEl || !paymentsEl) return;
-
-    const totalDebt = Number(customer.totalDebt || 0);
-    const transactions = Array.isArray(customer.transactions) ? [...customer.transactions].reverse() : [];
-    const sales = transactions.filter(item => item.type !== "payment");
-    const payments = transactions.filter(item => item.type === "payment");
-
-    nameEl.textContent = customer.customerName || "بدون اسم";
-    totalEl.textContent = `${totalDebt.toFixed(2)} جنيه`;
-    lastMovementEl.textContent = customer.lastDate ? `${customer.lastDate} • ${formatDisplayTime(customer.lastTime)}` : "-";
-    movementCountEl.textContent = String(transactions.length || 0);
-
-    if (!sales.length) {
-        salesEl.innerHTML = '<div class="customer-empty-state">لا توجد مشتريات مسجلة.</div>';
-    } else {
-        salesEl.innerHTML = sales.map(transaction => {
-            const items = Array.isArray(transaction.items) ? transaction.items : [];
-            const itemsHtml = items.map(item => {
-                const quantity = Number(item.quantity || 0);
-                const unitPrice = Number(item.price || 0);
-                const itemTotal = Number(item.total || (quantity * unitPrice) || 0);
-                return `
-                    <li>
-                        <span class="debt-item-name">${escapeHtml(item.name || "بدون اسم")}</span>
-                        <span class="debt-item-middle">${quantity} × ${unitPrice.toFixed(2)}</span>
-                        <span class="debt-item-total">${itemTotal.toFixed(2)} جنيه</span>
-                    </li>`;
-            }).join("");
-
-            return `
-                <div class="customer-timeline-item sale-item">
-                    <div class="customer-timeline-top">
-                        <strong>شكك</strong>
-                        <span>${escapeHtml(transaction.date || "-")} • ${escapeHtml(formatDisplayTime(transaction.time))}</span>
-                    </div>
-                    <div class="customer-timeline-metrics">
-                        <div class="customer-metric-box"><span>الإجمالي</span><strong class="amount-total">${Number(transaction.total || 0).toFixed(2)}</strong></div>
-                        <div class="customer-metric-box"><span>المدفوع</span><strong class="amount-paid">${Number(transaction.paid || 0).toFixed(2)}</strong></div>
-                        <div class="customer-metric-box"><span>الباقي</span><strong class="amount-remain">${Number(transaction.debtAdded || 0).toFixed(2)}</strong></div>
-                    </div>
-                    ${itemsHtml ? `<ul class="customer-timeline-items">${itemsHtml}</ul>` : ""}
-                </div>`;
-        }).join("");
-    }
-
-    if (!payments.length) {
-        paymentsEl.innerHTML = '<div class="customer-empty-state">لا توجد مدفوعات مسجلة.</div>';
-    } else {
-        paymentsEl.innerHTML = payments.map(transaction => `
-            <div class="customer-timeline-item payment-item">
-                <div class="customer-timeline-top">
-                    <strong>سداد</strong>
-                    <span>${escapeHtml(transaction.date || "-")} • ${escapeHtml(formatDisplayTime(transaction.time))}</span>
+                <div class="debt-amount">${formatCurrency(customer.totalDebt)} جنيه</div>
+                <div class="debt-card-actions">
+                    <button type="button" class="btn-open-debt-details" aria-expanded="false" onclick="toggleDebtDetails('${escapeHtml(customer.id)}')">السجل</button>
+                    <button type="button" class="btn-open-debt-payment" onclick="openDebtPayment('${escapeHtml(customer.id)}')">سداد</button>
                 </div>
-                <div class="customer-timeline-meta">
-                    <span>المبلغ: <strong class="amount-paid">${Number(transaction.amount || 0).toFixed(2)}</strong> جنيه</span>
-                    <span>المتبقي: <strong class="amount-remain">${Number(transaction.remainingDebt || 0).toFixed(2)}</strong> جنيه</span>
-                </div>
-            </div>`).join("");
-    }
-
-    drawer.classList.add("is-open");
+                <div id="debt-details-${escapeHtml(customer.id)}" class="debt-details" aria-hidden="true">${renderDebtTransactionDetails(transactions)}</div>
+            </div>
+        </div>`).join("");
 }
 
-function openCustomerDrawer(customerId) {
-    const customer = allDebtCustomersCache.find(item => item.id === customerId);
-    if (!customer) {
-        showToast("العميل غير موجود", false);
-        return;
-    }
-    renderCustomerDrawer(customer);
+function getTransactionTimestamp(transaction) {
+    const date = String(transaction.date || "");
+    const time = String(transaction.time || "00:00");
+    const timestamp = Date.parse(`${date}T${time}`);
+    if (Number.isFinite(timestamp)) return timestamp;
+    const createdAt = normalizeDateValue(transaction.createdAt);
+    if (createdAt) return createdAt.getTime();
+    return Number(date.replace(/\D/g, "") + time.replace(/\D/g, "")) || 0;
 }
 
-function closeCustomerDrawer() {
-    const drawer = document.getElementById("customerDrawer");
-    if (drawer) drawer.classList.remove("is-open");
-}
-
-function renderDebtTransactionDetails(customer) {
-    const transactions = Array.isArray(customer.transactions) ? [...customer.transactions].reverse() : [];
+function renderDebtTransactionDetails(customerTransactions) {
+    const transactions = Array.isArray(customerTransactions)
+        ? customerTransactions
+            .map((transaction, index) => ({ transaction, index }))
+            .sort((a, b) => getTransactionTimestamp(a.transaction) - getTransactionTimestamp(b.transaction) || a.index - b.index)
+            .map(entry => entry.transaction)
+        : [];
     if (!transactions.length) return '<div class="debt-no-details">لا توجد تفاصيل مسجلة.</div>';
 
-    return transactions.map(transaction => {
+    let runningDebt = 0;
+    const calculatedTransactions = transactions.map(transaction => {
+        const oldDebt = Number(runningDebt.toFixed(2));
+        if (transaction.type === "payment") {
+            const amount = Math.max(0, Number(transaction.amount) || 0);
+            runningDebt = Math.max(0, Number((oldDebt - amount).toFixed(2)));
+            return { transaction, oldDebt, newDebt: runningDebt };
+        }
+
+        const total = Math.max(0, Number(transaction.total) || 0);
+        const paid = Math.min(total, Math.max(0, Number(transaction.paid) || 0));
+        runningDebt = Number((oldDebt + total - paid).toFixed(2));
+        return { transaction, oldDebt, newDebt: runningDebt, total, paid };
+    });
+
+    return calculatedTransactions.reverse().map(({ transaction, oldDebt, newDebt, total, paid }) => {
+        const dateTime = `${escapeHtml(transaction.date || "-")} - ${escapeHtml(formatArabicTime12(transaction.time))}`;
         if (transaction.type === "payment") {
             return `<div class="debt-transaction payment-transaction">
-                <div class="debt-transaction-header">
-                    <strong>سداد</strong>
-                </div>
-                <div class="debt-info-row">
-                    <span class="debt-info-label">التاريخ</span>
-                    <span class="debt-info-value">${escapeHtml(transaction.date || "-")}</span>
-                </div>
-                <div class="debt-info-row">
-                    <span class="debt-info-label">الوقت</span>
-                    <span class="debt-info-value">${escapeHtml(formatDisplayTime(transaction.time))}</span>
-                </div>
-                <div class="debt-metrics-row">
-                    <div class="debt-metric-box">
-                        <span>المبلغ</span>
-                        <strong class="amount-paid">${Number(transaction.amount || 0).toFixed(2)}</strong>
-                    </div>
-                    <div class="debt-metric-box">
-                        <span>المتبقي</span>
-                        <strong class="amount-remain">${Number(transaction.remainingDebt || 0).toFixed(2)}</strong>
-                    </div>
+                <div class="debt-transaction-header"><span class="debt-transaction-label debt-payment-label">سداد</span><span class="debt-transaction-date-time">${dateTime}</span></div>
+                <div class="debt-amount-summary payment-summary">
+                    <div class="debt-amount-box">القديم<strong class="amount-old">${formatCurrency(oldDebt)}</strong></div>
+                    <div class="debt-amount-box">المدفوع<strong class="amount-paid">${formatCurrency(transaction.amount)}</strong></div>
+                    <div class="debt-amount-box">الباقي<strong class="amount-remain">${formatCurrency(newDebt)}</strong></div>
                 </div>
             </div>`;
         }
-
         const items = Array.isArray(transaction.items) ? transaction.items : [];
         const itemsHtml = items.map(item => {
-            const quantity = Number(item.quantity || 0);
-            const unitPrice = Number(item.price || 0);
-            const itemTotal = Number(item.total || (quantity * unitPrice) || 0);
-            return `<li>
-                <span class="debt-item-name">${escapeHtml(item.name || "بدون اسم")}</span>
-                <span class="debt-item-middle">${quantity} × ${unitPrice.toFixed(2)}</span>
-                <span class="debt-item-total">${itemTotal.toFixed(2)} جنيه</span>
-            </li>`;
+            const quantity = Math.round(Number(item.quantity || 0));
+            const price = Number(item.price || 0);
+            return `<li class="debt-item-row"><span class="debt-item-name">${escapeHtml(item.name || "بدون اسم")}</span><span class="debt-item-math">${formatNumber(quantity)} × ${formatCurrency(price)}</span><span class="debt-item-total">${formatCurrency(quantity * price)} جنيه</span></li>`;
         }).join("");
-
+        const oldDebtHtml = oldDebt > 0.000001
+            ? `<div class="debt-amount-box">القديم<strong class="amount-old">${formatCurrency(oldDebt)}</strong></div>`
+            : "";
         return `<div class="debt-transaction sale-transaction">
-            <div class="debt-transaction-header">
-                <strong>شكك</strong>
+            <div class="debt-transaction-header"><span class="debt-transaction-label debt-sale-label">شكك</span><span class="debt-transaction-date-time">${dateTime}</span></div>
+            <div class="debt-amount-summary">
+                ${oldDebtHtml}
+                <div class="debt-amount-box">الإجمالي<strong class="amount-total">${formatCurrency(total)}</strong></div>
+                <div class="debt-amount-box">المدفوع<strong class="amount-paid">${formatCurrency(paid)}</strong></div>
+                <div class="debt-amount-box">الباقي<strong class="amount-remain">${formatCurrency(newDebt)}</strong></div>
             </div>
-            <div class="debt-info-row">
-                <span class="debt-info-label">التاريخ</span>
-                <span class="debt-info-value">${escapeHtml(transaction.date || "-")}</span>
-            </div>
-            <div class="debt-info-row">
-                <span class="debt-info-label">الوقت</span>
-                <span class="debt-info-value">${escapeHtml(formatDisplayTime(transaction.time))}</span>
-            </div>
-            <div class="debt-metrics-row">
-                <div class="debt-metric-box">
-                    <span>الإجمالي</span>
-                    <strong class="amount-total">${Number(transaction.total || 0).toFixed(2)}</strong>
-                </div>
-                <div class="debt-metric-box">
-                    <span>المدفوع</span>
-                    <strong class="amount-paid">${Number(transaction.paid || 0).toFixed(2)}</strong>
-                </div>
-                <div class="debt-metric-box">
-                    <span>الباقي</span>
-                    <strong class="amount-remain">${Number(transaction.debtAdded || 0).toFixed(2)}</strong>
-                </div>
-            </div>
-            ${itemsHtml ? `<div class="debt-items-box"><div class="debt-items-title">المنتجات</div><ul>${itemsHtml}</ul></div>` : ""}
+            ${itemsHtml ? `<ul class="debt-items-list">${itemsHtml}</ul>` : ""}
         </div>`;
     }).join("");
 }
@@ -3337,77 +3305,125 @@ function toggleDebtDetails(customerId) {
     details.setAttribute("aria-hidden", isOpen ? "false" : "true");
     if (button) {
         button.setAttribute("aria-expanded", isOpen ? "true" : "false");
-        button.textContent = isOpen ? "إخفاء التفاصيل" : "التفاصيل";
+        button.textContent = isOpen ? "إخفاء السجل" : "السجل";
     }
 }
 
 function openDebtPayment(customerId) {
     const customer = allDebtCustomersCache.find(item => item.id === customerId);
-    if (!customer) { showToast("العميل غير موجود", false); return; }
+    if (!customer) return;
     selectedDebtCustomerId = customer.id;
     selectedDebtCustomerData = customer;
-    const panel = document.getElementById("debtPaymentPanel");
-    const name = document.getElementById("selectedDebtCustomerName");
-    const amount = document.getElementById("selectedDebtCurrentAmount");
-    const payment = document.getElementById("debtPaymentAmount");
-    if (panel) panel.style.display = "block";
-    if (name) name.textContent = customer.customerName || "";
-    if (amount) amount.textContent = Number(customer.totalDebt || 0).toFixed(2);
-    if (payment) { payment.value = ""; payment.max = Number(customer.totalDebt || 0).toFixed(2); payment.focus(); }
-    panel?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const panel = document.getElementById(`debt-payment-${customer.id}`);
+    const payment = document.getElementById(`debt-payment-input-${customer.id}`);
+    if (panel) panel.hidden = false;
+    if (payment) { payment.value = ""; payment.max = Number(customer.totalDebt).toFixed(2); payment.focus(); }
+    panel?.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-function cancelDebtPayment() {
-    selectedDebtCustomerId = null;
-    selectedDebtCustomerData = null;
-    const panel = document.getElementById("debtPaymentPanel");
-    const payment = document.getElementById("debtPaymentAmount");
-    if (panel) panel.style.display = "none";
-    if (payment) payment.value = "";
+function cancelDebtPayment(customerId = selectedDebtCustomerId) {
+    const panel = customerId ? document.getElementById(`debt-payment-${customerId}`) : null;
+    if (panel) panel.hidden = true;
+    if (customerId === selectedDebtCustomerId) {
+        selectedDebtCustomerId = null;
+        selectedDebtCustomerData = null;
+    }
 }
 
-async function payDebt() {
-    if (!firebaseReady || !db) { showToast("غير متصل", false); return; }
-    if (!selectedDebtCustomerId) { showToast("اختر عميلاً", false); return; }
-    const paymentInput = document.getElementById("debtPaymentAmount");
-    const payment = Number(paymentInput ? paymentInput.value : 0);
+async function payDebt(customerId = selectedDebtCustomerId) {
+    if (!firebaseReady || !db || !customerId) return;
+    selectedDebtCustomerId = customerId;
+    const payment = Number(document.getElementById(`debt-payment-input-${customerId}`)?.value || 0);
     if (!Number.isFinite(payment) || payment <= 0) { showToast("أدخل مبلغاً صحيحاً", false); return; }
-
-    const customerRef = db.collection("debt_customers").doc(selectedDebtCustomerId);
+    const paymentPanel = document.getElementById(`debt-payment-${customerId}`);
+    const paymentButton = paymentPanel?.querySelector(".btn-pay-debt");
+    if (paymentButton?.disabled) return;
+    if (paymentButton) {
+        paymentButton.disabled = true;
+        paymentButton.classList.add("is-saving");
+        paymentButton.textContent = "جاري السداد...";
+    }
     const paymentDate = getLocalDateValue();
     const paymentTime = getLocalTimeValue();
-    let oldDebtForMessage = Number(selectedDebtCustomerData?.totalDebt || 0);
-
+    let closedCustomerName = "";
     try {
+        const customerRef = db.collection("debt_customers").doc(customerId);
+        const paymentRef = customerRef.collection("transactions").doc();
         await db.runTransaction(async transaction => {
             const snapshot = await transaction.get(customerRef);
             if (!snapshot.exists) throw new Error("CUSTOMER_NOT_FOUND");
             const data = snapshot.data() || {};
             const currentDebt = Number(data.totalDebt || 0);
-            oldDebtForMessage = currentDebt;
-            if (currentDebt <= 0) throw new Error("NO_DEBT");
+            if (!Number.isFinite(currentDebt) || currentDebt <= 0) throw new Error("NO_DEBT");
             if (payment > currentDebt + 0.000001) throw new Error("PAYMENT_TOO_HIGH");
             const newDebt = Number(Math.max(0, currentDebt - payment).toFixed(2));
-            transaction.set(customerRef, {
-                totalDebt: newDebt,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                lastDate: paymentDate,
-                lastTime: paymentTime,
-                transactions: firebase.firestore.FieldValue.arrayUnion({
-                    type: "payment", date: paymentDate, time: paymentTime,
-                    amount: Number(payment.toFixed(2)), remainingDebt: newDebt
-                })
-            }, { merge: true });
+            transaction.set(paymentRef, {
+                type: "payment",
+                date: paymentDate,
+                time: paymentTime,
+                amount: Number(payment.toFixed(2)),
+                remainingDebt: newDebt,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            if (newDebt <= 0.000001) {
+                closedCustomerName = String(data.customerName || "").trim();
+                transaction.delete(customerRef);
+            } else {
+                transaction.update(customerRef, {
+                    totalDebt: newDebt,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    lastDate: paymentDate,
+                    lastTime: paymentTime
+                });
+            }
         });
-
-        cancelDebtPayment();
-        showToast(payment >= oldDebtForMessage ? "تم السداد" : "تم السداد");
+        if (closedCustomerName) {
+            customerTransactionsCache.delete(customerId);
+            allDebtCustomersCache = allDebtCustomersCache.filter(customer => customer.id !== selectedDebtCustomerId);
+            allCustomersCache = allCustomersCache.filter(customer => customer.id !== selectedDebtCustomerId);
+            renderDebtCustomers();
+            renderShakakCustomerSuggestions(document.getElementById("shakakCustomerName")?.value || "");
+            const shakakCustomerInput = document.getElementById("shakakCustomerName");
+            if (shakakCustomerInput && normalizeCustomerName(shakakCustomerInput.value) === normalizeCustomerName(closedCustomerName)) {
+                shakakCustomerInput.value = "";
+                shakakCustomerInput.title = "";
+                selectedShakakCustomerId = null;
+            }
+        } else {
+            const customer = allDebtCustomersCache.find(item => item.id === customerId);
+            if (customer) {
+                const newDebt = Number((Number(customer.totalDebt || 0) - payment).toFixed(2));
+                customer.totalDebt = Math.max(0, newDebt);
+                customer.lastDate = paymentDate;
+                customer.lastTime = paymentTime;
+                const paymentEntry = {
+                    id: `payment-${paymentDate}-${paymentTime}`,
+                    type: "payment",
+                    date: paymentDate,
+                    time: paymentTime,
+                    amount: Number(payment.toFixed(2)),
+                    remainingDebt: customer.totalDebt
+                };
+                const transactions = customerTransactionsCache.get(customer.id) || [];
+                customerTransactionsCache.set(customer.id, [...transactions, paymentEntry]);
+                renderDebtCustomers();
+                renderShakakCustomerSuggestions(document.getElementById("shakakCustomerName")?.value || "");
+            }
+        }
+        cancelDebtPayment(customerId);
+        showToast(closedCustomerName ? "تم السداد بالكامل" : "تم السداد الجزئي");
     } catch (error) {
         console.error("Debt payment error:", error);
         if (error.message === "PAYMENT_TOO_HIGH") showToast("المبلغ أكبر من الدين", false);
-        else if (error.message === "NO_DEBT") showToast("لا يوجد دين", false);
+        else if (error.message === "NO_DEBT") showToast("لا يوجد دين حالي", false);
         else if (error.message === "CUSTOMER_NOT_FOUND") showToast("العميل غير موجود", false);
         else showToast("تعذر السداد", false);
+    } finally {
+        if (paymentButton) {
+            paymentButton.disabled = false;
+            paymentButton.classList.remove("is-saving");
+            paymentButton.textContent = "تسجيل الدفع";
+        }
     }
 }
 
@@ -3423,6 +3439,12 @@ async function completePosSale() {
     }
 
     const saleButton = document.querySelector('#pos-section button[onclick="completePosSale()"]');
+    if (saleButton?.disabled) return;
+    if (saleButton) {
+        saleButton.disabled = true;
+        saleButton.classList.add("is-saving");
+        saleButton.textContent = "جاري الحفظ...";
+    }
     const saleDate = getLocalDateValue();
     const saleTime = getLocalTimeValue();
     const items = posCart.map(item => ({
@@ -3450,6 +3472,12 @@ async function completePosSale() {
     } catch (error) {
         console.error("Complete POS sale error:", error);
         showToast("تعذر البيع", false);
+    } finally {
+        if (saleButton) {
+            saleButton.disabled = false;
+            saleButton.classList.remove("is-saving");
+            saleButton.textContent = "بيع 💸";
+        }
     }
 }
 
@@ -3466,11 +3494,55 @@ function closeReportCalendar(){const c=document.getElementById("reportCalendar")
 function renderReportCalendar(){const c=document.getElementById("reportCalendar"),h=document.getElementById("reportDate");if(!c||!reportCalendarMonth)return;const mo=reportCalendarMonth.getMonth(),yr=reportCalendarMonth.getFullYear(),sel=h?.value||"",title=new Intl.DateTimeFormat("ar-EG",{month:"long",year:"numeric"}).format(reportCalendarMonth),first=new Date(yr,mo,1,12).getDay(),days=new Date(yr,mo+1,0,12).getDate();const names=["أحد","اثن","ثلا","أرب","خمي","جمع","سبت"];let cells=names.map(x=>`<span class="calendar-weekday">${x}</span>`).join("");for(let i=0;i<first;i++)cells+=`<span class="calendar-day empty"></span>`;for(let day=1;day<=days;day++){const v=`${yr}-${String(mo+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;cells+=`<button type="button" class="calendar-day${v===sel?" active":""}" data-date="${v}">${day}</button>`;}c.innerHTML=`<div class="calendar-topbar"><button type="button" class="calendar-month-nav" data-month="-1">→</button><strong>${title}</strong><button type="button" class="calendar-month-nav" data-month="1">←</button></div><div class="calendar-grid">${cells}</div><button type="button" class="calendar-today-btn" id="reportCalendarToday">اليوم</button>`;c.querySelectorAll("[data-month]").forEach(b=>b.addEventListener("click",()=>{reportCalendarMonth.setMonth(reportCalendarMonth.getMonth()+Number(b.dataset.month));renderReportCalendar();}));c.querySelectorAll("[data-date]").forEach(b=>b.addEventListener("click",()=>{setReportDate(b.dataset.date,true);closeReportCalendar();}));document.getElementById("reportCalendarToday")?.addEventListener("click",()=>{setReportDate(getLocalDateValue(),true);closeReportCalendar();});}
 function initializeDailyReport(){const h=document.getElementById("reportDate"),d=document.getElementById("reportDateDisplay");if(!h||!d)return;h.value=getLocalDateValue();dailyReportDateManuallyChanged=false;syncReportDateDisplay();d.addEventListener("click",openReportCalendar);d.addEventListener("focus",openReportCalendar);document.getElementById("reportPrevDay")?.addEventListener("click",()=>shiftReportDay(-1));document.getElementById("reportNextDay")?.addEventListener("click",()=>shiftReportDay(1));document.addEventListener("click",e=>{const control=document.querySelector(".report-date-control"),c=document.getElementById("reportCalendar");if(control&&c&&!control.contains(e.target))closeReportCalendar();});loadDailyReport();}
 function formatArabicReportDate(v){return new Intl.DateTimeFormat("ar-EG",{weekday:"long"}).format(parseDateValue(v));}
-function formatReportMoney(v){return Number(v||0).toFixed(2);}
-function formatReportTime(v){const m=String(v||"").match(/^(\d{1,2}):(\d{2})/);if(!m)return String(v||"-");let h=Number(m[1]);const ap=h>=12?"م":"ص";h=h%12||12;return `${h}:${m[2]} ${ap}`;}
+function formatReportTime(v){const m=String(v||"").match(/^(\d{1,2}):(\d{2})/);if(!m)return String(v||"-");let h=Number(m[1]);const period=h>=12?"مساءً":"صباحاً";h=h%12||12;return `${h}:${m[2]} ${period}`;}
+function renderDailyReportCards(sales) {
+    const list = document.getElementById("dailyReportCards");
+    const empty = document.getElementById("dailyReportEmpty");
+    if (!list) return;
+    list.innerHTML = sales.map(sale => {
+        const items = Array.isArray(sale.items) ? sale.items : [];
+        const customer = sale.reportType === "شكك" ? String(sale.customerName || "").trim() : "";
+        const typeClass = sale.reportType === "كاش" ? "report-type-cash" : "report-type-credit";
+        const rows = items.map(item => `<div class="daily-report-card-item">
+            <span class="daily-report-item-name">${escapeHtml(item.name || "بدون اسم")}</span>
+            <span class="daily-report-item-qty">${formatNumber(item.quantity || 0)} × ${formatCurrency(item.price || 0)}</span>
+            <strong class="daily-report-item-total">${formatCurrency(item.total || (Number(item.quantity || 0) * Number(item.price || 0)))} جنيه</strong>
+        </div>`).join("");
+        const headerClass = sale.reportType === "شكك" ? " daily-report-card-header-credit" : "";
+        return `<article class="daily-report-card">
+            <header class="daily-report-card-header${headerClass}">
+                <span class="daily-report-card-time">${escapeHtml(formatReportTime(sale.time))}</span>
+                <span class="report-type-badge ${typeClass}">${escapeHtml(sale.reportType || "-")}</span>
+                ${customer ? `<span class="daily-report-card-customer">${escapeHtml(customer)}</span>` : ""}
+            </header>
+            <div class="daily-report-card-items">${rows || '<div class="daily-report-card-empty">لا توجد منتجات</div>'}</div>
+            <footer class="daily-report-card-footer">إجمالي الفاتورة <strong>${formatCurrency(sale.total)} جنيه</strong></footer>
+        </article>`;
+    }).join("");
+    if (empty) empty.style.display = sales.length ? "none" : "block";
+}
 async function loadDailyReport(){const h=document.getElementById("reportDate"),date=(h?.value||getLocalDateValue());if(h&&!/^\d{4}-\d{2}-\d{2}$/.test(h.value))h.value=getLocalDateValue();const safeDate=h?.value||date,w=document.getElementById("reportWeekday");if(w)w.textContent=formatArabicReportDate(safeDate);syncReportDateDisplay();if(!firebaseReady||!db){renderDailyReport([],[]);return;}try{const [cs,ks]=await Promise.all([db.collection("daily_sales").where("date","==",safeDate).get(),db.collection("shakak_records").where("date","==",safeDate).get()]);const cash=[],credit=[];cs.forEach(doc=>cash.push({id:doc.id,...doc.data(),reportType:"كاش"}));ks.forEach(doc=>credit.push({id:doc.id,...doc.data(),reportType:"شكك"}));renderDailyReport(cash,credit);}catch(error){console.error("Daily report error:",error);showToast("تعذر تحميل التقرير",false);renderDailyReport([],[]);}}
-function renderDailyReport(cashSales,creditSales){const cashTotal=cashSales.reduce((s,x)=>s+Number(x.total||0),0),creditTotal=creditSales.reduce((s,x)=>s+Number(x.total||0),0),totalSales=cashTotal+creditTotal,allSales=[...cashSales,...creditSales].sort((a,b)=>String(a.time||"").localeCompare(String(b.time||""))),stats={};allSales.forEach(s=>(Array.isArray(s.items)?s.items:[]).forEach(i=>{const k=String(i.productId||i.name||"");if(!stats[k])stats[k]={name:i.name||"بدون اسم",quantity:0};stats[k].quantity+=Number(i.quantity||0);}));const vals=Object.values(stats).sort((a,b)=>b.quantity-a.quantity);setReportText("reportTotalSales",totalSales.toFixed(2));setReportText("reportCashSales",cashTotal.toFixed(2));setReportText("reportCreditSales",creditTotal.toFixed(2));setReportText("reportTopProduct",vals.length?`${vals[0].name} (${vals[0].quantity})`:"-");const list=document.getElementById("dailyReportTableBody"),empty=document.getElementById("dailyReportEmpty");if(!list)return;list.innerHTML="";allSales.forEach(s=>(Array.isArray(s.items)?s.items:[]).forEach(i=>{const customer=s.reportType==="شكك"?(s.customerName||""):"",cls=s.reportType==="كاش"?"report-type-cash":"report-type-credit";list.insertAdjacentHTML("beforeend",`<tr><td class="lux-name">${escapeHtml(i.name||"بدون اسم")}<small>${escapeHtml(formatReportTime(s.time))}${customer?" · "+escapeHtml(customer):""}</small></td><td>${Number(i.quantity||0)}</td><td class="lux-total">${Number(i.total||0).toFixed(2)}</td><td><span class="report-type-badge ${cls}">${escapeHtml(s.reportType||"-")}</span></td></tr>`);}));if(empty)empty.style.display=allSales.length?"none":"block";}
 function setReportText(id, value) {
     const el = document.getElementById(id);
     if (el) el.textContent = value;
+}
+
+function renderDailyReport(cashSales, creditSales) {
+    const cashTotal = cashSales.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
+    const creditTotal = creditSales.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
+    const sales = [...cashSales, ...creditSales].sort((a, b) => {
+        const timeA = String(a.time || "");
+        const timeB = String(b.time || "");
+        return timeB.localeCompare(timeA);
+    });
+    const quantities = {};
+    sales.forEach(sale => (Array.isArray(sale.items) ? sale.items : []).forEach(item => {
+        const key = String(item.productId || item.name || "");
+        quantities[key] = quantities[key] || { name: item.name || "بدون اسم", quantity: 0 };
+        quantities[key].quantity += Number(item.quantity || 0);
+    }));
+    setReportText("reportTotalSales", formatCurrency(cashTotal + creditTotal));
+    setReportText("reportCashSales", formatCurrency(cashTotal));
+    setReportText("reportCreditSales", formatCurrency(creditTotal));
+    renderDailyReportCards(sales);
 }

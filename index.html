@@ -20,6 +20,8 @@
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app-check.js"></script>
+
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 </head>
@@ -44,7 +46,7 @@
 
         <button type="button" class="tab-btn" onclick="switchTab('search')">المنتجات</button>
 
-        <button type="button" class="tab-btn" onclick="switchTab('shakak')">Note</button>
+        <button type="button" class="tab-btn" onclick="switchTab('shakak')">النوته</button>
 
         <button type="button" class="tab-btn" onclick="switchTab('debts')">العملاء</button>
 
@@ -287,21 +289,9 @@
 
     <div id="debtsSection" class="section-content">
         <div class="pos-container debts-container">
-<div class="form-group">
+            <div class="form-group">
                 <label for="debtsSearchInput">بحث عن العميل</label>
                 <input type="text" id="debtsSearchInput" placeholder="ابحث باسم العميل..." autocomplete="off" oninput="filterDebtCustomers()">
-            </div>
-            <div id="debtPaymentPanel" class="debt-payment-panel inline-style-19">
-                <div class="debt-selected-name">العميل: <strong id="selectedDebtCustomerName"></strong></div>
-                <div class="debt-current-line">إجمالي الدين الحالي: <strong id="selectedDebtCurrentAmount">0.00</strong> جنيه</div>
-                <div class="form-group">
-                    <label for="debtPaymentAmount">المبلغ المسدد</label>
-                    <input type="number" id="debtPaymentAmount" min="0" step="0.01" placeholder="اكتب المبلغ..." inputmode="decimal">
-                </div>
-                <div class="debt-payment-actions">
-                    <button type="button" onclick="cancelDebtPayment()" class="btn-cancel-debt">إلغاء</button>
-                    <button type="button" onclick="payDebt()" class="btn-pay-debt"> تسجيل السداد</button>
-                </div>
             </div>
             <div id="debtCustomersList" class="debt-customers-list"></div>
         </div>
@@ -311,7 +301,6 @@
         <div class="daily-report-container">
             <div class="daily-report-header">
                 <div class="daily-report-header-row">
-                    <div class="daily-report-day-box"><span>اليوم</span><strong id="reportWeekday">اليوم</strong></div>
                     <div class="daily-report-date-picker">
                         <label for="reportDateDisplay">التاريخ</label>
                         <div class="report-date-control">
@@ -326,27 +315,15 @@
             </div>
 
             <div class="daily-report-summary">
+                <div class="report-stat-card report-day-card"><span>اليوم</span><strong id="reportWeekday">اليوم</strong></div>
                 <div class="report-stat-card report-total-card"><span>إجمالي المبيعات</span><strong id="reportTotalSales">0.00</strong></div>
                 <div class="report-stat-card report-cash-card"><span>مبيعات كاش</span><strong id="reportCashSales">0.00</strong></div>
                 <div class="report-stat-card report-credit-card"><span>مبيعات شكك</span><strong id="reportCreditSales">0.00</strong></div>
-                <div class="report-stat-card report-top-card"><span>أكثر منتج مبيعًا</span><strong id="reportTopProduct">-</strong></div>
             </div>
 
             <div class="daily-report-sales">
                 <div class="daily-report-sales-title">المبيعات</div>
-                <div class="lux-table-wrap">
-                    <table class="lux-table lux-report-table">
-                        <thead>
-                            <tr>
-                                <th>المنتج</th>
-                                <th>الكمية</th>
-                                <th>الإجمالي</th>
-                                <th>النوع</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dailyReportTableBody"></tbody>
-                    </table>
-                </div>
+                <div id="dailyReportCards" class="daily-report-cards"></div>
                 <div id="dailyReportEmpty" class="daily-report-empty inline-style-19">لا توجد مبيعات مسجلة في هذا اليوم.</div>
             </div>
         </div>
@@ -459,6 +436,7 @@
         <div id="modalPrice" class="modal-price"></div>
 
         <div id="modalBarcode" class="modal-barcode"></div>
+        <div id="modalUpdatedAt" class="modal-updated-at"></div>
 
         <button type="button" id="deleteProductModalBtn" class="modal-delete-btn" onclick="deleteProductFromModal()">حذف المنتج</button>
 
@@ -466,64 +444,18 @@
 
 </div>
 
-<div id="customerDrawer" class="customer-drawer" onclick="closeCustomerDrawer()">
-    <div class="customer-drawer-panel" onclick="event.stopPropagation()">
-        <button type="button" class="close-modal customer-drawer-close" onclick="closeCustomerDrawer()" aria-label="إغلاق">&times;</button>
-
-        <div class="customer-drawer-header">
-            <div>
-                <span class="drawer-badge">ملف العميل</span>
-                <h3 id="customerDrawerName">-</h3>
-            </div>
-            <div class="customer-drawer-total-box">
-                <span>إجمالي الدين</span>
-                <strong id="customerDrawerTotal">0.00 جنيه</strong>
-            </div>
-        </div>
-
-        <div class="customer-drawer-overview">
-            <div class="drawer-stat-item">
-                <span>آخر حركة</span>
-                <strong id="customerDrawerLastMovement">-</strong>
-            </div>
-            <div class="drawer-stat-item">
-                <span>عدد الحركات</span>
-                <strong id="customerDrawerMovementCount">0</strong>
-            </div>
-        </div>
-
-        <div class="customer-drawer-body">
-            <section class="customer-drawer-section">
-                <div class="customer-drawer-section-head">
-                    <h4>سجل المشتريات</h4>
-                </div>
-                <div id="customerDrawerSales" class="customer-drawer-list"></div>
-            </section>
-
-            <section class="customer-drawer-section">
-                <div class="customer-drawer-section-head">
-                    <h4>سجل السداد</h4>
-                </div>
-                <div id="customerDrawerPayments" class="customer-drawer-list"></div>
-            </section>
-        </div>
-    </div>
-</div>
-
 <div id="toast" role="status" aria-live="polite"></div>
 
 <div id="monthlyReportModal" class="modal" onclick="closeMonthlyReportModal()">
     <div class="modal-content monthly-report-modal-content" onclick="event.stopPropagation()">
         <div class="monthly-report-header">
-            <h3>التقرير الشهري</h3>
             <button type="button" class="confirm-cancel-btn" onclick="closeMonthlyReportModal()">إغلاق</button>
-        </div>
-
-        <div class="monthly-report-controls">
-            <label class="monthly-report-month-picker" for="monthlyReportMonthInput">
+            <h3>التقرير الشهري</h3>
+            <div class="monthly-report-month-picker" id="monthlyReportMonthPicker" role="button" tabindex="0" aria-label="اختيار الشهر">
                 <span>الشهر</span>
-                <input id="monthlyReportMonthInput" type="month" aria-label="اختيار الشهر">
-            </label>
+                <button type="button" id="monthlyReportMonthDisplay" class="monthly-report-month-display" aria-label="الشهر المحدد">سبتمبر</button>
+                <input id="monthlyReportMonthInput" type="month" aria-hidden="true" tabindex="-1">
+            </div>
         </div>
 
         <div class="monthly-report-summary">
@@ -538,6 +470,10 @@
             <div class="monthly-report-stat">
                 <span>المبيعات الشكك</span>
                 <strong id="monthlyReportCredit" class="monthly-report-credit">0.00</strong>
+            </div>
+            <div class="monthly-report-stat monthly-report-top-card">
+                <span>أكثر منتج مبيعًا</span>
+                <strong id="monthlyReportTopProduct">-</strong>
             </div>
         </div>
 
