@@ -3143,19 +3143,116 @@ function renderDebtCustomers() {
     const customers = allDebtCustomersCache.filter(customer => !q || String(customer.customerName || "").toLowerCase().includes(q));
 
     if (!customers.length) { list.innerHTML = '<div class="empty-debts">لا يوجد عملاء مديونين حالياً.</div>'; return; }
-    list.innerHTML = customers.map(customer => `
-        <div class="debt-customer-card debt-customer-card-wrap">
-            <div class="debt-customer-info">
-                <h4>${escapeHtml(customer.customerName || "بدون اسم")}</h4>
-                <div class="debt-amount">${Number(customer.totalDebt || 0).toFixed(2)} جنيه</div>
-                <div class="debt-meta">آخر تحديث: ${escapeHtml(customer.lastDate || "-")} ${escapeHtml(formatDisplayTime(customer.lastTime))}</div>
-                <div class="debt-card-actions">
-                    <button type="button" class="btn-open-debt-details" aria-expanded="false" onclick="toggleDebtDetails('${escapeHtml(customer.id)}')">التفاصيل</button>
-                    <button type="button" class="btn-open-debt-payment" onclick="openDebtPayment('${escapeHtml(customer.id)}')"> سداد</button>
+    list.innerHTML = customers.map(customer => {
+        const lastDate = customer.lastDate || "-";
+        const lastTime = formatDisplayTime(customer.lastTime);
+        const totalDebt = Number(customer.totalDebt || 0);
+
+        return `
+            <div class="debt-customer-card debt-customer-card-wrap">
+                <div class="debt-customer-info">
+                    <div class="debt-customer-row-header">
+                        <h4>${escapeHtml(customer.customerName || "بدون اسم")}</h4>
+                        <div class="debt-amount">${totalDebt.toFixed(2)} جنيه</div>
+                    </div>
+                    <div class="debt-meta">
+                        <span>آخر حركة: ${escapeHtml(lastDate)}</span>
+                        <span>${escapeHtml(lastTime)}</span>
+                    </div>
+                    <div class="debt-card-actions">
+                        <button type="button" class="btn-open-debt-payment" onclick="openDebtPayment('${escapeHtml(customer.id)}')">سداد</button>
+                        <button type="button" class="btn-open-debt-details" aria-expanded="false" onclick="openCustomerDrawer('${escapeHtml(customer.id)}')">تفاصيل</button>
+                    </div>
                 </div>
-                <div id="debt-details-${escapeHtml(customer.id)}" class="debt-details inline-style-19" aria-hidden="true">${renderDebtTransactionDetails(customer)}</div>
-            </div>
-        </div>`).join("");
+            </div>`;
+    }).join("");
+}
+
+function renderCustomerDrawer(customer) {
+    const nameEl = document.getElementById("customerDrawerName");
+    const totalEl = document.getElementById("customerDrawerTotal");
+    const lastMovementEl = document.getElementById("customerDrawerLastMovement");
+    const movementCountEl = document.getElementById("customerDrawerMovementCount");
+    const salesEl = document.getElementById("customerDrawerSales");
+    const paymentsEl = document.getElementById("customerDrawerPayments");
+    const drawer = document.getElementById("customerDrawer");
+
+    if (!customer || !drawer || !nameEl || !totalEl || !lastMovementEl || !movementCountEl || !salesEl || !paymentsEl) return;
+
+    const totalDebt = Number(customer.totalDebt || 0);
+    const transactions = Array.isArray(customer.transactions) ? [...customer.transactions].reverse() : [];
+    const sales = transactions.filter(item => item.type !== "payment");
+    const payments = transactions.filter(item => item.type === "payment");
+
+    nameEl.textContent = customer.customerName || "بدون اسم";
+    totalEl.textContent = `${totalDebt.toFixed(2)} جنيه`;
+    lastMovementEl.textContent = customer.lastDate ? `${customer.lastDate} • ${formatDisplayTime(customer.lastTime)}` : "-";
+    movementCountEl.textContent = String(transactions.length || 0);
+
+    if (!sales.length) {
+        salesEl.innerHTML = '<div class="customer-empty-state">لا توجد مشتريات مسجلة.</div>';
+    } else {
+        salesEl.innerHTML = sales.map(transaction => {
+            const items = Array.isArray(transaction.items) ? transaction.items : [];
+            const itemsHtml = items.map(item => {
+                const quantity = Number(item.quantity || 0);
+                const unitPrice = Number(item.price || 0);
+                const itemTotal = Number(item.total || (quantity * unitPrice) || 0);
+                return `
+                    <li>
+                        <span class="debt-item-name">${escapeHtml(item.name || "بدون اسم")}</span>
+                        <span class="debt-item-middle">${quantity} × ${unitPrice.toFixed(2)}</span>
+                        <span class="debt-item-total">${itemTotal.toFixed(2)} جنيه</span>
+                    </li>`;
+            }).join("");
+
+            return `
+                <div class="customer-timeline-item sale-item">
+                    <div class="customer-timeline-top">
+                        <strong>شكك</strong>
+                        <span>${escapeHtml(transaction.date || "-")} • ${escapeHtml(formatDisplayTime(transaction.time))}</span>
+                    </div>
+                    <div class="customer-timeline-metrics">
+                        <div class="customer-metric-box"><span>الإجمالي</span><strong class="amount-total">${Number(transaction.total || 0).toFixed(2)}</strong></div>
+                        <div class="customer-metric-box"><span>المدفوع</span><strong class="amount-paid">${Number(transaction.paid || 0).toFixed(2)}</strong></div>
+                        <div class="customer-metric-box"><span>الباقي</span><strong class="amount-remain">${Number(transaction.debtAdded || 0).toFixed(2)}</strong></div>
+                    </div>
+                    ${itemsHtml ? `<ul class="customer-timeline-items">${itemsHtml}</ul>` : ""}
+                </div>`;
+        }).join("");
+    }
+
+    if (!payments.length) {
+        paymentsEl.innerHTML = '<div class="customer-empty-state">لا توجد مدفوعات مسجلة.</div>';
+    } else {
+        paymentsEl.innerHTML = payments.map(transaction => `
+            <div class="customer-timeline-item payment-item">
+                <div class="customer-timeline-top">
+                    <strong>سداد</strong>
+                    <span>${escapeHtml(transaction.date || "-")} • ${escapeHtml(formatDisplayTime(transaction.time))}</span>
+                </div>
+                <div class="customer-timeline-meta">
+                    <span>المبلغ: <strong class="amount-paid">${Number(transaction.amount || 0).toFixed(2)}</strong> جنيه</span>
+                    <span>المتبقي: <strong class="amount-remain">${Number(transaction.remainingDebt || 0).toFixed(2)}</strong> جنيه</span>
+                </div>
+            </div>`).join("");
+    }
+
+    drawer.classList.add("is-open");
+}
+
+function openCustomerDrawer(customerId) {
+    const customer = allDebtCustomersCache.find(item => item.id === customerId);
+    if (!customer) {
+        showToast("العميل غير موجود", false);
+        return;
+    }
+    renderCustomerDrawer(customer);
+}
+
+function closeCustomerDrawer() {
+    const drawer = document.getElementById("customerDrawer");
+    if (drawer) drawer.classList.remove("is-open");
 }
 
 function renderDebtTransactionDetails(customer) {

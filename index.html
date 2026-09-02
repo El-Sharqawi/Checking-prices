@@ -466,6 +466,50 @@
 
 </div>
 
+<div id="customerDrawer" class="customer-drawer" onclick="closeCustomerDrawer()">
+    <div class="customer-drawer-panel" onclick="event.stopPropagation()">
+        <button type="button" class="close-modal customer-drawer-close" onclick="closeCustomerDrawer()" aria-label="إغلاق">&times;</button>
+
+        <div class="customer-drawer-header">
+            <div>
+                <span class="drawer-badge">ملف العميل</span>
+                <h3 id="customerDrawerName">-</h3>
+            </div>
+            <div class="customer-drawer-total-box">
+                <span>إجمالي الدين</span>
+                <strong id="customerDrawerTotal">0.00 جنيه</strong>
+            </div>
+        </div>
+
+        <div class="customer-drawer-overview">
+            <div class="drawer-stat-item">
+                <span>آخر حركة</span>
+                <strong id="customerDrawerLastMovement">-</strong>
+            </div>
+            <div class="drawer-stat-item">
+                <span>عدد الحركات</span>
+                <strong id="customerDrawerMovementCount">0</strong>
+            </div>
+        </div>
+
+        <div class="customer-drawer-body">
+            <section class="customer-drawer-section">
+                <div class="customer-drawer-section-head">
+                    <h4>سجل المشتريات</h4>
+                </div>
+                <div id="customerDrawerSales" class="customer-drawer-list"></div>
+            </section>
+
+            <section class="customer-drawer-section">
+                <div class="customer-drawer-section-head">
+                    <h4>سجل السداد</h4>
+                </div>
+                <div id="customerDrawerPayments" class="customer-drawer-list"></div>
+            </section>
+        </div>
+    </div>
+</div>
+
 <div id="toast" role="status" aria-live="polite"></div>
 
 <div id="monthlyReportModal" class="modal" onclick="closeMonthlyReportModal()">

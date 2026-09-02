@@ -1500,8 +1500,8 @@ body.dark-mode .amount-remain {
 .debt-customer-card {
     background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
     border: 1px solid rgba(148, 163, 184, 0.2);
-    padding: 18px 18px 16px;
-    border-radius: 18px;
+    padding: 14px 16px;
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1523,6 +1523,13 @@ body.dark-mode .amount-remain {
     gap: 8px;
 }
 
+.debt-customer-row-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
 .debt-customer-info h4 {
     margin: 0;
     color: #0f172a;
@@ -1534,15 +1541,19 @@ body.dark-mode .amount-remain {
 
 .debt-amount {
     color: #dc2626;
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 900;
     line-height: 1.2;
+    white-space: nowrap;
 }
 
 .debt-meta {
     color: #64748b;
     font-size: 12px;
     line-height: 1.5;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .empty-debts {
@@ -1605,6 +1616,241 @@ body.dark-mode .amount-remain {
 .btn-open-debt-payment {
     background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
     box-shadow: 0 8px 18px rgba(22, 163, 74, 0.18);
+}
+
+.customer-drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 2100;
+    display: none;
+    justify-content: flex-end;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(6px);
+}
+
+.customer-drawer.is-open {
+    display: flex;
+}
+
+.customer-drawer-panel {
+    width: min(520px, 92vw);
+    height: 100%;
+    background: #f8fafc;
+    box-shadow: -18px 0 30px rgba(15, 23, 42, 0.14);
+    border-right: 1px solid rgba(148, 163, 184, 0.2);
+    padding: 18px 18px 24px;
+    overflow-y: auto;
+    position: relative;
+}
+
+.customer-drawer-close {
+    position: absolute;
+    top: 14px;
+    left: 18px;
+    right: auto;
+    width: 34px;
+    height: 34px;
+    font-size: 28px;
+    line-height: 1;
+}
+
+.customer-drawer-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 42px 18px 0;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+    margin-bottom: 16px;
+}
+
+.drawer-badge {
+    display: inline-block;
+    background: rgba(37, 99, 235, 0.08);
+    color: #1d4ed8;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+
+.customer-drawer-header h3 {
+    margin: 0;
+    font-size: 24px;
+    color: #0f172a;
+}
+
+.customer-drawer-total-box {
+    min-width: 120px;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid rgba(59, 130, 246, 0.15);
+    border-radius: 14px;
+    padding: 10px 12px;
+    text-align: center;
+}
+
+.customer-drawer-total-box span {
+    display: block;
+    font-size: 11px;
+    color: #475569;
+    margin-bottom: 4px;
+}
+
+.customer-drawer-total-box strong {
+    display: block;
+    color: #0f172a;
+    font-size: 17px;
+    font-weight: 900;
+}
+
+.customer-drawer-overview {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.drawer-stat-item {
+    background: #fff;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 14px;
+    padding: 12px 10px;
+    text-align: center;
+}
+
+.drawer-stat-item span {
+    display: block;
+    color: #64748b;
+    font-size: 11px;
+    margin-bottom: 6px;
+}
+
+.drawer-stat-item strong {
+    color: #0f172a;
+    font-size: 16px;
+    font-weight: 900;
+}
+
+.customer-drawer-body {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.customer-drawer-section {
+    background: #fff;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 16px;
+    padding: 12px;
+}
+
+.customer-drawer-section-head {
+    margin-bottom: 10px;
+}
+
+.customer-drawer-section-head h4 {
+    margin: 0;
+    font-size: 17px;
+    color: #0f172a;
+}
+
+.customer-drawer-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.customer-timeline-item {
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 12px;
+    padding: 10px 10px 8px;
+    background: #f8fafc;
+}
+
+.customer-timeline-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.customer-timeline-top strong {
+    font-size: 14px;
+    color: #0f172a;
+}
+
+.customer-timeline-top span {
+    font-size: 11px;
+    color: #64748b;
+}
+
+.customer-timeline-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: #475569;
+}
+
+.customer-timeline-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.customer-metric-box {
+    background: #fff;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 10px;
+    padding: 7px 6px;
+    text-align: center;
+}
+
+.customer-metric-box span {
+    display: block;
+    font-size: 10px;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.customer-metric-box strong {
+    display: block;
+    font-size: 13px;
+    color: #0f172a;
+}
+
+.customer-timeline-items {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.customer-timeline-items li {
+    display: grid;
+    grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.2fr) auto;
+    align-items: center;
+    gap: 7px;
+    background: rgba(148, 163, 184, 0.06);
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 11px;
+    color: #475569;
+}
+
+.customer-empty-state {
+    background: rgba(148, 163, 184, 0.04);
+    border: 1px dashed rgba(148, 163, 184, 0.5);
+    border-radius: 12px;
+    padding: 18px 12px;
+    text-align: center;
+    color: #64748b;
+    font-size: 13px;
 }
 
 .debt-details {
