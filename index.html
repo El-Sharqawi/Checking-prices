@@ -235,25 +235,35 @@
 
         <div class="form-group">
 
-            <div class="image-picker-row">
+            <div class="image-upload-wrapper">
 
-                <input type="file" id="productImage" accept="image/*" capture="environment" onchange="updateImageFileName(this)" class="inline-style-19">
+                <div class="image-picker-row">
 
-                <button type="button" class="btn-qr-scan image-picker-btn"
+                    <input type="file" id="productImage" accept="image/*" capture="environment" onchange="updateImageFileName(this)" class="inline-style-19">
 
-                        onclick="document.getElementById('productImage').click()">
+                    <button type="button" class="btn-qr-scan image-picker-btn"
 
-                    رفع صورة
+                            onclick="document.getElementById('productImage').click()">
 
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        رفع صورة
 
-                    <path d="M4 5h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm8 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0-2a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
 
-                </button>
+                        <path d="M4 5h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm8 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0-2a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+
+                    </button>
+
+                </div>
+
+                <div id="imageFileName" class="file-name"></div>
+
+                <div id="imagePreviewWrap" class="image-preview-wrap" aria-live="polite">
+
+                    <img id="imagePreview" alt="معاينة صورة المنتج" src="">
+
+                </div>
 
             </div>
-
-            <div id="imageFileName" class="file-name"></div>
 
         </div>
 

@@ -875,6 +875,10 @@ function resetFormFields() {
 
     const imageName = document.getElementById("imageFileName");
 
+    const imagePreview = document.getElementById("imagePreview");
+
+    const imagePreviewWrap = document.getElementById("imagePreviewWrap");
+
     if (name) name.value = "";
 
     if (price) price.value = "";
@@ -884,6 +888,10 @@ function resetFormFields() {
     if (image) image.value = "";
 
     if (imageName) imageName.textContent = "";
+
+    if (imagePreview) imagePreview.src = "";
+
+    if (imagePreviewWrap) imagePreviewWrap.classList.remove("is-visible");
 
     const imageUrl = document.getElementById("productImageUrl");
     if (imageUrl) imageUrl.value = "";
@@ -1677,15 +1685,49 @@ function deleteSingleUpdate(docId) {
 
 function updateImageFileName(input) {
 
-    if (!input || !input.files || !input.files[0]) return;
-
-    const file = input.files[0];
+    const file = input && input.files && input.files[0] ? input.files[0] : null;
 
     const fileNameElement = document.getElementById("imageFileName");
+
+    const previewWrap = document.getElementById("imagePreviewWrap");
+
+    const previewImage = document.getElementById("imagePreview");
+
+    if (!file) {
+
+        if (fileNameElement) fileNameElement.textContent = "";
+
+        if (previewWrap) previewWrap.classList.remove("is-visible");
+
+        if (previewImage) previewImage.src = "";
+
+        return;
+
+    }
 
     if (fileNameElement) {
 
         fileNameElement.textContent = "تم اختيار الصورة: " + file.name;
+
+    }
+
+    if (previewImage) {
+
+        const reader = new FileReader();
+
+        reader.onload = event => {
+
+            previewImage.src = event.target.result;
+
+            if (previewWrap) previewWrap.classList.add("is-visible");
+
+        };
+
+        reader.readAsDataURL(file);
+
+    } else if (previewWrap) {
+
+        previewWrap.classList.add("is-visible");
 
     }
 
@@ -2720,6 +2762,20 @@ function getLocalTimeValue(date = new Date()) {
     return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
+function formatDisplayTime(timeValue) {
+    if (!timeValue) return "-";
+    const match = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(String(timeValue).trim());
+    if (!match) return String(timeValue);
+
+    let hours = Number(match[1]);
+    const minutes = match[2];
+    const suffix = hours >= 12 ? "مساءً" : "صباحًا";
+    hours = hours % 12;
+    if (hours === 0) hours = 12;
+
+    return `${hours}:${minutes} ${suffix}`;
+}
+
 function initializeShakakDateTime(force = false) {
     const dateInput = document.getElementById("shakakDate");
     const timeInput = document.getElementById("shakakTime");
@@ -3092,7 +3148,7 @@ function renderDebtCustomers() {
             <div class="debt-customer-info">
                 <h4>${escapeHtml(customer.customerName || "بدون اسم")}</h4>
                 <div class="debt-amount">${Number(customer.totalDebt || 0).toFixed(2)} جنيه</div>
-                <div class="debt-meta">آخر تحديث: ${escapeHtml(customer.lastDate || "-")} ${escapeHtml(customer.lastTime || "")}</div>
+                <div class="debt-meta">آخر تحديث: ${escapeHtml(customer.lastDate || "-")} ${escapeHtml(formatDisplayTime(customer.lastTime))}</div>
                 <div class="debt-card-actions">
                     <button type="button" class="btn-open-debt-details" aria-expanded="false" onclick="toggleDebtDetails('${escapeHtml(customer.id)}')">التفاصيل</button>
                     <button type="button" class="btn-open-debt-payment" onclick="openDebtPayment('${escapeHtml(customer.id)}')"> سداد</button>
@@ -3109,25 +3165,69 @@ function renderDebtTransactionDetails(customer) {
     return transactions.map(transaction => {
         if (transaction.type === "payment") {
             return `<div class="debt-transaction payment-transaction">
-                <strong>سداد</strong>
-                <span>${escapeHtml(transaction.date || "-")} ${escapeHtml(transaction.time || "")}</span>
-                <span>المبلغ: <strong class="amount-paid">${Number(transaction.amount || 0).toFixed(2)}</strong> جنيه</span>
-                <span>المتبقي: <strong class="amount-remain">${Number(transaction.remainingDebt || 0).toFixed(2)}</strong> جنيه</span>
+                <div class="debt-transaction-header">
+                    <strong>سداد</strong>
+                </div>
+                <div class="debt-info-row">
+                    <span class="debt-info-label">التاريخ</span>
+                    <span class="debt-info-value">${escapeHtml(transaction.date || "-")}</span>
+                </div>
+                <div class="debt-info-row">
+                    <span class="debt-info-label">الوقت</span>
+                    <span class="debt-info-value">${escapeHtml(formatDisplayTime(transaction.time))}</span>
+                </div>
+                <div class="debt-metrics-row">
+                    <div class="debt-metric-box">
+                        <span>المبلغ</span>
+                        <strong class="amount-paid">${Number(transaction.amount || 0).toFixed(2)}</strong>
+                    </div>
+                    <div class="debt-metric-box">
+                        <span>المتبقي</span>
+                        <strong class="amount-remain">${Number(transaction.remainingDebt || 0).toFixed(2)}</strong>
+                    </div>
+                </div>
             </div>`;
         }
 
         const items = Array.isArray(transaction.items) ? transaction.items : [];
-        const itemsHtml = items.map(item =>
-            `<li>${escapeHtml(item.name || "بدون اسم")} × ${Number(item.quantity || 0)} = ${Number(item.total || 0).toFixed(2)} جنيه</li>`
-        ).join("");
+        const itemsHtml = items.map(item => {
+            const quantity = Number(item.quantity || 0);
+            const unitPrice = Number(item.price || 0);
+            const itemTotal = Number(item.total || (quantity * unitPrice) || 0);
+            return `<li>
+                <span class="debt-item-name">${escapeHtml(item.name || "بدون اسم")}</span>
+                <span class="debt-item-middle">${quantity} × ${unitPrice.toFixed(2)}</span>
+                <span class="debt-item-total">${itemTotal.toFixed(2)} جنيه</span>
+            </li>`;
+        }).join("");
 
         return `<div class="debt-transaction sale-transaction">
-            <strong>شكك</strong>
-            <span>${escapeHtml(transaction.date || "-")} ${escapeHtml(transaction.time || "")}</span>
-            <span>الإجمالي: <strong class="amount-total">${Number(transaction.total || 0).toFixed(2)}</strong> جنيه</span>
-            <span>المدفوع: <strong class="amount-paid">${Number(transaction.paid || 0).toFixed(2)}</strong> جنيه</span>
-            <span>الباقي: <strong class="amount-remain">${Number(transaction.debtAdded || 0).toFixed(2)}</strong> جنيه</span>
-            ${itemsHtml ? `<ul>${itemsHtml}</ul>` : ""}
+            <div class="debt-transaction-header">
+                <strong>شكك</strong>
+            </div>
+            <div class="debt-info-row">
+                <span class="debt-info-label">التاريخ</span>
+                <span class="debt-info-value">${escapeHtml(transaction.date || "-")}</span>
+            </div>
+            <div class="debt-info-row">
+                <span class="debt-info-label">الوقت</span>
+                <span class="debt-info-value">${escapeHtml(formatDisplayTime(transaction.time))}</span>
+            </div>
+            <div class="debt-metrics-row">
+                <div class="debt-metric-box">
+                    <span>الإجمالي</span>
+                    <strong class="amount-total">${Number(transaction.total || 0).toFixed(2)}</strong>
+                </div>
+                <div class="debt-metric-box">
+                    <span>المدفوع</span>
+                    <strong class="amount-paid">${Number(transaction.paid || 0).toFixed(2)}</strong>
+                </div>
+                <div class="debt-metric-box">
+                    <span>الباقي</span>
+                    <strong class="amount-remain">${Number(transaction.debtAdded || 0).toFixed(2)}</strong>
+                </div>
+            </div>
+            ${itemsHtml ? `<div class="debt-items-box"><div class="debt-items-title">المنتجات</div><ul>${itemsHtml}</ul></div>` : ""}
         </div>`;
     }).join("");
 }
