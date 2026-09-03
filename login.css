@@ -4721,8 +4721,899 @@ body.dark-mode .viewport {
     background: transparent !important;
 }
 
+/* Last mobile override: keep compact values after all earlier media rules. */
+@media (max-width: 520px) {
+    html,
+    body {
+        overflow-x: hidden !important;
+    }
+
+    input:not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+        height: 34px !important;
+        min-height: 34px !important;
+        padding: 6px 8px !important;
+        font-size: 11px !important;
+        border-radius: 8px !important;
+    }
+
+    #reportDateDisplay,
+    #shakakDate,
+    #shakakTime,
+    #shakakSearchInput,
+    #posSearchInput,
+    #productSearchInput,
+    #debtsSearchInput {
+        height: 34px !important;
+        min-height: 34px !important;
+        font-size: 11px !important;
+    }
+
+    #reportsSection .daily-report-summary,
+    .monthly-report-modal-content .monthly-report-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 5px !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }
+
+    #reportsSection .report-stat-card,
+    .monthly-report-modal-content .monthly-report-stat {
+        min-height: 52px !important;
+        padding: 5px 3px !important;
+        border-radius: 7px !important;
+    }
+
+    #reportsSection .report-stat-card span,
+    .monthly-report-modal-content .monthly-report-stat span {
+        margin-bottom: 2px !important;
+        font-size: 9px !important;
+        line-height: 1.15 !important;
+    }
+
+    #reportsSection .report-stat-card strong,
+    .monthly-report-modal-content .monthly-report-stat strong {
+        font-size: 11px !important;
+        line-height: 1.15 !important;
+    }
+
+    .monthly-report-modal-content,
+    .price-updates-modal-content,
+    .confirm-content,
+    #productModal .modal-content {
+        width: calc(100vw - 20px) !important;
+        max-width: 320px !important;
+        padding: 11px 9px !important;
+        border-radius: 11px !important;
+    }
+
+    .monthly-report-modal-content .monthly-report-stat {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .monthly-report-modal-content .monthly-report-table-wrap {
+        overflow-x: hidden !important;
+    }
+
+    .monthly-report-modal-content .lux-report-table th,
+    .monthly-report-modal-content .lux-report-table td {
+        padding: 5px 2px !important;
+        font-size: 9px !important;
+    }
+
+    #searchSection #resultsList {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 4px !important;
+    }
+
+    #searchSection .product-card {
+        min-height: 102px !important;
+        padding: 2px !important;
+        gap: 1px !important;
+        border-radius: 6px !important;
+    }
+
+    #searchSection .product-thumb {
+        height: 58px !important;
+        min-height: 58px !important;
+        flex-basis: 58px !important;
+    }
+
+    #searchSection .product-thumb img {
+        width: 52px !important;
+        height: 52px !important;
+    }
+
+    .container {
+        padding-top: 36px !important;
+    }
+
+    h2 {
+        width: calc(100% - 86px);
+        margin: 0 auto 6px !important;
+        font-size: 16px !important;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+
+    .theme-toggle,
+    .refresh-btn {
+        top: 6px !important;
+        height: 32px !important;
+        min-height: 32px !important;
+        border-width: 1px !important;
+        border-radius: 8px !important;
+    }
+
+    .theme-toggle {
+        left: 7px !important;
+        width: 32px !important;
+        font-size: 14px !important;
+    }
+
+    .refresh-btn {
+        right: 7px !important;
+        min-width: 32px !important;
+        width: 32px !important;
+        padding: 0 !important;
+        font-size: 20px !important;
+    }
+
+    .tabs {
+        gap: 4px !important;
+        margin-bottom: 8px !important;
+        padding: 4px !important;
+        border-radius: 8px !important;
+    }
+
+    .tabs .tab-btn,
+    .tab-btn {
+        min-height: 32px !important;
+        padding: 5px 2px !important;
+        font-size: 10px !important;
+        border-radius: 7px !important;
+    }
+
+    #pos-section .inline-style-7,
+    #pos-section .invoice-grand-total-container {
+        gap: 5px !important;
+        margin-bottom: 7px !important;
+        padding: 6px 7px !important;
+        border-radius: 7px !important;
+        font-size: 11px !important;
+        line-height: 1.2 !important;
+    }
+
+    #pos-section .inline-style-8,
+    #pos-section .inline-style-9,
+    #pos-section .inline-style-10,
+    #pos-section #posItemCount {
+        font-size: 11px !important;
+    }
+
+    #pos-section .inline-style-10 {
+        font-size: 12px !important;
+    }
+
+    #shakakSection #shakakDate,
+    #shakakSection #shakakTime {
+        height: 30px !important;
+        min-height: 30px !important;
+        padding: 4px 6px !important;
+        font-size: 10px !important;
+    }
+
+    #searchSection #resultsList {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 3px !important;
+    }
+
+    #searchSection .product-card {
+        min-height: 94px !important;
+        padding: 2px !important;
+        gap: 1px !important;
+        border-radius: 5px !important;
+    }
+
+    #searchSection .product-thumb {
+        height: 52px !important;
+        min-height: 52px !important;
+        flex-basis: 52px !important;
+    }
+
+    #searchSection .product-thumb img {
+        width: 46px !important;
+        height: 46px !important;
+    }
+
+    #searchSection .product-info {
+        min-height: 29px !important;
+    }
+
+    #searchSection .product-info h4,
+    #searchSection .product-price-txt,
+    #searchSection .product-price-txt strong {
+        font-size: 7px !important;
+        line-height: 1.05 !important;
+    }
+
+    #searchSection .product-info h4 {
+        min-height: 2em !important;
+    }
+
+    .monthly-report-modal-content .monthly-report-summary {
+        gap: 4px !important;
+    }
+
+    .monthly-report-modal-content .monthly-report-stat {
+        min-height: 46px !important;
+        padding: 4px 2px !important;
+        border-radius: 6px !important;
+    }
+
+    .monthly-report-modal-content .monthly-report-stat span,
+    .monthly-report-modal-content .monthly-report-stat strong {
+        font-size: 8px !important;
+        line-height: 1.1 !important;
+    }
+
+    #debtsSection .debts-container {
+        padding: 0 !important;
+    }
+
+    #debtsSection .form-group {
+        margin-bottom: 6px !important;
+    }
+
+    #debtsSection .debt-customers-list {
+        gap: 5px !important;
+    }
+
+    #debtsSection .debt-customer-card {
+        padding: 7px !important;
+        gap: 5px !important;
+        border-radius: 7px !important;
+    }
+
+    #debtsSection .debt-customer-info h4 {
+        margin-bottom: 2px !important;
+        font-size: 12px !important;
+    }
+
+    #debtsSection .debt-meta {
+        font-size: 10px !important;
+    }
+
+    #debtsSection .debt-card-actions {
+        gap: 4px !important;
+    }
+
+    #debtsSection .debt-card-actions button,
+    #debtsSection .btn-open-debt-details,
+    #debtsSection .btn-open-debt-payment {
+        min-height: 28px !important;
+        padding: 5px 7px !important;
+        border-radius: 7px !important;
+        font-size: 9px !important;
+    }
+}
+
+/* Final compact sizing for small mobile screens only. */
+@media (max-width: 520px) {
+    html,
+    body {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    input:not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+        width: 100%;
+        height: 34px !important;
+        min-height: 34px !important;
+        padding: 6px 8px !important;
+        border-radius: 8px !important;
+        font-size: 11px !important;
+    }
+
+    .report-date-control > input[type="date"],
+    #monthlyReportMonthInput {
+        width: 1px !important;
+        height: 1px !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+    }
+
+    #reportsSection .daily-report-summary,
+    .monthly-report-modal-content .monthly-report-summary {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 5px !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        overflow: hidden !important;
+        padding: 0 !important;
+    }
+
+    #reportsSection .report-stat-card,
+    .monthly-report-modal-content .monthly-report-stat {
+        width: 100% !important;
+        min-width: 0 !important;
+        min-height: 52px !important;
+        padding: 5px 3px !important;
+        border-radius: 7px !important;
+    }
+
+    #reportsSection .report-stat-card span,
+    .monthly-report-modal-content .monthly-report-stat span {
+        margin-bottom: 2px !important;
+        font-size: 9px !important;
+        line-height: 1.15 !important;
+        white-space: nowrap;
+    }
+
+    #reportsSection .report-stat-card strong,
+    .monthly-report-modal-content .monthly-report-stat strong {
+        font-size: 11px !important;
+        line-height: 1.15 !important;
+    }
+
+    .monthly-report-modal-content,
+    .price-updates-modal-content,
+    .confirm-content,
+    #productModal .modal-content {
+        width: calc(100vw - 20px) !important;
+        max-width: 320px !important;
+        padding: 11px 9px !important;
+        border-radius: 11px !important;
+    }
+
+    .monthly-report-modal-content .monthly-report-header {
+        gap: 5px !important;
+        margin-bottom: 7px !important;
+        padding-bottom: 6px !important;
+    }
+
+    .monthly-report-modal-content .monthly-report-header h3 {
+        font-size: 14px !important;
+    }
+
+    .monthly-report-modal-content .monthly-report-header .confirm-cancel-btn,
+    #priceUpdatesModal .monthly-report-header .confirm-cancel-btn {
+        height: 30px !important;
+        min-height: 30px !important;
+        padding: 4px 8px !important;
+        font-size: 10px !important;
+    }
+
+    .monthly-report-modal-content .monthly-report-month-picker {
+        height: 30px !important;
+        min-height: 30px !important;
+        padding: 4px 6px !important;
+        font-size: 10px !important;
+    }
+
+    .monthly-report-modal-content .monthly-report-month-display {
+        min-width: 64px;
+        height: 22px;
+        font-size: 11px !important;
+    }
+
+    .monthly-report-modal-content .monthly-report-table-wrap {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+    }
+
+    .monthly-report-modal-content .lux-report-table th,
+    .monthly-report-modal-content .lux-report-table td {
+        padding: 5px 2px !important;
+        font-size: 9px !important;
+        line-height: 1.15 !important;
+    }
+
+    #reportsSection .daily-report-container,
+    #reportsSection .daily-report-sales,
+    .daily-report-card,
+    .stat-card,
+    .quick-product-item,
+    .debt-customer-card {
+        margin-bottom: 5px !important;
+        padding: 6px !important;
+        border-radius: 8px !important;
+    }
+
+    #reportsSection .daily-report-cards {
+        gap: 5px !important;
+    }
+
+    #reportsSection .daily-report-card-items {
+        gap: 2px !important;
+        padding: 4px 0 !important;
+    }
+
+    #searchSection #resultsList {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 4px !important;
+    }
+
+    #searchSection .product-card {
+        min-height: 102px !important;
+        padding: 2px !important;
+        gap: 1px !important;
+        border-radius: 6px !important;
+    }
+
+    #searchSection .product-thumb {
+        height: 58px !important;
+        min-height: 58px !important;
+        flex-basis: 58px !important;
+    }
+
+    #searchSection .product-thumb img {
+        width: 52px !important;
+        height: 52px !important;
+    }
+
+    #searchSection .product-info {
+        min-height: 32px !important;
+    }
+
+    #searchSection .product-info h4 {
+        font-size: 8px !important;
+        line-height: 1.05 !important;
+    }
+
+    #searchSection .product-price-txt,
+    #searchSection .product-price-txt strong {
+        font-size: 8px !important;
+        line-height: 1.05 !important;
+    }
+}
+
+/* Final phone-only compact adjustments for reports, notes, and products. */
+@media (max-width: 767px) {
+    #reportsSection .daily-report-container {
+        padding: 7px !important;
+        border-radius: 9px;
+    }
+
+    #reportsSection .daily-report-header {
+        margin-bottom: 6px !important;
+    }
+
+    #reportsSection .daily-report-header-row {
+        gap: 5px !important;
+        margin-bottom: 6px !important;
+    }
+
+    #reportsSection .daily-report-date-picker,
+    #reportsSection .daily-report-day-box {
+        padding: 5px 6px !important;
+        border-radius: 8px !important;
+    }
+
+    #reportsSection .daily-report-summary {
+        gap: 5px !important;
+        margin-bottom: 7px !important;
+    }
+
+    #reportsSection .report-stat-card {
+        padding: 6px 3px !important;
+        border-radius: 8px !important;
+    }
+
+    #reportsSection .daily-report-card {
+        padding: 8px !important;
+        border-radius: 8px !important;
+    }
+
+    #reportsSection .daily-report-cards {
+        gap: 7px !important;
+    }
+
+    #reportsSection .daily-report-card-items {
+        gap: 3px !important;
+        padding: 6px 0 !important;
+    }
+
+    #reportsSection .daily-report-card-item {
+        padding: 5px 0 !important;
+        font-size: 10px !important;
+    }
+
+    #shakakSection .shakak-container {
+        padding: 0 !important;
+    }
+
+    #shakakSection .shakak-date-time-grid {
+        gap: 5px !important;
+        margin-bottom: 6px !important;
+    }
+
+    #shakakSection .shakak-date-time-grid input,
+    #shakakSection #shakakCustomerName,
+    #shakakSection #shakakPaidAmount {
+        height: 34px !important;
+        min-height: 34px !important;
+        padding: 6px !important;
+        font-size: 11px !important;
+    }
+
+    #shakakSection .pos-search-row {
+        gap: 5px !important;
+        margin-bottom: 7px !important;
+    }
+
+    #shakakSection #shakakSearchInput,
+    #shakakSection .shakak-scan-btn {
+        height: 34px !important;
+        min-height: 34px !important;
+    }
+
+    #shakakSection .shakak-total-box {
+        gap: 5px !important;
+        margin-bottom: 7px !important;
+        padding: 7px 8px !important;
+        border-radius: 8px !important;
+    }
+
+    #shakakSection .shakak-total-line,
+    #shakakSection .shakak-grand-total {
+        font-size: 12px !important;
+    }
+
+    #shakakSection .table-scroll,
+    #shakakSection .lux-table-wrap {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        margin-bottom: 7px !important;
+    }
+
+    #shakakSection #shakakTable {
+        width: 100% !important;
+        min-width: 0 !important;
+        table-layout: fixed !important;
+    }
+
+    #shakakSection #shakakTable th,
+    #shakakSection #shakakTable td {
+        padding: 5px 2px !important;
+        font-size: 10px !important;
+        line-height: 1.2 !important;
+        overflow: hidden;
+        word-break: break-word;
+    }
+
+    #shakakSection #shakakTable th:nth-child(1),
+    #shakakSection #shakakTable td:nth-child(1) { width: 28% !important; }
+
+    #shakakSection #shakakTable th:nth-child(2),
+    #shakakSection #shakakTable td:nth-child(2) { width: 25% !important; }
+
+    #shakakSection #shakakTable th:nth-child(3),
+    #shakakSection #shakakTable td:nth-child(3) { width: 17% !important; }
+
+    #shakakSection #shakakTable th:nth-child(4),
+    #shakakSection #shakakTable td:nth-child(4) { width: 18% !important; }
+
+    #shakakSection #shakakTable th:nth-child(5),
+    #shakakSection #shakakTable td:nth-child(5) { width: 12% !important; }
+
+    #shakakSection #shakakTable .quantity-controls {
+        gap: 1px !important;
+        max-width: 100% !important;
+    }
+
+    #shakakSection #shakakTable .quantity-controls button {
+        flex: 0 0 19px !important;
+        width: 19px !important;
+        min-width: 19px !important;
+        height: 22px !important;
+        padding: 0 !important;
+        font-size: 13px !important;
+        line-height: 22px !important;
+    }
+
+    #shakakSection #shakakTable .quantity-controls span {
+        min-width: 13px !important;
+        font-size: 11px !important;
+    }
+
+    #shakakSection .btn-save-shakak {
+        min-height: 32px !important;
+        height: 32px !important;
+        padding: 5px 16px !important;
+        border-radius: 14px !important;
+        font-size: 11px !important;
+    }
+
+    #searchSection #resultsList {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 5px !important;
+    }
+
+    #searchSection .product-card {
+        min-height: 108px !important;
+        padding: 3px !important;
+        gap: 2px !important;
+        border-radius: 7px !important;
+    }
+
+    #searchSection .product-thumb {
+        height: 64px !important;
+        min-height: 64px !important;
+        flex-basis: 64px !important;
+    }
+
+    #searchSection .product-thumb img {
+        width: 58px !important;
+        height: 58px !important;
+    }
+
+    #searchSection .product-info {
+        min-height: 36px !important;
+    }
+
+    #searchSection .product-info h4 {
+        min-height: 2.2em !important;
+        font-size: 9px !important;
+        line-height: 1.1 !important;
+    }
+
+    #searchSection .product-price-txt {
+        font-size: 8px !important;
+        line-height: 1.1 !important;
+    }
+
+    #searchSection .product-price-txt strong {
+        font-size: 9px !important;
+    }
+}
+
+@media (max-width: 767px) {
+    input:not([type="file"]):not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+        height: 38px !important;
+        min-height: 38px !important;
+        padding: 7px 8px !important;
+        font-size: 12px !important;
+    }
+
+    .tabs .tab-btn,
+    .tab-btn {
+        min-height: 36px !important;
+        padding: 6px 4px !important;
+        font-size: 11px !important;
+    }
+
+    .inline-style-5,
+    #shakakSearchInput,
+    #posSearchInput,
+    #debtsSearchInput,
+    #productSearchInput {
+        height: 38px !important;
+        min-height: 38px !important;
+    }
+
+    .pos-scan-btn,
+    .shakak-scan-btn,
+    .btn-qr-scan {
+        height: 34px !important;
+        min-height: 34px !important;
+        padding: 0 10px !important;
+    }
+}
+
+/* Compact layout for phone screens only. */
+@media (max-width: 767px) {
+    body {
+        padding: 8px;
+        padding-bottom: 35vh;
+        align-items: flex-start;
+    }
+
+    .container {
+        padding: 12px 10px 16px !important;
+        padding-top: 42px !important;
+        border-radius: 14px;
+    }
+
+    h2 {
+        margin-bottom: 10px;
+        font-size: 21px;
+    }
+
+    .connection-status {
+        margin-bottom: 10px;
+        padding: 7px 9px;
+        border-radius: 8px;
+        font-size: 11px;
+    }
+
+    .tabs {
+        gap: 6px;
+        margin-bottom: 12px;
+        padding: 5px;
+        border-radius: 10px;
+    }
+
+    .tab-btn {
+        padding: 8px 4px;
+        border-width: 1px;
+        border-radius: 8px;
+        font-size: 11px;
+    }
+
+    label {
+        margin-bottom: 4px;
+        font-size: 12px;
+    }
+
+    .form-group {
+        margin-bottom: 2px;
+    }
+
+    input,
+    select,
+    textarea {
+        padding: 9px 8px;
+        border-width: 1px;
+        border-radius: 9px;
+        font-size: 12px;
+    }
+
+    button {
+        font-size: 12px;
+    }
+
+    .barcode-container,
+    .image-picker-row,
+    .pos-search-row {
+        gap: 6px;
+    }
+
+    .btn-qr-scan,
+    .pos-scan-btn,
+    .shakak-scan-btn {
+        height: 34px;
+        min-height: 34px;
+        padding: 0 10px;
+        border-radius: 8px;
+        font-size: 10px;
+    }
+
+    .btn-qr-scan svg,
+    .pos-scan-btn svg,
+    .shakak-scan-btn svg {
+        width: 15px;
+        height: 15px;
+    }
+
+    .pos-container,
+    .daily-report-container,
+    #priceUpdatesSection {
+        padding: 10px !important;
+        border-radius: 12px;
+    }
+
+    .pos-actions,
+    .shakak-actions,
+    .modal-buttons,
+    .debt-card-actions,
+    .debt-payment-actions {
+        gap: 6px;
+    }
+
+    .pos-action-btn,
+    .btn-save,
+    .btn-save-shakak,
+    .btn-pay-debt,
+    .btn-delete-selected,
+    .btn-select-all,
+    .btn-back-section,
+    .confirm-delete-btn,
+    .confirm-cancel-btn {
+        min-height: 34px;
+        padding: 7px 10px;
+        border-radius: 8px;
+        font-size: 11px;
+    }
+
+    .btn-save {
+        height: 34px !important;
+        padding: 7px 10px;
+        margin-top: 7px;
+    }
+
+    .stats-grid {
+        gap: 6px;
+        margin-bottom: 10px;
+    }
+
+    .stat-card {
+        padding: 8px 5px;
+        border-width: 1px;
+        border-radius: 9px;
+    }
+
+    .stat-card span {
+        font-size: 11px;
+    }
+
+    .stat-card strong {
+        font-size: 15px;
+    }
+
+    #resultsList {
+        gap: 6px;
+    }
+
+    #searchSection .product-card {
+        padding: 4px !important;
+        gap: 3px !important;
+        border-radius: 9px;
+    }
+
+    #searchSection .product-thumb {
+        flex-basis: 70px !important;
+        height: 70px !important;
+        min-height: 70px !important;
+    }
+
+    #searchSection .product-thumb img {
+        width: 64px !important;
+        height: 64px !important;
+    }
+
+    #searchSection .product-info {
+        min-height: 42px;
+    }
+
+    #searchSection .product-info h4 {
+        font-size: 12px;
+    }
+
+    #searchSection .product-price-txt {
+        margin-top: 2px !important;
+        font-size: 11px;
+    }
+
+    .lux-table-wrap {
+        border-radius: 9px;
+    }
+
+    .lux-table th,
+    .lux-table td {
+        padding: 7px 4px;
+        font-size: 11px;
+    }
+
+    .modal {
+        padding: 8px;
+    }
+
+    .modal-content {
+        width: min(92vw, 310px);
+        max-width: 310px;
+        min-height: 280px;
+        padding: 16px 12px 12px;
+        border-radius: 14px;
+    }
+
+    #productModal .modal-product-actions {
+        gap: 6px;
+    }
+}
+
 /* Compact product modal actions on every screen size. */
 #productModal .modal-product-actions {
+    display: flex;
+    align-items: stretch;
     width: 100%;
     gap: 6px;
     margin-top: 12px;
@@ -4732,11 +5623,12 @@ body.dark-mode .viewport {
     flex: 1 1 0;
     width: auto !important;
     min-width: 0 !important;
-    height: 34px;
-    min-height: 34px;
-    padding: 6px 8px !important;
+    height: 36px;
+    min-height: 36px;
+    margin: 0 !important;
+    padding: 5px 8px !important;
     border-radius: 8px !important;
-    font-size: 12px !important;
+    font-size: 11px !important;
     line-height: 1.2;
     font-weight: 800;
     white-space: nowrap;
@@ -5166,4 +6058,133 @@ body.dark-mode #searchSection .product-card {
     object-position: center !important;
     border-radius: 0 !important;
     background: transparent !important;
+}
+
+/* Last mobile override: keep compact values after all earlier media rules. */
+@media (max-width: 520px) {
+    html,
+    body {
+        overflow-x: hidden !important;
+    }
+
+    input:not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+        height: 34px !important;
+        min-height: 34px !important;
+        padding: 6px 8px !important;
+        font-size: 11px !important;
+        border-radius: 8px !important;
+    }
+
+    #reportDateDisplay,
+    #shakakDate,
+    #shakakTime,
+    #shakakSearchInput,
+    #posSearchInput,
+    #productSearchInput,
+    #debtsSearchInput {
+        height: 34px !important;
+        min-height: 34px !important;
+        font-size: 11px !important;
+    }
+
+    #reportsSection .daily-report-summary,
+    .monthly-report-modal-content .monthly-report-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 5px !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }
+
+    #reportsSection .report-stat-card,
+    .monthly-report-modal-content .monthly-report-stat {
+        min-height: 52px !important;
+        padding: 5px 3px !important;
+        border-radius: 7px !important;
+    }
+
+    #reportsSection .report-stat-card span,
+    .monthly-report-modal-content .monthly-report-stat span {
+        margin-bottom: 2px !important;
+        font-size: 9px !important;
+        line-height: 1.15 !important;
+    }
+
+    #reportsSection .report-stat-card strong,
+    .monthly-report-modal-content .monthly-report-stat strong {
+        font-size: 11px !important;
+        line-height: 1.15 !important;
+    }
+
+    .monthly-report-modal-content,
+    .price-updates-modal-content,
+    .confirm-content,
+    #productModal .modal-content {
+        width: calc(100vw - 20px) !important;
+        max-width: 320px !important;
+        padding: 11px 9px !important;
+        border-radius: 11px !important;
+    }
+
+    .monthly-report-modal-content .monthly-report-stat {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .monthly-report-modal-content .monthly-report-table-wrap {
+        overflow-x: hidden !important;
+    }
+
+    .monthly-report-modal-content .lux-report-table th,
+    .monthly-report-modal-content .lux-report-table td {
+        padding: 5px 2px !important;
+        font-size: 9px !important;
+    }
+
+    #searchSection #resultsList {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 4px !important;
+    }
+
+    #searchSection .product-card {
+        min-height: 102px !important;
+        padding: 2px !important;
+        gap: 1px !important;
+        border-radius: 6px !important;
+    }
+
+    #searchSection .product-thumb {
+        height: 58px !important;
+        min-height: 58px !important;
+        flex-basis: 58px !important;
+    }
+
+    #searchSection .product-thumb img {
+        width: 52px !important;
+        height: 52px !important;
+    }
+}
+
+@media (max-width: 520px) {
+    h2 {
+        position: absolute;
+        top: 13px;
+        left: 43px;
+        right: 43px;
+        width: auto;
+        margin: 0 !important;
+    }
+
+    .monthly-report-modal-content .monthly-report-stat {
+        min-height: 46px !important;
+        height: 46px !important;
+        padding: 4px 2px !important;
+    }
+
+    .monthly-report-modal-content .monthly-report-stat span,
+    .monthly-report-modal-content .monthly-report-stat strong {
+        font-size: 8px !important;
+        line-height: 1.1 !important;
+    }
 }
