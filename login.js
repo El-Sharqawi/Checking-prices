@@ -215,35 +215,59 @@ function unlockBodyScrollForModal() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    if (window.innerWidth <= 768) {
-        const inputs = document.querySelectorAll('input, textarea, select');
+function isMobileInputViewport() {
+    return window.matchMedia('(max-width: 767px)').matches;
+}
 
-        inputs.forEach(element => {
-            element.addEventListener('focus', function() {
-                setTimeout(() => {
-                    const rect = element.getBoundingClientRect();
-                    const outputHeight = window.innerHeight || document.documentElement.clientHeight;
-                    const spaceBelow = outputHeight - rect.bottom;
-                    const shouldOpenAbove = spaceBelow < 220;
+function getInputDropdown(input) {
+    const parent = input.closest('.pos-search-wrap, .shakak-customer-wrap, .report-date-control');
+    if (!parent) return null;
+    return parent.querySelector('.pos-autocomplete-results, .shakak-customer-results, .report-calendar');
+}
 
-                    const parent = element.closest('.pos-search-wrap, .shakak-customer-wrap');
-                    const dropdown = parent ? parent.querySelector('.pos-autocomplete-results, .shakak-customer-results') : null;
+function keepMobileInputVisible(input) {
+    if (!isMobileInputViewport() || !input || !input.matches('input, select, textarea')) return;
 
-                    if (dropdown) {
-                        dropdown.classList.toggle('open-above', shouldOpenAbove);
-                        dropdown.style.top = shouldOpenAbove ? 'auto' : '100%';
-                        dropdown.style.bottom = shouldOpenAbove ? 'calc(100% + 4px)' : 'auto';
-                    }
+    const viewport = window.visualViewport;
+    const viewportTop = viewport ? viewport.offsetTop : 0;
+    const viewportHeight = viewport ? viewport.height : window.innerHeight;
+    const keyboardBuffer = 96;
+    const safeTop = viewportTop + 56;
+    const safeBottom = viewportTop + viewportHeight - keyboardBuffer;
+    const rect = input.getBoundingClientRect();
+    const dropdown = getInputDropdown(input);
+    const dropdownHeight = dropdown && getComputedStyle(dropdown).display !== 'none'
+        ? Math.min(dropdown.scrollHeight || 0, 220)
+        : 0;
+    const needsSpaceAbove = Boolean(dropdown && rect.bottom + dropdownHeight > safeBottom);
 
-                    window.scrollTo({
-                        top: rect.top + window.scrollY - 200,
-                        behavior: 'smooth'
-                    });
-                }, 350);
-            });
-        });
+    if (dropdown) {
+        dropdown.classList.toggle('open-above', needsSpaceAbove);
+        dropdown.style.top = needsSpaceAbove ? 'auto' : '100%';
+        dropdown.style.bottom = needsSpaceAbove ? 'calc(100% + 4px)' : 'auto';
     }
+
+    const targetTop = needsSpaceAbove
+        ? Math.max(viewportTop + 20, rect.top - Math.max(0, dropdownHeight - 12))
+        : Math.max(safeTop, rect.top);
+    const targetBottom = needsSpaceAbove ? safeBottom : safeBottom - dropdownHeight;
+    const scrollDelta = rect.bottom > targetBottom
+        ? rect.bottom - targetBottom
+        : rect.top < targetTop
+            ? rect.top - targetTop
+            : 0;
+
+    if (Math.abs(scrollDelta) > 1) {
+        window.scrollBy({ top: scrollDelta, behavior: 'smooth' });
+    } else {
+        input.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+    }
+}
+
+document.addEventListener('focusin', event => {
+    if (!event.target.matches('input, select, textarea')) return;
+    window.setTimeout(() => keepMobileInputVisible(event.target), 250);
+    window.setTimeout(() => keepMobileInputVisible(event.target), 550);
 });
 
 function escapeHtml(value) {
