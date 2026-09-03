@@ -532,6 +532,38 @@ input:focus {
     box-shadow: 0 6px 16px rgba(185, 28, 28, 0.18);
 }
 
+.modal-product-actions {
+    display: flex;
+    width: 100%;
+    gap: 8px;
+    margin-top: auto;
+}
+
+.modal-product-actions button {
+    flex: 1;
+    min-width: 0;
+}
+
+.modal-edit-btn {
+    border: none;
+    border-radius: 10px;
+    background: var(--primary);
+    color: #fff;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(41, 128, 185, .18);
+}
+
+.modal-edit-btn:hover {
+    filter: brightness(1.08);
+}
+
+body.dark-mode .modal-edit-btn {
+    background: #2563eb;
+}
+
 .btn-edit,
 .btn-delete {
     border: none;
@@ -4248,6 +4280,236 @@ body.dark-mode .quantity-controls {
     color: var(--primary);
 }
 
+/* Dark mode contrast for components with legacy fixed colors. */
+body.dark-mode {
+    color-scheme: dark;
+    --primary: #60a5fa;
+    --bg-body: #0b1220;
+    --card-bg: linear-gradient(135deg, #172235 0%, #0f172a 100%);
+    --input-bg: #172235;
+    --text-main: #f8fafc;
+    --text-muted: #a8b6c8;
+    --border-color: #3b4b62;
+    --stats-bg: #172235;
+    --hover-bg: #26364c;
+    --table-header-bg: #223149;
+    --app-button-bg: #26364c;
+    --app-button-text: #f8fafc;
+    --app-button-border: #465a75;
+    --app-button-hover: #31445f;
+    --qr-bg: #0f766e;
+    --qr-hover: #115e59;
+}
+
+body.dark-mode .container,
+body.dark-mode .pos-container,
+body.dark-mode .daily-report-container,
+body.dark-mode #priceUpdatesSection,
+body.dark-mode .modal-content {
+    background: var(--card-bg) !important;
+    color: var(--text-main);
+    border-color: var(--border-color);
+}
+
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea,
+body.dark-mode #reportDateDisplay,
+body.dark-mode .report-day-nav,
+body.dark-mode .calendar-month-nav,
+body.dark-mode .monthly-report-month-picker {
+    background: var(--input-bg) !important;
+    color: var(--text-main) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-mode .monthly-report-month-picker > span,
+body.dark-mode .monthly-report-month-display {
+    color: var(--text-main) !important;
+}
+
+body.dark-mode input::placeholder,
+body.dark-mode textarea::placeholder {
+    color: #8292a8;
+}
+
+body.dark-mode .tabs,
+body.dark-mode .stat-card,
+body.dark-mode .report-stat-card,
+body.dark-mode .shakak-payment-summary,
+body.dark-mode .debt-payment-panel,
+body.dark-mode .debt-transaction,
+body.dark-mode .daily-report-card,
+body.dark-mode .cart-empty,
+body.dark-mode .daily-report-empty {
+    background: var(--stats-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-main);
+}
+
+body.dark-mode .tab-btn,
+body.dark-mode .tabs .tab-btn {
+    background: var(--app-button-bg) !important;
+    color: var(--app-button-text) !important;
+}
+
+body.dark-mode .tab-btn:hover:not(.active),
+body.dark-mode .tabs .tab-btn:hover:not(.active) {
+    background: var(--app-button-hover) !important;
+    color: var(--text-main) !important;
+}
+
+body.dark-mode .tab-btn.active,
+body.dark-mode .tabs .tab-btn.active {
+    background: #2563eb !important;
+    color: #fff !important;
+}
+
+body.dark-mode .lux-table,
+body.dark-mode .lux-table tbody td,
+body.dark-mode .daily-report-table,
+body.dark-mode .daily-report-table td,
+body.dark-mode .shakak-table,
+body.dark-mode .shakak-table td {
+    color: var(--text-main);
+}
+
+body.dark-mode .lux-table thead th,
+body.dark-mode .daily-report-table th,
+body.dark-mode .shakak-table th {
+    background: var(--table-header-bg) !important;
+    color: var(--text-main) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-mode .lux-table tbody td,
+body.dark-mode .daily-report-table td,
+body.dark-mode .shakak-table td {
+    border-color: rgba(148, 163, 184, .24) !important;
+}
+
+body.dark-mode .product-card,
+body.dark-mode .quick-product-item,
+body.dark-mode .pos-autocomplete-results,
+body.dark-mode #posAutocompleteResults,
+body.dark-mode .price-update-row,
+body.dark-mode .monthly-report-stat,
+body.dark-mode .monthly-report-month-picker {
+    background: var(--input-bg) !important;
+    color: var(--text-main) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-mode .pos-suggestion-item:hover,
+body.dark-mode .pos-suggestion-item.active-suggestion,
+body.dark-mode .shakak-suggestion-item:hover,
+body.dark-mode .shakak-suggestion-item.active-suggestion,
+body.dark-mode .shakak-customer-suggestion-item:hover,
+body.dark-mode .shakak-customer-suggestion-item.active-suggestion,
+body.dark-mode .quick-product-item.active {
+    background: #263f63 !important;
+}
+
+body.dark-mode .modal-barcode,
+body.dark-mode .product-barcode-txt,
+body.dark-mode .price-update-barcode,
+body.dark-mode .monthly-report-header h3,
+body.dark-mode .monthly-report-month-picker,
+body.dark-mode .monthly-report-month-picker input,
+body.dark-mode .monthly-report-stat strong,
+body.dark-mode .monthly-report-stat span {
+    color: var(--text-main) !important;
+}
+
+body.dark-mode .monthly-report-stat,
+body.dark-mode .monthly-report-stat:nth-child(1),
+body.dark-mode .monthly-report-stat:nth-child(2),
+body.dark-mode .monthly-report-stat:nth-child(3),
+body.dark-mode .monthly-report-empty {
+    background: var(--stats-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-mode .monthly-report-empty {
+    color: var(--text-muted) !important;
+}
+
+body.dark-mode .quantity-controls {
+    background: #0f172a !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-mode .quantity-controls button,
+body.dark-mode .invoice-qty-controls button,
+body.dark-mode .pos-qty-btn {
+    color: #f8fafc !important;
+    background: rgba(148, 163, 184, .14) !important;
+}
+
+body.dark-mode .modal-barcode {
+    color: #dbeafe !important;
+}
+
+body.dark-mode .monthly-report-btn {
+    background: linear-gradient(135deg, #1e3a5f 0%, #172b46 100%) !important;
+    color: #dbeafe !important;
+    border-color: #41658f !important;
+}
+
+body.dark-mode .monthly-report-btn span,
+body.dark-mode .monthly-report-btn strong,
+body.dark-mode .stat-card span,
+body.dark-mode .stat-card strong {
+    color: inherit !important;
+}
+
+body.dark-mode .pos-shakak-btn {
+    background: linear-gradient(135deg, #4c1d59, #a21caf) !important;
+}
+
+body.dark-mode .pos-sale-btn,
+body.dark-mode .btn-save,
+body.dark-mode .btn-save-shakak,
+body.dark-mode .btn-pay-debt {
+    background: #15803d !important;
+    color: #fff !important;
+}
+
+body.dark-mode .btn-delete,
+body.dark-mode .btn-delete-selected,
+body.dark-mode .btn-clear-shakak,
+body.dark-mode .modal-delete-btn {
+    background: #be123c !important;
+    color: #fff !important;
+}
+
+body.dark-mode .btn-edit {
+    background: #059669 !important;
+    color: #fff !important;
+}
+
+body.dark-mode .btn-open-debt-details,
+body.dark-mode .btn-select-all,
+body.dark-mode .btn-cancel-debt {
+    background: var(--app-button-bg) !important;
+    color: var(--text-main) !important;
+    border-color: var(--app-button-border) !important;
+}
+
+body.dark-mode .debt-payment-label,
+body.dark-mode #debtsSection .amount-paid {
+    color: #79d3b4 !important;
+}
+
+body.dark-mode #debtsSection .debt-sale-label,
+body.dark-mode #debtsSection .amount-old {
+    color: #a8b6c8 !important;
+}
+
+body.dark-mode .viewport {
+    background: #020617;
+}
+
 .monthly-report-modal-content .monthly-report-summary {
     grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -4431,4 +4693,477 @@ body.dark-mode .quantity-controls {
         padding: 28px 30px 32px;
         padding-top: 52px !important;
     }
+}
+
+/* Fixed image frame keeps every product thumbnail aligned. */
+#searchSection .product-thumb {
+    width: 100% !important;
+    height: 90px !important;
+    min-height: 90px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+    background: transparent !important;
+    border-radius: 6px !important;
+    transform: none !important;
+}
+
+#searchSection .product-thumb img {
+    display: block !important;
+    width: 82px !important;
+    height: 82px !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+}
+
+/* Compact product modal actions on every screen size. */
+#productModal .modal-product-actions {
+    width: 100%;
+    gap: 6px;
+    margin-top: 12px;
+}
+
+#productModal .modal-product-actions button {
+    flex: 1 1 0;
+    width: auto !important;
+    min-width: 0 !important;
+    height: 34px;
+    min-height: 34px;
+    padding: 6px 8px !important;
+    border-radius: 8px !important;
+    font-size: 12px !important;
+    line-height: 1.2;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+#searchSection .product-thumb {
+    flex: 0 0 90px !important;
+    aspect-ratio: 1 / 1 !important;
+}
+
+/* Final product card sizing and compact image preview. */
+#searchSection .product-card {
+    min-height: 0 !important;
+    padding: 6px !important;
+    gap: 4px !important;
+    overflow: hidden !important;
+}
+
+#searchSection .product-info {
+    flex: 0 0 auto !important;
+    min-height: 50px;
+    justify-content: flex-start !important;
+}
+
+#searchSection .product-info h4 {
+    min-height: 2.5em;
+    margin: 0 !important;
+    line-height: 1.25 !important;
+    overflow-wrap: anywhere;
+}
+
+#searchSection .product-price-txt {
+    min-height: 1.4em;
+    margin: 4px 0 0 !important;
+    line-height: 1.4 !important;
+    white-space: nowrap;
+}
+
+.image-preview-wrap {
+    width: 120px !important;
+    height: 92px !important;
+    min-height: 92px !important;
+    margin-top: 8px !important;
+    padding: 5px !important;
+    border-radius: 8px !important;
+    background: var(--input-bg) !important;
+    box-shadow: 0 3px 10px rgba(15, 23, 42, .10) !important;
+}
+
+.image-preview-wrap img {
+    width: auto !important;
+    height: auto !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    padding: 0 !important;
+    border-radius: 5px !important;
+    background: transparent !important;
+}
+
+body.dark-mode .image-preview-wrap {
+    background: var(--stats-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+@media (max-width: 560px) {
+    .monthly-report-modal-content .monthly-report-summary {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        grid-template-areas:
+            "top total"
+            "cash credit" !important;
+        gap: 6px !important;
+        overflow: visible !important;
+        padding: 0 !important;
+    }
+
+    .monthly-report-modal-content .monthly-report-stat {
+        width: auto !important;
+        min-width: 0 !important;
+        min-height: 64px;
+        padding: 7px 3px;
+    }
+
+    .monthly-report-modal-content .monthly-report-stat:nth-child(1) {
+        grid-area: total;
+    }
+
+    .monthly-report-modal-content .monthly-report-stat:nth-child(2) {
+        grid-area: cash;
+    }
+
+    .monthly-report-modal-content .monthly-report-stat:nth-child(3) {
+        grid-area: credit;
+    }
+
+    .monthly-report-modal-content .monthly-report-stat:nth-child(4) {
+        grid-area: top;
+    }
+
+    .monthly-report-modal-content .monthly-report-stat span {
+        font-size: 9px !important;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+
+    .monthly-report-modal-content .monthly-report-stat strong {
+        font-size: 12px !important;
+        line-height: 1.2;
+    }
+
+    .monthly-report-modal-content .monthly-report-table-wrap {
+        overflow-x: hidden !important;
+    }
+
+    .monthly-report-modal-content .lux-report-table {
+        min-width: 0 !important;
+        width: 100% !important;
+        table-layout: fixed !important;
+    }
+
+    .monthly-report-modal-content .lux-report-table th,
+    .monthly-report-modal-content .lux-report-table td {
+        padding: 8px 2px !important;
+        font-size: 10px !important;
+        line-height: 1.2 !important;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .monthly-report-modal-content .lux-report-table th:nth-child(1),
+    .monthly-report-modal-content .lux-report-table td:nth-child(1) {
+        width: 34%;
+    }
+
+    .monthly-report-modal-content .lux-report-table th:nth-child(2),
+    .monthly-report-modal-content .lux-report-table td:nth-child(2) {
+        width: 18%;
+    }
+
+    .monthly-report-modal-content .lux-report-table th:nth-child(3),
+    .monthly-report-modal-content .lux-report-table td:nth-child(3) {
+        width: 24%;
+    }
+
+    .monthly-report-modal-content .lux-report-table th:nth-child(4),
+    .monthly-report-modal-content .lux-report-table td:nth-child(4) {
+        width: 24%;
+    }
+
+    .monthly-report-modal-content .monthly-report-stat {
+        min-height: 56px;
+        padding: 5px 2px;
+        border-radius: 8px;
+    }
+
+    .monthly-report-modal-content .monthly-report-stat span {
+        font-size: 8px !important;
+    }
+
+    .monthly-report-modal-content .monthly-report-stat strong {
+        font-size: 11px !important;
+    }
+}
+
+/* Compact, consistent product cards. */
+#searchSection .product-card {
+    min-height: 148px;
+    padding: 6px;
+    border-color: #dbe3ec;
+}
+
+#searchSection .product-thumb {
+    width: 100%;
+    height: 100px;
+    min-height: 100px;
+    object-fit: contain;
+    border-radius: 6px;
+}
+
+#searchSection .product-info h4,
+#searchSection .product-price-txt {
+    color: #172033;
+}
+
+#searchSection .product-price-txt strong {
+    color: #15803d;
+}
+
+@media (max-width: 520px) {
+    #searchSection .product-card {
+        min-height: 142px;
+        padding: 5px;
+    }
+
+    #searchSection .product-thumb {
+        height: 96px;
+        min-height: 96px;
+    }
+}
+
+@media (max-width: 420px) {
+    #searchSection .product-card {
+        min-height: 138px;
+    }
+
+    #searchSection .product-thumb {
+        height: 92px;
+        min-height: 92px;
+    }
+}
+
+@media (max-width: 767px) {
+    #searchSection #resultsList {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 8px;
+    }
+
+    #searchSection .product-card {
+        min-width: 0;
+    }
+}
+
+body.dark-mode #searchSection .product-card {
+    background: var(--stats-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-mode #searchSection .product-info h4,
+body.dark-mode #searchSection .product-price-txt {
+    color: var(--text-main) !important;
+}
+
+body.dark-mode #searchSection .product-price-txt strong {
+    color: #4ade80 !important;
+}
+
+#searchSection .product-card {
+    background: var(--input-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+#searchSection .product-thumb {
+    background: transparent !important;
+}
+
+body.dark-mode #searchSection .product-card {
+    background: var(--stats-bg) !important;
+}
+
+@media (max-width: 767px) {
+    #searchSection .product-card {
+        background: var(--input-bg) !important;
+        border-color: var(--border-color) !important;
+    }
+
+    #searchSection .product-thumb {
+        background: transparent !important;
+    }
+}
+
+@media (max-width: 767px) {
+    #searchSection #resultsList {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 6px !important;
+    }
+
+    #searchSection .product-card {
+        min-height: 126px !important;
+        height: auto !important;
+        min-width: 0 !important;
+        padding: 4px !important;
+        gap: 3px !important;
+        overflow: hidden !important;
+        background: var(--input-bg) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 9px !important;
+    }
+
+    #searchSection .product-thumb {
+        width: 100% !important;
+        height: 90px !important;
+        min-height: 90px !important;
+        object-fit: contain !important;
+        object-position: center !important;
+        transform: scale(1.08);
+        border-radius: 5px !important;
+    }
+
+    #searchSection .product-info h4 {
+        min-height: 2.4em;
+        margin: 0 !important;
+        color: var(--text-main) !important;
+        font-size: 10px !important;
+        line-height: 1.2 !important;
+        text-align: center;
+    }
+
+    #searchSection .product-price-txt {
+        margin: 1px 0 0 !important;
+        color: var(--text-muted) !important;
+        font-size: 9px !important;
+        line-height: 1.2 !important;
+        white-space: nowrap;
+    }
+
+    #searchSection .product-price-txt strong {
+        color: var(--success) !important;
+        font-size: 10px !important;
+    }
+}
+
+@media (max-width: 560px) {
+    .monthly-report-modal-content {
+        width: calc(100vw - 20px) !important;
+        max-width: none !important;
+        max-height: calc(100vh - 20px) !important;
+        padding: 14px 10px !important;
+        overflow-x: hidden;
+    }
+
+    .monthly-report-modal-content .monthly-report-header {
+        display: grid !important;
+        grid-template-columns: auto minmax(0, 1fr) !important;
+        grid-template-areas:
+            "close title"
+            "month month" !important;
+        grid-auto-rows: auto !important;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+    }
+
+    .monthly-report-modal-content .monthly-report-header h3 {
+        grid-area: title;
+        min-width: 0;
+        font-size: 17px;
+        line-height: 1.3;
+        white-space: normal;
+        text-align: right;
+    }
+
+    .monthly-report-modal-content .monthly-report-header .confirm-cancel-btn {
+        grid-area: close;
+        min-width: 64px;
+        height: 36px;
+        padding: 0 10px !important;
+        font-size: 12px;
+    }
+
+    .monthly-report-modal-content .monthly-report-month-picker {
+        grid-area: month;
+        width: 100% !important;
+        min-width: 0;
+        height: 38px !important;
+        min-height: 38px !important;
+        justify-content: center;
+        gap: 6px;
+        padding: 5px 8px;
+    }
+
+    .monthly-report-modal-content .monthly-report-month-display {
+        min-width: 78px;
+        font-size: 14px;
+    }
+
+    .monthly-report-modal-content .monthly-report-summary {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        grid-auto-columns: auto !important;
+        gap: 7px;
+        width: 100%;
+        overflow: visible !important;
+        padding: 0;
+    }
+
+    .monthly-report-modal-content .monthly-report-stat {
+        width: auto !important;
+        min-width: 0;
+        min-height: 72px;
+        padding: 9px 5px;
+    }
+
+    .monthly-report-modal-content .monthly-report-stat span {
+        font-size: 10px;
+        line-height: 1.3;
+    }
+
+    .monthly-report-modal-content .monthly-report-stat strong {
+        font-size: 14px;
+        line-height: 1.3;
+    }
+
+    .monthly-report-modal-content .monthly-report-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .monthly-report-modal-content .lux-report-table {
+        min-width: 390px;
+    }
+}
+
+/* Final fixed image frame for product cards. */
+#searchSection .product-thumb {
+    width: 100% !important;
+    height: 90px !important;
+    min-height: 90px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+    background: transparent !important;
+    border-radius: 6px !important;
+    transform: none !important;
+}
+
+#searchSection .product-thumb img {
+    display: block !important;
+    width: 82px !important;
+    height: 82px !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    border-radius: 0 !important;
+    background: transparent !important;
 }

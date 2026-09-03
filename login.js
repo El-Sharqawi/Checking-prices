@@ -334,7 +334,7 @@ function getImageAsDataUrl(file) {
                 canvas.width = width;
                 canvas.height = height;
                 context.drawImage(image, 0, 0, width, height);
-                resolve(canvas.toDataURL("image/jpeg", 0.7));
+                resolve(canvas.toDataURL("image/png"));
             };
 
             image.onerror = () => reject(new Error("تعذر قراءة صورة المنتج."));
@@ -502,8 +502,8 @@ function switchTab(tab) {
         loadDailyReport();
     }
 
-    if (tab === "search" && typeof searchProducts === "function") {
-        searchProducts();
+    if (tab === "search") {
+        displayProducts(allProductsCache);
     }
 
 }
@@ -534,7 +534,7 @@ function initRealtimeListeners() {
 
             updateStats(allProductsCache);
 
-            searchProducts();
+            displayProducts(allProductsCache);
 
         },
 
@@ -903,6 +903,9 @@ async function updateExistingProduct(id, name, price, barcode, newImage) {
 
 function resetFormFields() {
 
+    const editingId = document.getElementById("editingId");
+    const search = document.getElementById("productSearchInput");
+    const searchResults = document.getElementById("productSearchResults");
     const name = document.getElementById("productName");
 
     const price = document.getElementById("productPrice");
@@ -917,7 +920,11 @@ function resetFormFields() {
 
     const imagePreviewWrap = document.getElementById("imagePreviewWrap");
 
+    if (editingId) editingId.value = "";
+    if (search) search.value = "";
+    if (searchResults) searchResults.innerHTML = "";
     if (name) name.value = "";
+    if (price) price.value = "";
 
     if (barcode) barcode.value = "";
 
@@ -931,6 +938,9 @@ function resetFormFields() {
 
     const imageUrl = document.getElementById("productImageUrl");
     if (imageUrl) imageUrl.value = "";
+
+    const saveButton = document.getElementById("saveProductBtn");
+    if (saveButton) saveButton.textContent = "حفظ";
 
     setBarcodeLookupStatus("");
 
@@ -982,19 +992,14 @@ function displayProducts(products) {
 
             <div class="product-card" onclick="openProductModal('${id}')" title="${name}">
 
-                <img
-
-                    src="${image}"
-
-                    class="product-thumb"
-
-                    alt="${name}"
-
-                    loading="lazy"
-
-                    onerror="this.src='https://via.placeholder.com/120?text=No+Img'"
-
-                >
+                <div class="product-thumb">
+                    <img
+                        src="${image}"
+                        alt="${name}"
+                        loading="lazy"
+                        onerror="this.src='https://via.placeholder.com/120?text=No+Img'"
+                    >
+                </div>
 
                 <div class="product-info">
 
@@ -1028,31 +1033,11 @@ function productMatchesQuery(product, query) {
         .some(value => String(value ?? "").toLowerCase().includes(normalizedQuery));
 }
 
-function searchProducts() {
+function filterProductSearch() {
 
-    const input = document.getElementById("searchInput");
+    const input = document.getElementById("productSearchInput");
 
-    const q = input ? input.value.trim().toLowerCase() : "";
-
-    if (!q) {
-
-        displayProducts(allProductsCache);
-
-        return;
-
-    }
-
-    const filtered = allProductsCache.filter(product => productMatchesQuery(product, q));
-
-    displayProducts(filtered);
-
-}
-
-function filterAddProductSearch() {
-
-    const input = document.getElementById("addProductQuickSearch");
-
-    const list = document.getElementById("addProductQuickResults");
+    const list = document.getElementById("productSearchResults");
 
     if (!input || !list) return;
 
@@ -1075,7 +1060,7 @@ function filterAddProductSearch() {
     }
 
     list.innerHTML = filtered.map((product, index) => `
-        <button type="button" class="quick-product-item${index === Number(input.dataset.quickSelectedIndex || 0) ? " active" : ""}" data-index="${index}" data-product-id="${product.id}" onclick="fillFromQuickProductSearch('${product.id}')">
+        <button type="button" class="quick-product-item${index === Number(input.dataset.quickSelectedIndex || 0) ? " active" : ""}" data-index="${index}" data-product-id="${product.id}" onclick="fillProductForm('${product.id}')">
             <span>${escapeHtml(product.name || "بدون اسم")}</span>
             <small>${escapeHtml(formatCurrency(product.price ?? 0))} ج.م</small>
         </button>
@@ -1124,7 +1109,7 @@ function filterAddProductSearch() {
     }
 }
 
-function fillFromQuickProductSearch(id) {
+function fillProductForm(id) {
     const product = getProductById(id);
     if (!product) return;
 
@@ -1133,8 +1118,17 @@ function fillFromQuickProductSearch(id) {
     document.getElementById("productPrice").value = product.price ?? "";
     document.getElementById("productBarcode").value = product.barcode === "بدون باركود" ? "" : (product.barcode || "");
     document.getElementById("productImageUrl").value = product.image || "";
-    document.getElementById("addProductQuickSearch").value = "";
-    document.getElementById("addProductQuickResults").innerHTML = "";
+    document.getElementById("productSearchInput").value = "";
+    document.getElementById("productSearchResults").innerHTML = "";
+
+    const imagePreview = document.getElementById("imagePreview");
+    const imagePreviewWrap = document.getElementById("imagePreviewWrap");
+    const imageName = document.getElementById("imageFileName");
+    if (imagePreview && imagePreviewWrap) {
+        imagePreview.src = product.image || "";
+        imagePreviewWrap.classList.toggle("is-visible", Boolean(product.image));
+    }
+    if (imageName) imageName.textContent = product.image ? "الصورة الحالية" : "";
 
     const saveBtn = document.getElementById("saveProductBtn");
     if (saveBtn) saveBtn.textContent = "حفظ التعديل";
@@ -1210,6 +1204,15 @@ function deleteProductFromModal() {
     if (!productId) return;
     closeProductModal();
     deleteProduct(productId);
+}
+
+function editProductFromModal() {
+    const modal = document.getElementById("productModal");
+    const productId = modal ? modal.dataset.productId : "";
+    if (!productId) return;
+
+    closeProductModal();
+    fillProductForm(productId);
 }
 
 function deleteProduct(id) {
@@ -1974,7 +1977,8 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
                 if (isSearch) {
 
                     if (scannedCode) vibrateAfterScan();
-                    searchProducts();
+                    if (targetInput) targetInput.value = scannedCode;
+                    filterProductSearch();
 
                 }
 

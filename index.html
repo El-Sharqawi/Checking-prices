@@ -279,12 +279,6 @@
 
         </button>
 
-        <div class="quick-product-check">
-            <label for="addProductQuickSearch">بحث سريع في المنتجات</label>
-            <input type="text" id="addProductQuickSearch" placeholder="ابحث عن منتج موجود..." autocomplete="off" oninput="filterAddProductSearch()">
-            <div id="addProductQuickResults" class="quick-product-results"></div>
-        </div>
-
     </div>
 
     <div id="debtsSection" class="section-content">
@@ -355,13 +349,13 @@
 
         <div class="form-group">
 
-            <label for="searchInput">بحث المنتجات</label>
+            <label for="productSearchInput">بحث عن منتج للتعديل</label>
 
             <div class="barcode-container products-search-row">
 
-                <input type="text" id="searchInput" placeholder="ابحث بالاسم، السعر أو الباركود..." oninput="searchProducts()" autocomplete="off">
+                <input type="text" id="productSearchInput" placeholder="ابحث باسم المنتج أو الباركود..." oninput="filterProductSearch()" autocomplete="off">
 
-                <button type="button" class="btn-qr-scan" onclick="toggleScanner('searchReader', 'searchInput', true)">
+                <button type="button" class="btn-qr-scan" onclick="toggleScanner('searchReader', 'productSearchInput', true)">
 
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
 
@@ -374,6 +368,8 @@
                 </button>
 
             </div>
+
+            <div id="productSearchResults" class="quick-product-results"></div>
 
         </div>
 
@@ -438,7 +434,10 @@
         <div id="modalBarcode" class="modal-barcode"></div>
         <div id="modalUpdatedAt" class="modal-updated-at"></div>
 
-        <button type="button" id="deleteProductModalBtn" class="modal-delete-btn" onclick="deleteProductFromModal()">حذف المنتج</button>
+        <div class="modal-product-actions">
+            <button type="button" id="editProductModalBtn" class="modal-edit-btn" onclick="editProductFromModal()">تعديل المنتج</button>
+            <button type="button" id="deleteProductModalBtn" class="modal-delete-btn" onclick="deleteProductFromModal()">حذف المنتج</button>
+        </div>
 
     </div>
 
