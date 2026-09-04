@@ -738,6 +738,22 @@ function toggleTheme() {
     setThemeIcon(isDark);
 }
 
+function setupScrollTopButton() {
+    const button = document.getElementById("scrollTopBtn");
+    if (!button || button.dataset.ready === "1") return;
+    button.dataset.ready = "1";
+
+    const updateVisibility = () => {
+        button.classList.toggle("is-visible", window.scrollY > 280);
+    };
+
+    window.addEventListener("scroll", updateVisibility, { passive: true });
+    button.addEventListener("click", () => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    updateVisibility();
+}
+
 function switchTab(tab) {
 
     stopCurrentScanner();
@@ -1326,12 +1342,14 @@ function displayProducts(products) {
             <div class="product-card" onclick="openProductModal('${id}')" title="${name}">
 
                 <div class="product-thumb">
-                    <img
-                        src="${image}"
-                        alt="${name}"
-                        loading="lazy"
-                        onerror="this.src='https://via.placeholder.com/120?text=No+Img'"
-                    >
+                    <div class="product-image-box">
+                        <img
+                            src="${image}"
+                            alt="${name}"
+                            loading="lazy"
+                            onerror="this.src='https://via.placeholder.com/120?text=No+Img'"
+                        >
+                    </div>
                 </div>
 
                 <div class="product-info">
@@ -2929,6 +2947,7 @@ let posCart = [];
 let currentSelectedIndex = -1;
 
 document.addEventListener("DOMContentLoaded", () => {
+    setupScrollTopButton();
     setupFullscreenImage();
     setupBarcodeLookupOnAddForm();
     setupShakakAutocomplete();
@@ -4030,4 +4049,4 @@ function renderDailyReport(cashSales, creditSales) {
     setReportText("reportCashSales", formatCurrency(cashTotal));
     setReportText("reportCreditSales", formatCurrency(creditTotal));
     renderDailyReportCards(sales);
-}
+}405
