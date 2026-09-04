@@ -131,6 +131,221 @@ let activeScanner = null;
 
 let activeScannerElementId = null;
 
+const defaultProductCategories = [
+    "مشروبات", "شيبسي", "بسكويت", "زيوت", "ألبان", "معلبات", "منظفات", "أخرى"
+];
+
+let productCategories = [];
+let categoryDialogResolver = null;
+
+function loadProductCategories() {
+    try {
+        const saved = JSON.parse(localStorage.getItem("productCategories") || "[]");
+        productCategories = [...new Set([...defaultProductCategories, ...saved].filter(Boolean))];
+    } catch (error) {
+        productCategories = [...defaultProductCategories];
+    }
+}
+
+function saveProductCategories() {
+    localStorage.setItem("productCategories", JSON.stringify(productCategories));
+}
+
+function populateProductCategories(selectedValue = "") {
+    const select = document.getElementById("productCategory");
+    const filter = document.getElementById("productCategoryFilter");
+
+    const categories = [...new Set([...productCategories, selectedValue].filter(Boolean))];
+    if (select) {
+        select.innerHTML = '<option value="" disabled hidden></option>' + categories.map(category =>
+            `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`
+        ).join("");
+        select.value = selectedValue;
+    }
+    if (filter) {
+        const currentFilter = filter.value;
+        filter.innerHTML = '<option value="">كل الأقسام</option>' + categories.map(category =>
+            `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`
+        ).join("");
+        filter.value = categories.includes(currentFilter) ? currentFilter : "";
+    }
+}
+
+function getProductCategory(product) {
+    return String(product?.category || "").trim();
+}
+
+function normalizeCategoryText(value) {
+    return String(value || "")
+        .toLowerCase()
+        .replace(/[إأآا]/g, "ا")
+        .replace(/ى/g, "ي")
+        .replace(/ة/g, "ه")
+        .replace(/[ًٌٍَُِّْـ]/g, "")
+        .replace(/[^\u0600-\u06ff\w]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function suggestCategoryFromName(name) {
+    const value = normalizeCategoryText(name);
+    if (!value) return "";
+    const keywords = {
+        "مشروبات": ["عصير", "جوس", "بيبسي", "بيبيسي", "كولا", "كوكاكولا", "مشروب", "مياه", "ماء", "شاي", "شاى", "قهوة", "قهوه", "نسكافيه", "نسكفيه", "فيروز", "سبيرو سباتس", "ميرندا", "سفن", "سفن اب", "ريد بول", "مشروب طاقه", "باور هورس", "ستينج", "بيبسي دايت", "فانتا", "ديو", "تانج", "راني", "ايد", "energy", "drink", "juice", "water", "cola", "pepsi", "coca", "fanta", "red bull"],
+        "شيبسي": ["شيبسي", "شيبس", "تشيبس", "بطاطس", "مقرمش", "مقرمشات", "سناكس", "سناك", "فشار", "ذره مقرمشه", "كرسبي", "بفك", "بوشار", "تسالي", "لب", "فول سوداني", "crackers", "chips", "snack", "doritos", "lays", "ليز", "تايجر", "برينجلز", "pringles", "cheetos", "cheetos"],
+        "بسكويت": ["بسكويت", "بسكوت", "ويفر", "شوكولاته", "شيكولاته", "شكولاته", "شوكولا", "كاكاو", "حلوى", "حلاوه", "كيك", "جاتوه", "كوكيز", "قرشله", "بسكويت شاي", "cookies", "biscuit", "wafer", "chocolate", "cocoa", "oreo", "اوريو", "جالكسي", "galaxy", "cadbury", "kinder", "kit kat", "مارس", "سنيكرز", "snickers", "twix", "milka", "toblerone"],
+        "زيوت": ["زيت", "زيوت", "سمن", "سمنة", "كانولا", "ذره", "عباد الشمس", "زيت زيتون", "زيتون", "زيت حار", "زيت قلي", "oil", "ghee", "olive oil"],
+        "ألبان": ["لبن", "حليب", "جبنه", "جبن", "زبادي", "زبادى", "رايب", "قشطه", "قشطة", "كريمه", "كريمة", "موتزاريلا", "فيتا", "لبنه", "لبان", "دانون", "جهينه", "المراعي", "dairy", "milk", "cheese", "yogurt", "cream"],
+        "معلبات": ["معلب", "معلبات", "تونه", "تونة", "فول", "صلصه", "صلصة", "ذره", "حمص", "بسله", "بسلة", "لانشون", "سردين", "مربى", "مربي", "مكرونه", "مكرونة", "كاتشب", "مايونيز", "canned", "tuna", "beans", "pasta", "ketchup", "mayonnaise"],
+        "منظفات": ["منظف", "منظفات", "مسحوق", "صابون", "كلور", "مطهر", "معطر", "سائل مواعين", "غسيل", "شامبو", "بلسم", "مناديل", "فيري", "بريل", "تايد", "اريال", "كلوركس", "داوني", "برسيل", "فانيش", "detergent", "soap", "cleaner", "shampoo", "fabric softener"],
+        "أخرى": ["سجائر", "سيجاره", "سجاير", "تبغ", "دخان", "ولاعة", "مخبوز", "مخبوزات", "عيش", "خبز", "باتيه", "كرواسون", "فطير", "بقلاوه", "حلويات شرقيه", "cigarette", "tobacco", "bakery", "bread", "croissant", "pastry"]
+    };
+    const matches = Object.entries(keywords).flatMap(([category, words]) =>
+        words.map(word => ({
+            category,
+            keyword: normalizeCategoryText(word)
+        }))
+    ).filter(match => match.keyword && value.includes(match.keyword));
+
+    matches.sort((a, b) => b.keyword.length - a.keyword.length);
+    return matches[0]?.category || "";
+}
+
+function suggestCategoryFromFile(fileName) {
+    return suggestCategoryFromName(String(fileName || "").replace(/[._-]+/g, " "));
+}
+
+function applySuggestedCategory(name) {
+    const suggestion = suggestCategoryFromName(name);
+    const select = document.getElementById("productCategory");
+    if (suggestion && select && productCategories.includes(suggestion) && !select.dataset.categoryManuallyChanged) {
+        select.value = suggestion;
+    }
+}
+
+async function updateProductCategoryReferences(oldCategory, newCategory) {
+    const affected = allProductsCache.filter(product => getProductCategory(product) === oldCategory);
+    affected.forEach(product => { product.category = newCategory; });
+
+    if (firebaseReady && db && affected.length) {
+        const batch = db.batch();
+        affected.forEach(product => {
+            batch.update(db.collection("products").doc(product.id), { category: newCategory });
+        });
+        await batch.commit();
+    }
+    displayProducts(allProductsCache);
+}
+
+function openCategoryManager() {
+    renderCategoryManagerList();
+    document.getElementById("categoryManagerModal").style.display = "flex";
+}
+
+function closeCategoryManager() {
+    document.getElementById("categoryManagerModal").style.display = "none";
+}
+
+function closeCategoryDialog(value) {
+    const modal = document.getElementById("categoryDialogModal");
+    if (modal) modal.style.display = "none";
+    if (categoryDialogResolver) {
+        const resolve = categoryDialogResolver;
+        categoryDialogResolver = null;
+        resolve(value);
+    }
+}
+
+function showCategoryDialog({ title, message = "", value = "", confirmText = "تأكيد", input = true }) {
+    const modal = document.getElementById("categoryDialogModal");
+    const titleElement = document.getElementById("categoryDialogTitle");
+    const messageElement = document.getElementById("categoryDialogMessage");
+    const inputElement = document.getElementById("categoryDialogInput");
+    const confirmButton = document.getElementById("categoryDialogConfirm");
+    if (!modal || !titleElement || !messageElement || !inputElement || !confirmButton) return Promise.resolve(null);
+
+    titleElement.textContent = title;
+    messageElement.textContent = message;
+    inputElement.value = value;
+    inputElement.hidden = !input;
+    confirmButton.textContent = confirmText;
+    modal.style.display = "flex";
+
+    return new Promise(resolve => {
+        categoryDialogResolver = resolve;
+        confirmButton.onclick = () => closeCategoryDialog(input ? inputElement.value.trim() : true);
+        if (input) requestAnimationFrame(() => inputElement.focus());
+    });
+}
+
+function renderCategoryManagerList() {
+    const list = document.getElementById("categoryManagerList");
+    if (!list) return;
+    list.innerHTML = productCategories.map(category => `
+        <div class="category-manager-row">
+            <span>${escapeHtml(category)}</span>
+            <span class="category-manager-actions">
+                <button type="button" onclick="renameCategory('${escapeHtml(category)}')">تعديل</button>
+                <button type="button" class="danger" onclick="deleteCategory('${escapeHtml(category)}')">حذف</button>
+            </span>
+        </div>
+    `).join("");
+}
+
+function addCategory(name) {
+    const category = String(name || "").trim();
+    if (!category) return false;
+    if (productCategories.includes(category)) {
+        showToast("القسم موجود بالفعل", false);
+        return false;
+    }
+    productCategories.push(category);
+    saveProductCategories();
+    populateProductCategories(category);
+    return true;
+}
+
+function addCategoryFromManager() {
+    const input = document.getElementById("newCategoryName");
+    if (addCategory(input?.value)) {
+        input.value = "";
+        renderCategoryManagerList();
+        showToast("تمت إضافة القسم");
+    }
+}
+
+async function renameCategory(oldCategory) {
+    const newCategory = await showCategoryDialog({
+        title: "تعديل اسم القسم",
+        message: "اكتب الاسم الجديد للقسم",
+        value: oldCategory,
+        confirmText: "حفظ"
+    });
+    if (!newCategory || newCategory === oldCategory || productCategories.includes(newCategory)) return;
+    productCategories = productCategories.map(category => category === oldCategory ? newCategory : category);
+    saveProductCategories();
+    await updateProductCategoryReferences(oldCategory, newCategory);
+    populateProductCategories(newCategory);
+    renderCategoryManagerList();
+    showToast("تم تعديل القسم وربط المنتجات به");
+}
+
+async function deleteCategory(oldCategory) {
+    const confirmed = await showCategoryDialog({
+        title: "تأكيد حذف القسم",
+        message: `سيتم حذف «${oldCategory}» نهائياً. ستبقى المنتجات المرتبطة به دون تغيير.`,
+        confirmText: "حذف نهائياً",
+        input: false
+    });
+    if (!confirmed) return;
+    productCategories = productCategories.filter(category => category !== oldCategory);
+    saveProductCategories();
+    populateProductCategories("");
+    renderCategoryManagerList();
+    displayProducts(allProductsCache);
+    showToast("تم حذف القسم");
+}
+
 function playBeep() {
     try {
         const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -270,6 +485,24 @@ document.addEventListener('focusin', event => {
     window.setTimeout(() => keepMobileInputVisible(event.target), 550);
 });
 
+function isSelectableTextInput(element) {
+    return element.matches('input[type="text"], input[type="number"], input:not([type]), textarea');
+}
+
+document.addEventListener('focusin', event => {
+    if (!isSelectableTextInput(event.target)) return;
+    if (event.target.dataset.autoSelectApplied === "1") return;
+    event.target.dataset.autoSelectApplied = "1";
+    requestAnimationFrame(() => {
+        try { event.target.select(); } catch (error) {}
+    });
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    loadProductCategories();
+    populateProductCategories();
+});
+
 function escapeHtml(value) {
 
     return String(value ?? "")
@@ -292,8 +525,47 @@ function getProductById(id) {
 
 }
 
+function compareProductsByCategory(a, b) {
+    const categoryCompare = String(a.category || "أخرى").localeCompare(
+        String(b.category || "أخرى"),
+        "ar",
+        { sensitivity: "base" }
+    );
+    if (categoryCompare !== 0) return categoryCompare;
+
+    return String(a.name || "").localeCompare(
+        String(b.name || ""),
+        "ar",
+        { sensitivity: "base" }
+    );
+}
+
+function sortProductsByCategory(products) {
+    return [...products].sort(compareProductsByCategory);
+}
+
 function normalizeProductName(value) {
     return String(value || "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function normalizeProductInputName(value) {
+    return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function parseProductName(value) {
+    const normalized = normalizeProductInputName(value);
+    const separatorIndex = normalized.search(/[.-]/);
+    if (separatorIndex < 0) return { main: normalized, badge: "" };
+
+    const main = normalized.slice(0, separatorIndex).trim();
+    const badge = normalized.slice(separatorIndex + 1).trim();
+    if (!main || !badge) return { main: normalized, badge: "" };
+    return { main, badge };
+}
+
+function productNameMarkup(value) {
+    const { main, badge } = parseProductName(value);
+    return `<span class="product-name-main">${escapeHtml(main || "بدون اسم")}</span>${badge ? `<span class="product-name-badge">${escapeHtml(badge)}</span>` : ""}`;
 }
 
 function isDuplicateProductName(name, ignoreId = "") {
@@ -315,6 +587,10 @@ function isDuplicateProductBarcode(barcode, ignoreId = "") {
         const currentId = String(product.id || "");
         return currentId !== ignoreId && normalizeBarcode(product.barcode) === normalizedBarcode;
     });
+}
+
+function getProductImageSource(item) {
+    return String(item?.imageHd || item?.imageOriginal || item?.image || "").trim();
 }
 
 function getUpdateById(id) {
@@ -554,7 +830,9 @@ function initRealtimeListeners() {
 
             });
 
-            allProductsCache.sort((a,b) => { const t=p=>{const v=p.createdAt;if(v&&typeof v.toMillis==="function")return v.toMillis();if(v&&typeof v.seconds==="number")return v.seconds*1000;const n=Number(v);return Number.isFinite(n)?n:Number.MAX_SAFE_INTEGER;};return t(a)-t(b); });
+            allProductsCache = sortProductsByCategory(allProductsCache);
+
+            populateProductCategories(document.getElementById("productCategory")?.value || "");
 
             updateStats(allProductsCache);
 
@@ -717,9 +995,11 @@ async function saveProduct() {
     const editingId = document.getElementById("editingId").value.trim();
     const saveButton = document.getElementById("saveProductBtn");
 
-    const name = document.getElementById("productName").value.trim();
+    const name = normalizeProductInputName(document.getElementById("productName").value);
 
     const priceRaw = document.getElementById("productPrice").value.trim();
+
+    const category = document.getElementById("productCategory").value.trim();
 
     const barcode =
 
@@ -750,6 +1030,12 @@ async function saveProduct() {
         return;
     }
 
+    if (!category) {
+        showToast("اختر القسم أولاً", false);
+        document.getElementById("productCategory").focus();
+        return;
+    }
+
     if (isDuplicateProductBarcode(barcode, editingId)) {
         showToast("هذا الباركود مستخدم بالفعل لمنتج آخر", false);
         return;
@@ -777,7 +1063,7 @@ async function saveProduct() {
         const newImage = (await getImageAsDataUrl(imageFile)) || lookedUpImageUrl || null;
 
         if (editingId) {
-            await updateExistingProduct(editingId, name, priceRaw, barcode, newImage);
+            await updateExistingProduct(editingId, name, priceRaw, category, barcode, newImage);
             document.getElementById("editingId").value = "";
             resetFormFields();
             showToast("تم التعديل");
@@ -788,6 +1074,8 @@ async function saveProduct() {
                 name,
 
                 price: priceRaw,
+
+                category,
 
                 barcode,
 
@@ -829,7 +1117,7 @@ async function saveProduct() {
 
 }
 
-async function updateExistingProduct(id, name, price, barcode, newImage) {
+async function updateExistingProduct(id, name, price, category, barcode, newImage) {
 
     const productRef = db.collection("products").doc(id);
 
@@ -868,6 +1156,8 @@ async function updateExistingProduct(id, name, price, barcode, newImage) {
         name,
 
         price,
+
+        category,
 
         barcode,
 
@@ -911,6 +1201,8 @@ async function updateExistingProduct(id, name, price, barcode, newImage) {
 
             barcode,
 
+            category,
+
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
 
         });
@@ -934,6 +1226,8 @@ function resetFormFields() {
 
     const price = document.getElementById("productPrice");
 
+    const category = document.getElementById("productCategory");
+
     const barcode = document.getElementById("productBarcode");
 
     const image = document.getElementById("productImage");
@@ -949,6 +1243,11 @@ function resetFormFields() {
     if (searchResults) searchResults.innerHTML = "";
     if (name) name.value = "";
     if (price) price.value = "";
+
+    if (category) {
+        category.value = "";
+        delete category.dataset.categoryManuallyChanged;
+    }
 
     if (barcode) barcode.value = "";
 
@@ -978,7 +1277,15 @@ function displayProducts(products) {
 
     const selectAllBtn = document.getElementById("selectAllBtn");
 
-    if (products.length === 0) {
+    const filter = document.getElementById("productCategoryFilter");
+    const selectedCategory = filter ? filter.value : "";
+    const sortedProducts = sortProductsByCategory(products).filter(product =>
+        !selectedCategory || getProductCategory(product) === selectedCategory
+    );
+
+    if (filter && !filter.options.length) populateProductCategories();
+
+    if (sortedProducts.length === 0) {
 
         list.innerHTML =
 
@@ -998,17 +1305,19 @@ function displayProducts(products) {
 
     let html = "";
 
-    products.forEach(product => {
+    sortedProducts.forEach(product => {
 
         const id = escapeHtml(product.id);
 
-        const name = escapeHtml(product.name || "بدون اسم");
+        const name = escapeHtml(normalizeProductInputName(product.name) || "بدون اسم");
 
         const price = escapeHtml(formatCurrency(product.price ?? 0));
 
-        const image = product.image
+        const productImage = getProductImageSource(product);
 
-            ? escapeHtml(product.image)
+        const image = productImage
+
+            ? escapeHtml(productImage)
 
             : "https://via.placeholder.com/120?text=No+Img";
 
@@ -1027,7 +1336,7 @@ function displayProducts(products) {
 
                 <div class="product-info">
 
-                    <h4>${name}</h4>
+                    <h4>${productNameMarkup(product.name)}</h4>
 
                     <p class="product-price-txt">
 
@@ -1073,8 +1382,8 @@ function filterProductSearch() {
         return;
     }
 
-    const filtered = allProductsCache
-        .filter(product => productMatchesQuery(product, q))
+    const filtered = sortProductsByCategory(allProductsCache
+        .filter(product => productMatchesQuery(product, q)))
         .slice(0, 8);
 
     if (!filtered.length) {
@@ -1140,6 +1449,9 @@ function fillProductForm(id) {
     document.getElementById("editingId").value = product.id;
     document.getElementById("productName").value = product.name || "";
     document.getElementById("productPrice").value = product.price ?? "";
+    const categoryInput = document.getElementById("productCategory");
+    categoryInput.value = product.category || "";
+    categoryInput.dataset.categoryManuallyChanged = "1";
     document.getElementById("productBarcode").value = product.barcode === "بدون باركود" ? "" : (product.barcode || "");
     document.getElementById("productImageUrl").value = product.image || "";
     document.getElementById("productSearchInput").value = "";
@@ -1159,19 +1471,6 @@ function fillProductForm(id) {
 
     switchTab("add");
     showToast("تم تحميل المنتج");
-}
-
-function setupAutoSelectProductFields() {
-    ["productName", "productPrice", "productBarcode"].forEach(id => {
-        const input = document.getElementById(id);
-        if (!input || input.dataset.autoSelectReady === "1") return;
-        input.dataset.autoSelectReady = "1";
-        input.addEventListener("focus", () => {
-            requestAnimationFrame(() => {
-                try { input.select(); } catch (error) {}
-            });
-        });
-    });
 }
 
 function showConfirm(message, callback) {
@@ -1403,19 +1702,21 @@ function openProductModal(id) {
     const name = document.getElementById("modalName");
     const price = document.getElementById("modalPrice");
     const barcode = document.getElementById("modalBarcode");
+    const category = document.getElementById("modalCategory");
     const modal = document.getElementById("productModal");
 
     if (modal) modal.dataset.productId = id;
 
     if (image) {
-        image.src = product.image || "https://via.placeholder.com/130?text=No+Img";
+        image.src = getProductImageSource(product) || "https://via.placeholder.com/130?text=No+Img";
         image.onerror = () => {
             image.src = "https://via.placeholder.com/130?text=No+Img";
         };
     }
 
-    if (name) name.textContent = product.name || "بدون اسم";
+    if (name) name.innerHTML = productNameMarkup(product.name);
     if (barcode) barcode.textContent = "الباركود: " + (product.barcode || "بدون باركود");
+    if (category) category.textContent = "القسم: " + (getProductCategory(product) || "غير محدد");
 
     const updates = allPriceUpdatesCache.filter(u => u.productId === id).sort((a, b) => {
         const t = x => x.timestamp && typeof x.timestamp.toMillis === "function" ? x.timestamp.toMillis() : Number(x.updateId || 0);
@@ -1459,6 +1760,7 @@ function openUpdateModal(docId) {
     const price = document.getElementById("modalPrice");
 
     const barcode = document.getElementById("modalBarcode");
+    const category = document.getElementById("modalCategory");
 
     const modal = document.getElementById("productModal");
 
@@ -1466,7 +1768,7 @@ function openUpdateModal(docId) {
 
         image.src =
 
-            update.image ||
+            getProductImageSource(update) ||
 
             "https://via.placeholder.com/130?text=No+Img";
 
@@ -1478,11 +1780,7 @@ function openUpdateModal(docId) {
 
     }
 
-    if (name) {
-
-        name.textContent = update.name || "بدون اسم";
-
-    }
+    if (name) name.innerHTML = productNameMarkup(update.name);
     if (price) {
 
         price.innerHTML = "";
@@ -1520,6 +1818,10 @@ function openUpdateModal(docId) {
             "الباركود: " + (update.barcode || "بدون باركود");
 
     }
+    if (category) {
+        const product = allProductsCache.find(item => item.id === update.productId);
+        category.textContent = "القسم: " + (getProductCategory(product) || update.category || "غير محدد");
+    }
 
     const updatedAt = document.getElementById("modalUpdatedAt");
     if (updatedAt) updatedAt.textContent = formatPriceUpdateDateTime(update);
@@ -1536,6 +1838,145 @@ function closeProductModal() {
         modal.style.display = "none";
         modal.dataset.productId = "";
     }
+    closeFullscreenImage();
+
+}
+
+let fullscreenImageScale = 1;
+let fullscreenImageOffset = { x: 0, y: 0 };
+let fullscreenImagePointers = new Map();
+let fullscreenImagePinchStart = null;
+let fullscreenImageLastTap = 0;
+let fullscreenImagePanStart = null;
+let fullscreenImageDidMove = false;
+
+function resetFullscreenImageTransform() {
+    fullscreenImageScale = 1;
+    fullscreenImageOffset = { x: 0, y: 0 };
+    fullscreenImagePinchStart = null;
+    fullscreenImagePanStart = null;
+    fullscreenImageDidMove = false;
+    const image = document.getElementById("imageFullscreenImg");
+    if (image) image.style.transform = "translate3d(0, 0, 0) scale(1)";
+}
+
+function updateFullscreenImageTransform() {
+    const image = document.getElementById("imageFullscreenImg");
+    if (!image) return;
+    image.style.transform = `translate3d(${fullscreenImageOffset.x}px, ${fullscreenImageOffset.y}px, 0) scale(${fullscreenImageScale})`;
+}
+
+function clampFullscreenImageOffset() {
+    const image = document.getElementById("imageFullscreenImg");
+    const stage = image?.parentElement;
+    if (!image || !stage) return;
+    const maxX = Math.max(0, (image.offsetWidth * fullscreenImageScale - stage.clientWidth) / 2);
+    const maxY = Math.max(0, (image.offsetHeight * fullscreenImageScale - stage.clientHeight) / 2);
+    fullscreenImageOffset.x = Math.min(maxX, Math.max(-maxX, fullscreenImageOffset.x));
+    fullscreenImageOffset.y = Math.min(maxY, Math.max(-maxY, fullscreenImageOffset.y));
+}
+
+function openFullscreenImage() {
+    const modal = document.getElementById("productModal");
+    const sourceImage = document.getElementById("modalImg");
+    const fullscreen = document.getElementById("imageFullscreen");
+    const fullscreenImage = document.getElementById("imageFullscreenImg");
+    if (!fullscreen || !fullscreenImage || !sourceImage?.src) return;
+
+    fullscreenImage.src = sourceImage.src;
+    fullscreenImage.alt = sourceImage.alt || "صورة المنتج المكبرة";
+    resetFullscreenImageTransform();
+    fullscreen.classList.add("is-visible");
+    fullscreen.setAttribute("aria-hidden", "false");
+    modal?.classList.add("is-image-fullscreen");
+}
+
+function closeFullscreenImage() {
+    const modal = document.getElementById("productModal");
+    const fullscreen = document.getElementById("imageFullscreen");
+    if (!fullscreen) return;
+    fullscreen.classList.remove("is-visible");
+    fullscreen.setAttribute("aria-hidden", "true");
+    modal?.classList.remove("is-image-fullscreen");
+    fullscreenImagePointers.clear();
+    fullscreenImagePanStart = null;
+    resetFullscreenImageTransform();
+}
+
+function getFullscreenPointerDistance() {
+    const points = Array.from(fullscreenImagePointers.values());
+    if (points.length < 2) return 0;
+    return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+}
+
+function setupFullscreenImage() {
+    const sourceImage = document.getElementById("modalImg");
+    const closeButton = document.getElementById("imageFullscreenClose");
+    const image = document.getElementById("imageFullscreenImg");
+    if (!sourceImage || !closeButton || !image || sourceImage.dataset.fullscreenReady === "1") return;
+
+    sourceImage.dataset.fullscreenReady = "1";
+    sourceImage.addEventListener("click", openFullscreenImage);
+    closeButton.addEventListener("click", closeFullscreenImage);
+    image.addEventListener("pointerdown", event => {
+        try { image.setPointerCapture(event.pointerId); } catch (error) {}
+        fullscreenImagePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        fullscreenImageDidMove = false;
+        if (fullscreenImagePointers.size === 1 && fullscreenImageScale > 1) {
+            fullscreenImagePanStart = {
+                x: event.clientX,
+                y: event.clientY,
+                offsetX: fullscreenImageOffset.x,
+                offsetY: fullscreenImageOffset.y
+            };
+        } else {
+            fullscreenImagePanStart = null;
+        }
+        if (fullscreenImagePointers.size === 2) fullscreenImagePinchStart = {
+            distance: getFullscreenPointerDistance(),
+            scale: fullscreenImageScale
+        };
+    });
+    image.addEventListener("pointermove", event => {
+        if (!fullscreenImagePointers.has(event.pointerId)) return;
+        fullscreenImagePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        if (fullscreenImagePointers.size === 2 && fullscreenImagePinchStart) {
+            const distance = getFullscreenPointerDistance();
+            fullscreenImageScale = Math.min(5, Math.max(1, fullscreenImagePinchStart.scale * distance / fullscreenImagePinchStart.distance));
+            clampFullscreenImageOffset();
+            updateFullscreenImageTransform();
+        } else if (fullscreenImagePointers.size === 1 && fullscreenImageScale > 1 && fullscreenImagePanStart) {
+            const deltaX = event.clientX - fullscreenImagePanStart.x;
+            const deltaY = event.clientY - fullscreenImagePanStart.y;
+            if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) fullscreenImageDidMove = true;
+            fullscreenImageOffset.x = fullscreenImagePanStart.offsetX + deltaX;
+            fullscreenImageOffset.y = fullscreenImagePanStart.offsetY + deltaY;
+            clampFullscreenImageOffset();
+            updateFullscreenImageTransform();
+        }
+    });
+    ["pointerup", "pointercancel"].forEach(type => image.addEventListener(type, event => {
+        fullscreenImagePointers.delete(event.pointerId);
+        if (fullscreenImagePointers.size < 2) fullscreenImagePinchStart = null;
+        if (fullscreenImagePointers.size === 0) fullscreenImagePanStart = null;
+    }));
+    image.addEventListener("click", event => {
+        if (fullscreenImageDidMove) {
+            fullscreenImageDidMove = false;
+            fullscreenImageLastTap = 0;
+            event.stopPropagation();
+            return;
+        }
+        const now = Date.now();
+        if (now - fullscreenImageLastTap < 300) {
+            fullscreenImageScale = fullscreenImageScale > 1 ? 1 : 2.5;
+            fullscreenImageOffset = { x: 0, y: 0 };
+            clampFullscreenImageOffset();
+            updateFullscreenImageTransform();
+        }
+        fullscreenImageLastTap = now;
+        event.stopPropagation();
+    });
 
 }
 
@@ -1568,7 +2009,7 @@ function displayPriceUpdates(updates) {
 
         const id = escapeHtml(update.id);
 
-        const name = escapeHtml(update.name || "بدون اسم");
+        const name = escapeHtml(normalizeProductInputName(update.name) || "بدون اسم");
 
         const oldPrice = escapeHtml(formatCurrency(update.oldPrice ?? 0));
 
@@ -1600,7 +2041,7 @@ function displayPriceUpdates(updates) {
                     >
 
                     <div class="price-update-main">
-                        <div class="price-update-name">${name}</div>
+                        <div class="price-update-name">${productNameMarkup(update.name)}</div>
                         <div class="price-update-line">
                             <span class="price-update-old">${oldPrice} ج.م</span>
                             <span class="price-update-arrow">←</span>
@@ -1668,6 +2109,15 @@ function updateImageFileName(input) {
     const previewWrap = document.getElementById("imagePreviewWrap");
 
     const previewImage = document.getElementById("imagePreview");
+
+    if (file) {
+        const imageCategory = suggestCategoryFromFile(file.name);
+        const categorySelect = document.getElementById("productCategory");
+        if (categorySelect) delete categorySelect.dataset.categoryManuallyChanged;
+        if (imageCategory && categorySelect && productCategories.includes(imageCategory)) {
+            categorySelect.value = imageCategory;
+        }
+    }
 
     if (!file) {
 
@@ -1830,6 +2280,7 @@ async function lookupAndFillProductFromBarcode(barcode, options = {}) {
 
         if (offResult?.name && nameInput && (!nameInput.value.trim() || forceName)) {
             nameInput.value = offResult.name;
+            applySuggestedCategory(offResult.name);
         }
         if (offResult?.image && imageUrlField) {
             imageUrlField.value = offResult.image;
@@ -2478,7 +2929,7 @@ let posCart = [];
 let currentSelectedIndex = -1;
 
 document.addEventListener("DOMContentLoaded", () => {
-    setupAutoSelectProductFields();
+    setupFullscreenImage();
     setupBarcodeLookupOnAddForm();
     setupShakakAutocomplete();
     setupShakakCustomerAutocomplete();
@@ -2487,9 +2938,15 @@ document.addEventListener("DOMContentLoaded", () => {
     renderPosTable();
     renderShakakTable();
 
-    ["shakakPaidAmount", "shakakRemainingAmount"].forEach(id => {
-        const input=document.getElementById(id);
-        if(input){input.addEventListener("focus",()=>requestAnimationFrame(()=>input.select()));input.addEventListener("click",()=>input.select());}
+    document.getElementById("productCategoryFilter")?.addEventListener("change", () => {
+        displayProducts(allProductsCache);
+    });
+
+    const productNameInput = document.getElementById("productName");
+    const productCategoryInput = document.getElementById("productCategory");
+    productNameInput?.addEventListener("input", event => applySuggestedCategory(event.target.value));
+    productCategoryInput?.addEventListener("change", event => {
+        event.target.dataset.categoryManuallyChanged = "1";
     });
 
     const posInput = document.getElementById("posSearchInput");
@@ -2514,13 +2971,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
             }
 
-            const matchedProducts = allProductsCache.filter(p =>
+            const matchedProducts = sortProductsByCategory(allProductsCache.filter(p =>
 
                 (p.name && p.name.toLowerCase().includes(query)) ||
 
                 (p.barcode && p.barcode.toLowerCase().includes(query))
 
-            );
+            ));
 
             if (matchedProducts.length === 0) {
 
@@ -2690,7 +3147,7 @@ function renderCartRow(item, itemTotal, qtyHandler, removeHandler) {
     const id = escapeHtml(item.id);
     return `
         <tr>
-            <td class="lux-name">${escapeHtml(item.name)}</td>
+            <td class="lux-name">${productNameMarkup(item.name)}</td>
             <td>
                 <div class="quantity-controls">
                     <button type="button" class="pos-qty-btn" onclick="${qtyHandler}('${id}', -1)">−</button>
@@ -2997,10 +3454,10 @@ function renderShakakSuggestions(query) {
     shakakSelectedIndex = -1;
     if (!q) { results.style.display = "none"; return; }
 
-    const matched = allProductsCache.filter(product =>
+    const matched = sortProductsByCategory(allProductsCache.filter(product =>
         String(product.name || "").toLowerCase().includes(q) ||
         String(product.barcode || "").toLowerCase().includes(q)
-    ).slice(0, 30);
+    )).slice(0, 30);
 
     if (!matched.length) { results.style.display = "none"; return; }
     results.style.display = "block";

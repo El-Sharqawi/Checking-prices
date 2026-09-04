@@ -209,6 +209,17 @@
 
         </div>
 
+        <div class="form-group product-category-group">
+
+            <label for="productCategory">القسم</label>
+
+            <div class="category-control">
+                <select id="productCategory" autocomplete="off" required aria-required="true"></select>
+                <button type="button" id="categoryAdminTrigger" class="category-admin-trigger" onclick="openCategoryManager()" aria-label="إدارة الأقسام" title="إدارة الأقسام">إدارة الأقسام</button>
+            </div>
+
+        </div>
+
         <div class="form-group">
 
             <label for="productBarcode">الرمز الشريطي</label>
@@ -371,6 +382,10 @@
 
             <div id="productSearchResults" class="quick-product-results"></div>
 
+            <select id="productCategoryFilter" class="product-category-filter" aria-label="تصفية حسب القسم">
+                <option value="">كل الأقسام</option>
+            </select>
+
         </div>
 
         <div id="searchReader" class="viewport"></div>
@@ -432,6 +447,7 @@
         <div id="modalPrice" class="modal-price"></div>
 
         <div id="modalBarcode" class="modal-barcode"></div>
+        <div id="modalCategory" class="modal-category"></div>
         <div id="modalUpdatedAt" class="modal-updated-at"></div>
 
         <div class="modal-product-actions">
@@ -441,6 +457,37 @@
 
     </div>
 
+</div>
+
+<div id="imageFullscreen" class="image-fullscreen" aria-hidden="true">
+    <button type="button" id="imageFullscreenClose" class="image-fullscreen-close" aria-label="إغلاق الصورة" title="إغلاق الصورة">&times;</button>
+    <div class="image-fullscreen-stage">
+        <img id="imageFullscreenImg" class="image-fullscreen-img" src="" alt="صورة المنتج المكبرة">
+    </div>
+</div>
+
+<div id="categoryManagerModal" class="modal" onclick="closeCategoryManager()">
+    <div class="modal-content category-manager-content" onclick="event.stopPropagation()">
+        <button type="button" class="category-manager-close" onclick="closeCategoryManager()" aria-label="إغلاق">×</button>
+        <h3 class="modal-name">إدارة الأقسام</h3>
+        <div id="categoryManagerList" class="category-manager-list"></div>
+        <div class="category-manager-add">
+            <input type="text" id="newCategoryName" placeholder="اسم القسم الجديد" autocomplete="off">
+            <button type="button" class="btn-primary" onclick="addCategoryFromManager()">إضافة</button>
+        </div>
+    </div>
+</div>
+
+<div id="categoryDialogModal" class="modal" onclick="closeCategoryDialog(null)">
+    <div class="modal-content category-dialog-content" onclick="event.stopPropagation()">
+        <h3 id="categoryDialogTitle" class="modal-name"></h3>
+        <p id="categoryDialogMessage" class="category-dialog-message"></p>
+        <input type="text" id="categoryDialogInput" autocomplete="off">
+        <div class="category-dialog-actions">
+            <button type="button" id="categoryDialogConfirm" class="btn-primary">تأكيد</button>
+            <button type="button" class="confirm-cancel-btn" onclick="closeCategoryDialog(null)">إلغاء</button>
+        </div>
+    </div>
 </div>
 
 <div id="toast" role="status" aria-live="polite"></div>
