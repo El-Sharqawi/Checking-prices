@@ -593,6 +593,15 @@ function getProductImageSource(item) {
     return String(item?.imageHd || item?.imageOriginal || item?.image || "").trim();
 }
 
+function isProductAvailable(product) {
+    if (typeof product?.available === "boolean") return product.available;
+    return String(product?.status || "available").toLowerCase() !== "unavailable";
+}
+
+function getProductStatusLabel(product) {
+    return isProductAvailable(product) ? "متوفر" : "غير متوفر";
+}
+
 function getUpdateById(id) {
 
     return allPriceUpdatesCache.find(update => update.id === id) || null;
@@ -1017,6 +1026,8 @@ async function saveProduct() {
 
     const category = document.getElementById("productCategory").value.trim();
 
+    const status = document.getElementById("productStatus")?.value || "available";
+
     const barcode =
 
         document.getElementById("productBarcode").value.trim() || "بدون باركود";
@@ -1079,7 +1090,7 @@ async function saveProduct() {
         const newImage = (await getImageAsDataUrl(imageFile)) || lookedUpImageUrl || null;
 
         if (editingId) {
-            await updateExistingProduct(editingId, name, priceRaw, category, barcode, newImage);
+            await updateExistingProduct(editingId, name, priceRaw, category, barcode, status, newImage);
             document.getElementById("editingId").value = "";
             resetFormFields();
             showToast("تم التعديل");
@@ -1094,6 +1105,8 @@ async function saveProduct() {
                 category,
 
                 barcode,
+
+                status,
 
                 image: newImage || "",
 
@@ -1133,7 +1146,7 @@ async function saveProduct() {
 
 }
 
-async function updateExistingProduct(id, name, price, category, barcode, newImage) {
+async function updateExistingProduct(id, name, price, category, barcode, status, newImage) {
 
     const productRef = db.collection("products").doc(id);
 
@@ -1176,6 +1189,8 @@ async function updateExistingProduct(id, name, price, category, barcode, newImag
         category,
 
         barcode,
+
+        status,
 
         image: newImage !== null ? newImage : (old.image || ""),
 
@@ -1244,6 +1259,8 @@ function resetFormFields() {
 
     const category = document.getElementById("productCategory");
 
+    const status = document.getElementById("productStatus");
+
     const barcode = document.getElementById("productBarcode");
 
     const image = document.getElementById("productImage");
@@ -1264,6 +1281,8 @@ function resetFormFields() {
         category.value = "";
         delete category.dataset.categoryManuallyChanged;
     }
+
+    if (status) status.value = "available";
 
     if (barcode) barcode.value = "";
 
@@ -1303,9 +1322,12 @@ function displayProducts(products) {
 
     if (sortedProducts.length === 0) {
 
-        list.innerHTML =
-
-            '<p class="inline-style-20">لا توجد منتجات</p>';
+        if (!list.querySelector(".inline-style-20")) {
+            list.replaceChildren(Object.assign(document.createElement("p"), {
+                className: "inline-style-20",
+                textContent: "لا توجد منتجات"
+            }));
+        }
 
         if (selectAllBtn) {
 
@@ -1319,58 +1341,79 @@ function displayProducts(products) {
 
     }
 
-    let html = "";
+    list.querySelectorAll(".inline-style-20").forEach(emptyMessage => emptyMessage.remove());
+
+    const fallbackImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%23eef2f4'/%3E%3C/svg%3E";
+    const existingCards = new Map(
+        [...list.querySelectorAll(".product-card[data-product-id]")]
+            .map(card => [card.dataset.productId, card])
+    );
+    const orderedCards = [];
 
     sortedProducts.forEach(product => {
 
-        const id = escapeHtml(product.id);
+        const productId = String(product.id);
+        const name = normalizeProductInputName(product.name) || "بدون اسم";
+        const price = formatCurrency(product.price ?? 0);
+        const productImage = getProductImageSource(product) || fallbackImage;
+        let card = existingCards.get(productId);
 
-        const name = escapeHtml(normalizeProductInputName(product.name) || "بدون اسم");
-
-        const price = escapeHtml(formatCurrency(product.price ?? 0));
-
-        const productImage = getProductImageSource(product);
-
-        const image = productImage
-
-            ? escapeHtml(productImage)
-
-            : "https://via.placeholder.com/120?text=No+Img";
-
-        html += `
-
-            <div class="product-card" onclick="openProductModal('${id}')" title="${name}">
-
+        if (!card) {
+            card = document.createElement("div");
+            card.className = "product-card";
+            card.dataset.productId = productId;
+            card.innerHTML = `
                 <div class="product-thumb">
                     <div class="product-image-box">
-                        <img
-                            src="${image}"
-                            alt="${name}"
-                            loading="lazy"
-                            onerror="this.src='https://via.placeholder.com/120?text=No+Img'"
-                        >
+                        <img loading="lazy">
                     </div>
                 </div>
-
                 <div class="product-info">
-
-                    <h4>${productNameMarkup(product.name)}</h4>
-
-                    <p class="product-price-txt">
-
-                        <strong>${price} ج.م</strong>
-
-                    </p>
-
+                    <h4 data-product-name></h4>
+                    <p class="product-subtitle" data-product-subtitle></p>
+                    <p class="product-price-txt"><strong data-product-price></strong></p>
+                    <span class="product-status-badge" data-product-status aria-label="حالة المنتج"></span>
                 </div>
+            `;
+            card.addEventListener("click", () => openProductModal(productId));
+        }
 
-            </div>
+        card.title = name;
+        card.querySelector("[data-product-name]").innerHTML = productNameMarkup(product.name);
+        card.querySelector("[data-product-subtitle]").textContent = getProductCategory(product) || "";
+        card.querySelector("[data-product-price]").textContent = `${price} ج.م`;
+        const statusBadge = card.querySelector("[data-product-status]");
+        statusBadge.textContent = "";
+        statusBadge.title = getProductStatusLabel(product);
+        statusBadge.className = `product-status-badge ${isProductAvailable(product) ? "is-available" : "is-unavailable"}`;
 
-        `;
+        const image = card.querySelector("img");
+        image.alt = name;
+        const imageSource = image.dataset.failedSource === productImage
+            ? fallbackImage
+            : productImage;
+        if (image.dataset.source !== imageSource) {
+            image.dataset.source = imageSource;
+            image.src = imageSource;
+            image.onerror = () => {
+                image.onerror = null;
+                image.dataset.failedSource = productImage;
+                image.dataset.source = fallbackImage;
+                image.src = fallbackImage;
+            };
+        }
 
+        orderedCards.push(card);
+        existingCards.delete(productId);
     });
 
-    list.innerHTML = html;
+    existingCards.forEach(card => card.remove());
+
+    orderedCards.forEach((card, index) => {
+        if (list.children[index] !== card) {
+            list.insertBefore(card, list.children[index] || null);
+        }
+    });
 
     toggleDeleteSelectedBtn();
 
@@ -1467,6 +1510,8 @@ function fillProductForm(id) {
     document.getElementById("editingId").value = product.id;
     document.getElementById("productName").value = product.name || "";
     document.getElementById("productPrice").value = product.price ?? "";
+    const statusInput = document.getElementById("productStatus");
+    if (statusInput) statusInput.value = isProductAvailable(product) ? "available" : "unavailable";
     const categoryInput = document.getElementById("productCategory");
     categoryInput.value = product.category || "";
     categoryInput.dataset.categoryManuallyChanged = "1";
@@ -1744,8 +1789,11 @@ function openProductModal(id) {
     const updatedAt = document.getElementById("modalUpdatedAt");
 
     if (updatedAt) {
-        updatedAt.textContent = latest ? formatPriceUpdateDateTime(latest) : "";
-        updatedAt.style.display = latest ? "" : "none";
+        const updateSource = latest || {
+            updatedAt: product.updatedAt || product.createdAt
+        };
+        updatedAt.textContent = formatPriceUpdateDateTime(updateSource);
+        updatedAt.style.display = "";
     }
 
     if (price) {

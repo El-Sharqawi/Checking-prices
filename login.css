@@ -54,7 +54,7 @@ body {
 
 @media (max-width: 768px) {
     body {
-        padding-bottom: 50vh;
+        padding-bottom: 24px;
     }
 
     .container {
@@ -402,6 +402,7 @@ textarea:focus {
 
 /* Product cards: shared base */
 .product-card {
+    position: relative;
     background: var(--input-bg);
     border: 1px solid var(--border-color);
     padding: 8px;
@@ -461,7 +462,7 @@ textarea:focus {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    justify-content: flex-start;
 }
 
 .product-info h4 {
@@ -473,6 +474,110 @@ textarea:focus {
     min-width: 0;
     overflow: hidden;
     text-align: center;
+}
+
+.product-subtitle {
+    margin: 3px 0 0;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    min-height: 1.3em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.product-status-badge,
+.modal-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    max-width: 100%;
+    margin: 6px auto 0;
+    padding: 4px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.product-status-badge.is-available,
+.modal-status.is-available {
+    color: #166534;
+    background: rgba(34, 197, 94, .14);
+    border: 1px solid rgba(34, 197, 94, .28);
+}
+
+.product-status-badge.is-unavailable,
+.modal-status.is-unavailable {
+    color: #991b1b;
+    background: rgba(239, 68, 68, .13);
+    border: 1px solid rgba(239, 68, 68, .27);
+}
+
+#searchSection .product-status-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    width: 9px;
+    height: 9px;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    border: 2px solid var(--input-bg);
+    border-radius: 50%;
+    font-size: 0;
+    line-height: 0;
+}
+
+#searchSection .product-status-badge.is-available {
+    background: #16a34a;
+}
+
+#searchSection .product-status-badge.is-unavailable {
+    background: #dc2626;
+}
+
+#searchSection .product-info .product-price-txt {
+    order: 4;
+    margin-top: auto;
+}
+
+#searchSection .product-info .product-subtitle {
+    order: 3;
+}
+
+#searchSection .product-info h4 {
+    order: 1;
+}
+
+#searchSection .product-card {
+    min-height: 170px;
+}
+
+#productModal .modal-content {
+    min-height: 0;
+    max-height: min(86vh, 560px);
+    overflow-y: auto;
+}
+
+#productModal .modal-name {
+    overflow: visible;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+#productModal .modal-barcode,
+#productModal .modal-updated-at {
+    font-weight: 650;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+#productModal .modal-price {
+    margin-top: 12px;
 }
 
 .product-name-main,
@@ -1100,6 +1205,16 @@ body.dark-mode .modal-edit-btn {
     overflow-wrap: anywhere;
     font-weight: 500;
     margin-bottom: 8px;
+}
+
+.modal-category {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-bottom: 4px;
+}
+
+.modal-status {
+    margin: 0 auto 8px;
 }
 
 .modal-updated-at,
@@ -5481,7 +5596,7 @@ body.dark-mode .viewport {
 @media (max-width: 767px) {
     body {
         padding: 8px;
-        padding-bottom: 35vh;
+        padding-bottom: 24px;
         align-items: flex-start;
     }
 
@@ -6798,6 +6913,116 @@ body.dark-mode #searchSection .product-price-txt strong {
     #searchSection .product-price-txt {
         margin-top: 8px;
         white-space: nowrap;
+    }
+}
+
+@media (min-width: 769px) {
+    #searchSection .product-card {
+        height: auto;
+        min-height: 250px;
+        padding: 7px 8px 8px;
+        overflow: visible;
+    }
+
+    #searchSection .product-thumb {
+        flex: 0 0 108px !important;
+        height: 108px !important;
+        min-height: 108px !important;
+    }
+
+    #searchSection .product-info {
+        min-height: 116px;
+        overflow: visible;
+    }
+
+    #searchSection .product-info h4 {
+        min-height: 0;
+        overflow: visible;
+        line-height: 1.35;
+    }
+
+    #searchSection .product-info .product-name-main {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    #searchSection .product-info .product-name-badge {
+        max-width: 100%;
+        margin-top: 5px;
+        padding: 4px 9px;
+        overflow: visible;
+        line-height: 1.3;
+        text-align: center;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    #searchSection .product-info .product-subtitle {
+        min-height: 1.4em;
+        margin-top: 6px;
+        overflow: visible;
+        white-space: normal;
+        line-height: 1.35;
+    }
+
+    #searchSection .product-info .product-price-txt {
+        margin-top: auto;
+        padding-top: 5px;
+    }
+}
+
+@media (min-width: 769px) {
+    #productModal {
+        padding: 16px;
+    }
+
+    #productModal .modal-content {
+        width: min(88vw, 380px);
+        max-width: 380px;
+        min-height: 0;
+        max-height: 86vh;
+        padding: 18px 18px 16px;
+        border-radius: 18px;
+        overflow-y: auto;
+    }
+
+    #productModal .modal-img {
+        width: 160px;
+        height: 160px;
+        max-width: 100%;
+        max-height: 160px;
+        margin: 10px auto 8px;
+    }
+
+    #productModal .modal-name {
+        font-size: 20px;
+        line-height: 1.3;
+        margin: 5px 0 7px;
+    }
+
+    #productModal .modal-price {
+        margin-bottom: 8px;
+    }
+
+    #productModal .modal-barcode,
+    #productModal .modal-category,
+    #productModal .modal-updated-at {
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    #productModal .modal-product-actions {
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    #productModal .modal-product-actions button {
+        height: 38px;
+        min-height: 38px;
+        padding: 6px 10px !important;
+        font-size: 12px !important;
     }
 }
 
