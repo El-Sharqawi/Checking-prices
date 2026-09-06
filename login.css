@@ -517,6 +517,7 @@ textarea:focus {
 }
 
 #searchSection .product-status-badge {
+    display: none;
     position: absolute;
     top: 8px;
     right: 8px;

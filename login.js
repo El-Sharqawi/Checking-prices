@@ -83,6 +83,11 @@ function initializeFirebase() {
         }
 
         db = firebase.firestore();
+        db.enablePersistence({ synchronizeTabs: true }).catch(error => {
+            if (error.code !== "failed-precondition" && error.code !== "unimplemented") {
+                console.warn("Firestore persistence unavailable:", error);
+            }
+        });
 
         firebaseReady = true;
 
@@ -117,6 +122,9 @@ function initializeFirebase() {
 }
 
 let allProductsCache = [];
+const PRODUCT_PAGE_SIZE = 48;
+let visibleProductCount = PRODUCT_PAGE_SIZE;
+const productsById = new Map();
 
 let allPriceUpdatesCache = [];
 let allDebtCustomersCache = [];
@@ -134,21 +142,65 @@ let activeScannerElementId = null;
 const defaultProductCategories = [
     "مشروبات", "شيبسي", "بسكويت", "زيوت", "ألبان", "معلبات", "منظفات", "أخرى"
 ];
+const PRODUCT_CATEGORIES_STORAGE_KEY = "productCategories-v2";
 
 let productCategories = [];
 let categoryDialogResolver = null;
 
 function loadProductCategories() {
     try {
-        const saved = JSON.parse(localStorage.getItem("productCategories") || "[]");
-        productCategories = [...new Set([...defaultProductCategories, ...saved].filter(Boolean))];
+        const saved = JSON.parse(localStorage.getItem(PRODUCT_CATEGORIES_STORAGE_KEY) || "null");
+        if (Array.isArray(saved)) {
+            productCategories = [...new Set(saved.filter(Boolean))];
+            localStorage.removeItem("productCategories");
+            return;
+        }
+
+        const legacy = JSON.parse(localStorage.getItem("productCategories") || "null");
+        productCategories = Array.isArray(legacy)
+            ? [...new Set(legacy.filter(Boolean))]
+            : [...defaultProductCategories];
+        saveProductCategories();
+        localStorage.removeItem("productCategories");
     } catch (error) {
-        productCategories = [...defaultProductCategories];
+        productCategories = [];
     }
 }
 
 function saveProductCategories() {
-    localStorage.setItem("productCategories", JSON.stringify(productCategories));
+    localStorage.setItem(PRODUCT_CATEGORIES_STORAGE_KEY, JSON.stringify(productCategories));
+}
+
+async function persistProductCategories() {
+    if (firebaseReady && db) {
+        await db.collection("app_settings").doc("productCategories").set({
+            categories: productCategories,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    }
+    saveProductCategories();
+}
+
+async function syncProductCategoriesFromDatabase() {
+    if (!firebaseReady || !db) return;
+
+    try {
+        const snapshot = await db.collection("app_settings").doc("productCategories").get();
+        if (snapshot.exists) {
+            const saved = snapshot.data()?.categories;
+            if (Array.isArray(saved)) {
+                productCategories = [...new Set(saved.filter(Boolean))];
+                saveProductCategories();
+                populateProductCategories(document.getElementById("productCategory")?.value || "");
+                renderCategoryManagerList();
+                return;
+            }
+        }
+
+        await persistProductCategories();
+    } catch (error) {
+        console.warn("تعذر مزامنة الأقسام:", error);
+    }
 }
 
 function populateProductCategories(selectedValue = "") {
@@ -292,7 +344,7 @@ function renderCategoryManagerList() {
     `).join("");
 }
 
-function addCategory(name) {
+async function addCategory(name) {
     const category = String(name || "").trim();
     if (!category) return false;
     if (productCategories.includes(category)) {
@@ -300,14 +352,20 @@ function addCategory(name) {
         return false;
     }
     productCategories.push(category);
-    saveProductCategories();
+    try {
+        await persistProductCategories();
+    } catch (error) {
+        productCategories = productCategories.filter(item => item !== category);
+        showToast("تعذر حفظ القسم", false);
+        return false;
+    }
     populateProductCategories(category);
     return true;
 }
 
-function addCategoryFromManager() {
+async function addCategoryFromManager() {
     const input = document.getElementById("newCategoryName");
-    if (addCategory(input?.value)) {
+    if (await addCategory(input?.value)) {
         input.value = "";
         renderCategoryManagerList();
         showToast("تمت إضافة القسم");
@@ -322,8 +380,15 @@ async function renameCategory(oldCategory) {
         confirmText: "حفظ"
     });
     if (!newCategory || newCategory === oldCategory || productCategories.includes(newCategory)) return;
+    const previousCategories = productCategories;
     productCategories = productCategories.map(category => category === oldCategory ? newCategory : category);
-    saveProductCategories();
+    try {
+        await persistProductCategories();
+    } catch (error) {
+        productCategories = previousCategories;
+        showToast("تعذر حفظ تعديل القسم", false);
+        return;
+    }
     await updateProductCategoryReferences(oldCategory, newCategory);
     populateProductCategories(newCategory);
     renderCategoryManagerList();
@@ -338,8 +403,15 @@ async function deleteCategory(oldCategory) {
         input: false
     });
     if (!confirmed) return;
+    const previousCategories = productCategories;
     productCategories = productCategories.filter(category => category !== oldCategory);
-    saveProductCategories();
+    try {
+        await persistProductCategories();
+    } catch (error) {
+        productCategories = previousCategories;
+        showToast("تعذر حذف القسم", false);
+        return;
+    }
     populateProductCategories("");
     renderCategoryManagerList();
     displayProducts(allProductsCache);
@@ -526,18 +598,46 @@ function getProductById(id) {
 }
 
 function compareProductsByCategory(a, b) {
-    const categoryCompare = String(a.category || "أخرى").localeCompare(
-        String(b.category || "أخرى"),
-        "ar",
-        { sensitivity: "base" }
-    );
+    const categoryCompare = getProductCategoryOrder(a) - getProductCategoryOrder(b);
     if (categoryCompare !== 0) return categoryCompare;
 
-    return String(a.name || "").localeCompare(
-        String(b.name || ""),
+    const brandCompare = getProductBrand(a).localeCompare(
+        getProductBrand(b),
         "ar",
         { sensitivity: "base" }
     );
+    if (brandCompare !== 0) return brandCompare;
+
+    return getProductCreationTime(a) - getProductCreationTime(b);
+}
+
+function getProductCategoryOrder(product) {
+    const category = String(product?.category || "أخرى").trim();
+    const index = productCategories.indexOf(category);
+    return index < 0 ? productCategories.length : index;
+}
+
+function getProductCreationTime(product) {
+    const value = product?.createdAt;
+    if (value?.toMillis instanceof Function) return value.toMillis();
+    if (value?.seconds !== undefined) return Number(value.seconds) * 1000;
+    const numericValue = Number(value);
+    if (Number.isFinite(numericValue)) return numericValue;
+    const parsedValue = Date.parse(String(value || ""));
+    return Number.isFinite(parsedValue) ? parsedValue : Number.MAX_SAFE_INTEGER;
+}
+
+function getProductBrand(product) {
+    const explicitBrand = [product?.brand, product?.brandName, product?.manufacturer]
+        .map(value => String(value || "").trim())
+        .find(Boolean);
+    if (explicitBrand) return explicitBrand;
+
+    const normalizedName = String(product?.name || "")
+        .replace(/[.,;:!?()[\]{}\/\\_-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    return normalizedName.split(" ").slice(0, 2).join(" ");
 }
 
 function sortProductsByCategory(products) {
@@ -841,19 +941,18 @@ function initRealtimeListeners() {
 
         snapshot => {
 
-            allProductsCache = [];
-
-            snapshot.forEach(doc => {
-
-                allProductsCache.push({
-
-                    id: doc.id,
-
-                    ...doc.data()
-
+            snapshot.docChanges().forEach(change => {
+                if (change.type === "removed") {
+                    productsById.delete(change.doc.id);
+                    return;
+                }
+                productsById.set(change.doc.id, {
+                    id: change.doc.id,
+                    ...change.doc.data()
                 });
-
             });
+
+            allProductsCache = [...productsById.values()];
 
             allProductsCache = sortProductsByCategory(allProductsCache);
 
@@ -1317,10 +1416,14 @@ function displayProducts(products) {
     const sortedProducts = sortProductsByCategory(products).filter(product =>
         !selectedCategory || getProductCategory(product) === selectedCategory
     );
+    const productsToRender = sortedProducts.slice(0, visibleProductCount);
+    const loadMoreButton = document.getElementById("loadMoreProductsBtn");
 
     if (filter && !filter.options.length) populateProductCategories();
 
     if (sortedProducts.length === 0) {
+
+        list.replaceChildren();
 
         if (!list.querySelector(".inline-style-20")) {
             list.replaceChildren(Object.assign(document.createElement("p"), {
@@ -1336,6 +1439,7 @@ function displayProducts(products) {
         }
 
         toggleDeleteSelectedBtn();
+        if (loadMoreButton) loadMoreButton.style.display = "none";
 
         return;
 
@@ -1350,7 +1454,7 @@ function displayProducts(products) {
     );
     const orderedCards = [];
 
-    sortedProducts.forEach(product => {
+    productsToRender.forEach(product => {
 
         const productId = String(product.id);
         const name = normalizeProductInputName(product.name) || "بدون اسم";
@@ -1416,6 +1520,9 @@ function displayProducts(products) {
     });
 
     toggleDeleteSelectedBtn();
+    if (loadMoreButton) {
+        loadMoreButton.style.display = productsToRender.length < sortedProducts.length ? "block" : "none";
+    }
 
 }
 
@@ -2985,6 +3092,7 @@ window.addEventListener("DOMContentLoaded", () => {
     if (initializeFirebase()) {
 
         initRealtimeListeners();
+        syncProductCategoriesFromDatabase();
 
     }
 
@@ -3006,6 +3114,12 @@ document.addEventListener("DOMContentLoaded", () => {
     renderShakakTable();
 
     document.getElementById("productCategoryFilter")?.addEventListener("change", () => {
+        visibleProductCount = PRODUCT_PAGE_SIZE;
+        displayProducts(allProductsCache);
+    });
+
+    document.getElementById("loadMoreProductsBtn")?.addEventListener("click", () => {
+        visibleProductCount += PRODUCT_PAGE_SIZE;
         displayProducts(allProductsCache);
     });
 
