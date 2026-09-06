@@ -449,6 +449,16 @@ function playBeepSound() {
     playBeep();
 }
 
+let lastBarcodeBeep = { code: "", time: 0 };
+
+function playBarcodeBeepOnce(barcode) {
+    const code = normalizeBarcode(barcode);
+    const now = Date.now();
+    if (!code || (lastBarcodeBeep.code === code && now - lastBarcodeBeep.time < 500)) return;
+    lastBarcodeBeep = { code, time: now };
+    playBeepSound();
+}
+
 function vibrateAfterScan() {
     try {
         if (typeof navigator.vibrate === "function") navigator.vibrate(100);
@@ -456,7 +466,7 @@ function vibrateAfterScan() {
     }
 }
 
-function showToast(msg, isSuccess = true) {
+function showToast(msg, isSuccess = true, playSound = true) {
 
     const toast = document.getElementById("toast");
 
@@ -472,7 +482,7 @@ function showToast(msg, isSuccess = true) {
 
     toast.className = "show";
 
-    playBeep();
+    if (playSound) playBeep();
 
     clearTimeout(showToast.timer);
 
@@ -1152,7 +1162,8 @@ async function saveProduct() {
     }
 
     if (isDuplicateProductName(name, editingId)) {
-        showToast("هذا المنتج موجود", false);
+        playBarcodeBeepOnce(code);
+        showToast("هذا المنتج موجود", false, false);
         return;
     }
 
@@ -1598,6 +1609,10 @@ function filterProductSearch() {
                 const activeItem = items[activeIndex];
                 if (activeItem) {
                     event.preventDefault();
+                    const matchedProduct = getProductById(activeItem.dataset.productId);
+                    if (matchedProduct && normalizeBarcode(matchedProduct.barcode) === normalizeBarcode(input.value)) {
+                        playBarcodeBeepOnce(input.value);
+                    }
                     activeItem.click();
                 }
             }
@@ -2451,6 +2466,8 @@ async function lookupAndFillProductFromBarcode(barcode, options = {}) {
             return;
         }
 
+        playBarcodeBeepOnce(code);
+
         if (offResult?.name && nameInput && (!nameInput.value.trim() || forceName)) {
             nameInput.value = offResult.name;
             applySuggestedCategory(offResult.name);
@@ -2511,7 +2528,7 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
 
     if (typeof Html5Qrcode === "undefined") {
 
-        showToast("قارئ QR غير متاح", false);
+        showToast("قارئ QR غير متاح", false, false);
 
         return;
 
@@ -2587,10 +2604,11 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
                     const decodedProduct = findLocalProductByBarcode(scannedCode);
                     if (decodedProduct) {
                         vibrateAfterScan();
-                        addProductToShakakCart(decodedProduct);
+                        playBarcodeBeepOnce(scannedCode);
+                        addProductToShakakCart(decodedProduct, false);
                         targetInput.value = "";
                     } else {
-                        showToast("المنتج غير مسجل", false);
+                        showToast("المنتج غير مسجل", false, false);
                     }
                     return;
                 }
@@ -2599,12 +2617,13 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
                     const decodedProduct = findLocalProductByBarcode(scannedCode);
                     if (decodedProduct) {
                         vibrateAfterScan();
-                        addProductToPosCart(decodedProduct);
+                        playBarcodeBeepOnce(scannedCode);
+                        addProductToPosCart(decodedProduct, false);
                         if (targetInput) targetInput.value = "";
-                        showToast("تمت القراءة");
+                        showToast("تمت القراءة", true, false);
                     } else {
                         if (targetInput) targetInput.value = "";
-                        showToast("هذا المنتج غير متوفر", false);
+                        showToast("هذا المنتج غير متوفر", false, false);
                     }
                     return;
                 }
@@ -2613,10 +2632,10 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
                     const decodedProduct = findLocalProductByBarcode(scannedCode);
                     if (decodedProduct || isLookupBarcode(scannedCode)) {
                         vibrateAfterScan();
-                        showToast("تمت القراءة");
+                        showToast("تمت القراءة", true, false);
                     } else {
                         if (targetInput) targetInput.value = "";
-                        showToast("هذا المنتج غير متوفر", false);
+                        showToast("هذا المنتج غير متوفر", false, false);
                     }
                     await lookupAndFillProductFromBarcode(scannedCode, { forceName: false });
                     return;
@@ -2624,13 +2643,16 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
 
                 if (isSearch) {
 
-                    if (scannedCode) vibrateAfterScan();
+                    if (scannedCode) {
+                        vibrateAfterScan();
+                        playBarcodeBeepOnce(scannedCode);
+                    }
                     if (targetInput) targetInput.value = scannedCode;
                     filterProductSearch();
 
                 }
 
-                showToast("تمت القراءة");
+                showToast("تمت القراءة", true, false);
 
             },
 
@@ -2644,7 +2666,7 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
 
         console.error("Scanner start error:", error);
 
-        showToast("تعذر تشغيل الكاميرا", false);
+                showToast("تعذر تشغيل الكاميرا", false, false);
 
         await stopCurrentScanner();
 
@@ -3294,9 +3316,9 @@ function updateActiveSuggestion(items) {
 
 }
 
-function addProductToPosCart(foundProduct) {
+function addProductToPosCart(foundProduct, playSound = true) {
 
-    playBeepSound();
+    if (playSound) playBeepSound();
 
     const existingCartItem = posCart.find(item => item.id === foundProduct.id);
 
@@ -3664,8 +3686,8 @@ function updateShakakActiveSuggestion(items) {
     });
 }
 
-function addProductToShakakCart(foundProduct) {
-    playBeepSound();
+function addProductToShakakCart(foundProduct, playSound = true) {
+    if (playSound) playBeepSound();
     const existing = shakakCart.find(item => item.id === foundProduct.id);
     if (existing) existing.quantity += 1;
     else shakakCart.push({ id: foundProduct.id, name: foundProduct.name, price: Number(foundProduct.price) || 0, quantity: 1 });
