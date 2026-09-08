@@ -139,9 +139,6 @@ let activeScanner = null;
 
 let activeScannerElementId = null;
 
-const defaultProductCategories = [
-    "مشروبات", "شيبسي", "بسكويت", "زيوت", "ألبان", "معلبات", "منظفات", "أخرى"
-];
 const PRODUCT_CATEGORIES_STORAGE_KEY = "productCategories-v2";
 
 let productCategories = [];
@@ -159,8 +156,8 @@ function loadProductCategories() {
         const legacy = JSON.parse(localStorage.getItem("productCategories") || "null");
         productCategories = Array.isArray(legacy)
             ? [...new Set(legacy.filter(Boolean))]
-            : [...defaultProductCategories];
-        saveProductCategories();
+            : [];
+        if (Array.isArray(legacy)) saveProductCategories();
         localStorage.removeItem("productCategories");
     } catch (error) {
         productCategories = [];
@@ -207,12 +204,12 @@ function populateProductCategories(selectedValue = "") {
     const select = document.getElementById("productCategory");
     const filter = document.getElementById("productCategoryFilter");
 
-    const categories = [...new Set([...productCategories, selectedValue].filter(Boolean))];
+    const categories = [...productCategories];
     if (select) {
         select.innerHTML = '<option value="" disabled hidden></option>' + categories.map(category =>
             `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`
         ).join("");
-        select.value = selectedValue;
+        select.value = categories.includes(selectedValue) ? selectedValue : "";
     }
     if (filter) {
         const currentFilter = filter.value;
@@ -621,13 +618,33 @@ function compareProductsByCategory(a, b) {
     );
     if (brandCompare !== 0) return brandCompare;
 
+    const packagingCompare = getProductPackaging(a).localeCompare(
+        getProductPackaging(b),
+        "ar",
+        { sensitivity: "base", numeric: true }
+    );
+    if (packagingCompare !== 0) return packagingCompare;
+
+    const nameCompare = normalizeProductName(a?.name).localeCompare(
+        normalizeProductName(b?.name),
+        "ar",
+        { sensitivity: "base", numeric: true }
+    );
+    if (nameCompare !== 0) return nameCompare;
+
     return getProductCreationTime(a) - getProductCreationTime(b);
 }
 
 function getProductCategoryOrder(product) {
-    const category = String(product?.category || "أخرى").trim();
-    const index = productCategories.indexOf(category);
-    return index < 0 ? productCategories.length : index;
+    const category = normalizeCategoryText(product?.category);
+    const primaryCategoryOrder = ["مشروبات", "عصائر", "شيبسي", "مقرمشات"];
+    const primaryIndex = primaryCategoryOrder.findIndex(name => category === normalizeCategoryText(name));
+    if (primaryIndex >= 0) return primaryIndex;
+
+    const savedIndex = productCategories.findIndex(savedCategory =>
+        normalizeCategoryText(savedCategory) === category
+    );
+    return primaryCategoryOrder.length + (savedIndex >= 0 ? savedIndex : productCategories.length);
 }
 
 function getProductCreationTime(product) {
@@ -651,6 +668,22 @@ function getProductBrand(product) {
         .replace(/\s+/g, " ")
         .trim();
     return normalizedName.split(" ").slice(0, 2).join(" ");
+}
+
+function getProductPackaging(product) {
+    const explicitPackaging = [product?.packaging, product?.packageType, product?.size, product?.quantity]
+        .map(value => String(value || "").trim())
+        .find(Boolean);
+    if (explicitPackaging) return normalizeProductName(explicitPackaging);
+
+    const productName = normalizeProductName(product?.name);
+    const packagingTerms = [
+        "كانز", "علبه", "زجاجه", "بلاستيك", "كيس", "عبوه", "كرتونه",
+        "can", "cans", "bottle", "plastic", "bag", "box", "carton"
+    ];
+    const packagingTerm = packagingTerms.find(term => productName.includes(normalizeProductName(term))) || "";
+    const size = productName.match(/\d+(?:[.,]\d+)?\s*(?:مل|ملي|لتر|ل|جم|جرام|كجم|kg|g|ml|l)\b/i)?.[0] || "";
+    return normalizeProductName(`${packagingTerm} ${size}`);
 }
 
 function sortProductsByCategory(products) {
@@ -704,15 +737,6 @@ function isDuplicateProductBarcode(barcode, ignoreId = "") {
 
 function getProductImageSource(item) {
     return String(item?.imageHd || item?.imageOriginal || item?.image || "").trim();
-}
-
-function isProductAvailable(product) {
-    if (typeof product?.available === "boolean") return product.available;
-    return String(product?.status || "available").toLowerCase() !== "unavailable";
-}
-
-function getProductStatusLabel(product) {
-    return isProductAvailable(product) ? "متوفر" : "غير متوفر";
 }
 
 function getUpdateById(id) {
@@ -1119,6 +1143,15 @@ function updateStats(products) {
 
 }
 
+function updateProductCacheAndDisplay(product) {
+    const index = allProductsCache.findIndex(item => item.id === product.id);
+    if (index >= 0) allProductsCache[index] = product;
+    else allProductsCache.push(product);
+    allProductsCache = sortProductsByCategory(allProductsCache);
+    updateStats(allProductsCache);
+    displayProducts(allProductsCache);
+}
+
 async function saveProduct() {
 
     if (!firebaseReady || !db) {
@@ -1137,8 +1170,6 @@ async function saveProduct() {
     const priceRaw = document.getElementById("productPrice").value.trim();
 
     const category = document.getElementById("productCategory").value.trim();
-
-    const status = document.getElementById("productStatus")?.value || "available";
 
     const barcode =
 
@@ -1202,7 +1233,8 @@ async function saveProduct() {
         const newImage = (await getImageAsDataUrl(imageFile)) || lookedUpImageUrl || null;
 
         if (editingId) {
-            await updateExistingProduct(editingId, name, priceRaw, category, barcode, status, newImage);
+            const updatedProduct = await updateExistingProduct(editingId, name, priceRaw, category, barcode, newImage);
+            updateProductCacheAndDisplay(updatedProduct);
             document.getElementById("editingId").value = "";
             resetFormFields();
             showToast("تم التعديل");
@@ -1218,15 +1250,14 @@ async function saveProduct() {
 
                 barcode,
 
-                status,
-
                 image: newImage || "",
 
                 createdAt: Date.now()
 
             };
 
-            await db.collection("products").add(newProduct);
+            const productReference = await db.collection("products").add(newProduct);
+            updateProductCacheAndDisplay({ id: productReference.id, ...newProduct });
             resetFormFields();
             showToast("تم الحفظ");
 
@@ -1258,7 +1289,7 @@ async function saveProduct() {
 
 }
 
-async function updateExistingProduct(id, name, price, category, barcode, status, newImage) {
+async function updateExistingProduct(id, name, price, category, barcode, newImage) {
 
     const productRef = db.collection("products").doc(id);
 
@@ -1301,8 +1332,6 @@ async function updateExistingProduct(id, name, price, category, barcode, status,
         category,
 
         barcode,
-
-        status,
 
         image: newImage !== null ? newImage : (old.image || ""),
 
@@ -1358,6 +1387,8 @@ async function updateExistingProduct(id, name, price, category, barcode, status,
 
     }
 
+    return { id, ...old, ...updatedData, updatedAt: Date.now() };
+
 }
 
 function resetFormFields() {
@@ -1370,8 +1401,6 @@ function resetFormFields() {
     const price = document.getElementById("productPrice");
 
     const category = document.getElementById("productCategory");
-
-    const status = document.getElementById("productStatus");
 
     const barcode = document.getElementById("productBarcode");
 
@@ -1393,8 +1422,6 @@ function resetFormFields() {
         category.value = "";
         delete category.dataset.categoryManuallyChanged;
     }
-
-    if (status) status.value = "available";
 
     if (barcode) barcode.value = "";
 
@@ -1489,7 +1516,6 @@ function displayProducts(products) {
                     <h4 data-product-name></h4>
                     <p class="product-subtitle" data-product-subtitle></p>
                     <p class="product-price-txt"><strong data-product-price></strong></p>
-                    <span class="product-status-badge" data-product-status aria-label="حالة المنتج"></span>
                 </div>
             `;
             card.addEventListener("click", () => openProductModal(productId));
@@ -1499,11 +1525,6 @@ function displayProducts(products) {
         card.querySelector("[data-product-name]").innerHTML = productNameMarkup(product.name);
         card.querySelector("[data-product-subtitle]").textContent = getProductCategory(product) || "";
         card.querySelector("[data-product-price]").textContent = `${price} ج.م`;
-        const statusBadge = card.querySelector("[data-product-status]");
-        statusBadge.textContent = "";
-        statusBadge.title = getProductStatusLabel(product);
-        statusBadge.className = `product-status-badge ${isProductAvailable(product) ? "is-available" : "is-unavailable"}`;
-
         const image = card.querySelector("img");
         image.alt = name;
         const imageSource = image.dataset.failedSource === productImage
@@ -1630,8 +1651,6 @@ function fillProductForm(id) {
     document.getElementById("editingId").value = product.id;
     document.getElementById("productName").value = product.name || "";
     document.getElementById("productPrice").value = product.price ?? "";
-    const statusInput = document.getElementById("productStatus");
-    if (statusInput) statusInput.value = isProductAvailable(product) ? "available" : "unavailable";
     const categoryInput = document.getElementById("productCategory");
     categoryInput.value = product.category || "";
     categoryInput.dataset.categoryManuallyChanged = "1";
@@ -2617,7 +2636,7 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
                         showToast("تمت القراءة");
                     } else {
                         if (targetInput) targetInput.value = "";
-                        showToast("هذا المنتج غير متوفر", false);
+                        showToast("المنتج غير مسجل", false);
                     }
                     return;
                 }
@@ -2629,7 +2648,7 @@ async function toggleScanner(elementId, inputTargetId, isSearch = false) {
                         showToast("تمت القراءة");
                     } else {
                         if (targetInput) targetInput.value = "";
-                        showToast("هذا المنتج غير متوفر", false);
+                        showToast("المنتج غير مسجل", false);
                     }
                     await lookupAndFillProductFromBarcode(scannedCode, { forceName: false });
                     return;
@@ -3745,7 +3764,7 @@ function formatArabicDate(value) {
 
 function formatPriceUpdateDateTime(update) {
     const date = normalizeDateValue(update?.timestamp || update?.updatedAt || update?.updateId);
-    if (!date) return "تاريخ التعديل: غير متوفر";
+    if (!date) return "تاريخ التعديل: غير محدد";
     return `آخر تعديل: ${formatArabicDate(getLocalDateValue(date))} - ${formatArabicTime12(getLocalTimeValue(date))}`;
 }
 
