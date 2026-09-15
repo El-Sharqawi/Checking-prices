@@ -203,6 +203,14 @@
 
         <div class="form-group">
 
+            <label for="productBrand" id="productBrandLabel">العلامة التجارية / الماركة</label>
+
+            <input type="text" id="productBrand" placeholder="أدخل العلامة التجارية / الماركة..." autocomplete="off">
+
+        </div>
+
+        <div class="form-group">
+
             <label for="productPrice">السعر</label>
 
             <input type="number" id="productPrice" placeholder="أدخل السعر..." min="0" step="0.01" inputmode="decimal" autocomplete="off">
@@ -252,17 +260,18 @@
 
                 <div class="image-picker-row">
 
-                    <input type="file" id="productImage" accept="image/*" capture="environment" onchange="updateImageFileName(this)" class="inline-style-19">
+                    <input type="file" id="productImage" accept="image/*" capture="environment" onchange="updateImageFileName(this)" class="image-upload-input" aria-label="اختيار صورة المنتج">
 
-                    <button type="button" class="btn-qr-scan image-picker-btn"
-
+                    <button type="button" class="image-picker-btn" aria-label="رفع صورة المنتج"
                             onclick="document.getElementById('productImage').click()">
 
-                        رفع صورة
+                        <span class="image-picker-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                                <path d="M4 5h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm8 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0-2a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                            </svg>
+                        </span>
 
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-
-                        <path d="M4 5h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm8 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0-2a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                        <span>رفع صورة</span>
 
                     </button>
 
@@ -270,7 +279,7 @@
 
                 <div id="imageFileName" class="file-name"></div>
 
-                <div id="imagePreviewWrap" class="image-preview-wrap" aria-live="polite">
+                <div id="imagePreviewWrap" class="image-preview-wrap" aria-live="polite" aria-label="معاينة صورة المنتج">
 
                     <img id="imagePreview" alt="معاينة صورة المنتج" src="">
 

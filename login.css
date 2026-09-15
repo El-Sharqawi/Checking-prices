@@ -265,6 +265,18 @@ textarea:focus {
     width: 100%;
 }
 
+.image-upload-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 .image-picker-row {
     display: flex;
     gap: 10px;
@@ -274,6 +286,43 @@ textarea:focus {
 
 .image-picker-btn {
     flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 46px;
+    padding: 0 18px;
+    border: 1px solid rgba(41, 128, 185, 0.18);
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(41, 128, 185, 0.12), rgba(14, 165, 233, 0.08));
+    color: var(--primary);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 800;
+    box-shadow: 0 8px 20px rgba(41, 128, 185, 0.12);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.image-picker-btn:hover {
+    transform: translateY(-1px);
+    border-color: rgba(41, 128, 185, 0.4);
+    box-shadow: 0 12px 24px rgba(41, 128, 185, 0.15);
+}
+
+.image-picker-icon {
+    display: inline-flex;
+    width: 28px;
+    height: 28px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.55);
+}
+
+.image-picker-icon svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
 }
 
 .file-name {
@@ -286,15 +335,15 @@ textarea:focus {
 
 .image-preview-wrap {
     display: none;
-    width: 170px;
+    width: min(100%, 200px);
     max-width: 100%;
-    min-height: 130px;
+    min-height: 120px;
     margin-top: 10px;
     padding: 8px;
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    background: #fff;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    background: var(--input-bg, rgba(255,255,255,0.8));
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
     justify-content: center;
     align-items: center;
     overflow: hidden;
@@ -306,13 +355,14 @@ textarea:focus {
 
 .image-preview-wrap img {
     display: block;
-    width: auto;
-        height: 36px !important;
-        min-height: 36px !important;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
     max-height: 160px;
-        padding: 5px 8px;
+    object-fit: contain;
+    padding: 0;
     border-radius: 8px;
-    background: #f5f5f5;
+    background: transparent;
 }
 
 .btn-save {
@@ -403,39 +453,40 @@ textarea:focus {
 /* Product cards: shared base */
 .product-card {
     position: relative;
-    background: var(--input-bg);
+    background: var(--surface, #ffffff);
     border: 1px solid var(--border-color);
     padding: 8px;
-    border-radius: 12px;
+    border-radius: 14px;
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 6px;
+    gap: 7px;
     cursor: pointer;
-    transition: all .2s ease;
-    min-height: 170px;
+    transition: all .22s ease;
+    min-height: 190px;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
+    box-shadow: 0 6px 18px rgba(16,24,40,.05);
 }
 
 .product-card:hover {
     border-color: var(--primary);
-    transform: translateY(-1px);
-    box-shadow: 0 8px 20px rgba(41, 128, 185, .12);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(41, 128, 185, .12);
 }
 
 .product-thumb {
     width: 100%;
-    height: 88px;
+    height: 96px;
     object-fit: contain;
     display: block;
-    border-radius: 8px;
-    background: transparent;
-    border: none;
+    border-radius: 10px;
+    background: var(--input-bg, rgba(0,0,0,.02));
+    border: 1px solid var(--border-color);
     padding: 0;
     margin: 0 auto;
-    box-shadow: none;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.2);
 }
 
 .product-image-box {
@@ -445,6 +496,7 @@ textarea:focus {
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    background: var(--input-bg, rgba(0,0,0,.02));
 }
 
 .product-image-box img {
@@ -455,6 +507,7 @@ textarea:focus {
     object-fit: contain;
     object-position: center;
     display: block;
+    background: transparent;
 }
 
 .product-info {
@@ -463,6 +516,7 @@ textarea:focus {
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
+    gap: 4px;
 }
 
 .product-info h4 {
@@ -477,7 +531,7 @@ textarea:focus {
 }
 
 .product-subtitle {
-    margin: 3px 0 0;
+    margin: 0;
     color: var(--text-muted);
     font-size: 11px;
     font-weight: 700;
@@ -532,35 +586,87 @@ textarea:focus {
 .product-name-badge {
     display: block;
     min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.product-name-main {
+    display: -webkit-box;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
 }
 
 .product-name-badge {
     width: fit-content;
     max-width: 100%;
-    margin: 3px auto 0;
-    padding: 3px 9px;
+    margin: 2px auto 0;
+    padding: 4px 10px;
     border-radius: 999px;
-    background: #fef3c7;
-    border: 1px solid #f59e0b;
-    color: #92400e;
-    font-size: .82em;
-    font-weight: 700;
+    background: linear-gradient(135deg, #fff7d9, #fde68a);
+    border: 1px solid rgba(245, 158, 11, .35);
+    color: #8a5b00;
+    font-size: .8em;
+    font-weight: 800;
+    letter-spacing: .02em;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, .08);
 }
 
 .product-price-txt {
-    margin: 6px 0 0;
-    font-size: 13px;
+    margin: 4px 0 0;
+    font-size: 12px;
     color: var(--text-main);
     text-align: center;
 }
 
 .product-price-txt strong {
+    display: inline-block;
     color: var(--success);
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 900;
+    letter-spacing: .01em;
+    text-shadow: 0 1px 0 rgba(0,0,0,.03);
+}
+
+/* Keep the card footer aligned regardless of title length. */
+#resultsList .product-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 190px;
+}
+
+#resultsList .product-thumb {
+    flex: 0 0 96px;
+}
+
+#resultsList .product-info {
+    flex: 1 1 auto;
+    min-height: 78px;
+    display: flex;
+    flex-direction: column;
+}
+
+#resultsList .product-info h4 {
+    flex: 1 1 auto;
+    min-height: 3.9em;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+#resultsList .product-info h4 .product-name-badge {
+    margin-top: auto;
+    flex: 0 0 auto;
+}
+
+#resultsList .product-info .product-subtitle {
+    flex: 0 0 auto;
+}
+
+#resultsList .product-info .product-price-txt {
+    flex: 0 0 auto;
+    margin-top: auto;
 }
 
 .product-barcode-txt {
@@ -964,7 +1070,7 @@ body.dark-mode .modal-edit-btn {
 .confirm-cancel-btn {
     flex: 1;
     border: none;
-    padding: 10px;
+    padding: 12px;
     border-radius: 8px;
     font-weight: 700;
     cursor: pointer;
@@ -1120,7 +1226,9 @@ body.dark-mode .modal-edit-btn {
     font-weight: 900;
     margin: 8px 0 6px;
     min-width: 0;
-    overflow: hidden;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    word-break: break-word;
     width: 100%;
     line-height: 1.4;
 }
@@ -1128,6 +1236,14 @@ body.dark-mode .modal-edit-btn {
 .modal-name .product-name-main,
 .modal-name .product-name-badge {
     max-width: 100%;
+    overflow: visible;
+    white-space: normal;
+}
+
+.modal-name .product-name-main {
+    display: block;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
 }
 
 .modal-name .product-name-badge {
@@ -1202,7 +1318,7 @@ body.dark-mode .modal-edit-btn {
 
 .pos-container {
     background: rgba(255, 255, 255, .82);
-    padding: 10px;
+    padding: 12px;
     border-radius: 14px;
     box-shadow: 0 4px 12px rgba(15, 23, 42, .05);
     border: 1px solid rgba(148, 163, 184, .15);
@@ -6467,7 +6583,28 @@ body.dark-mode #searchSection .product-price-txt strong {
     border-radius: 8px;
     color: var(--text-main);
     font-size: 12px;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
     transition: background-color .2s ease, border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+
+.category-manager-row:active,
+.category-manager-row.is-dragging {
+    cursor: grabbing;
+    opacity: .7;
+}
+
+.category-manager-row.is-drag-over {
+    border-color: var(--primary);
+    background: rgba(41, 128, 185, .1);
+}
+
+.category-drag-handle {
+    color: var(--text-muted);
+    cursor: grab;
+    font-size: 18px;
+    line-height: 1;
 }
 
 .category-manager-row:hover {
@@ -6908,9 +7045,14 @@ body.dark-mode #searchSection .product-price-txt strong {
     }
 
     #searchSection .product-info .product-name-main {
+        display: -webkit-box;
         overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
     #searchSection .product-info .product-name-badge {
@@ -7043,5 +7185,75 @@ body.dark-mode #searchSection .product-price-txt strong {
         font-size: 11px !important;
         line-height: 1.3 !important;
         margin-bottom: 4px !important;
+    }
+}
+
+/* Final card footer alignment override. */
+#resultsList .product-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    min-height: 220px;
+    padding: 12px;
+    box-sizing: border-box;
+}
+
+#resultsList .product-info {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 94px;
+}
+
+#resultsList .product-info h4 {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 90px;
+    box-sizing: border-box;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+#resultsList .product-info h4 .product-name-badge {
+    margin-top: auto;
+}
+
+#resultsList .product-info .product-price-txt {
+    margin-top: auto;
+}
+
+/* Unified card footer: category stays available in data but is hidden from the card UI. */
+#resultsList .product-subtitle {
+    display: none !important;
+}
+
+#resultsList .product-name-badge {
+    display: block;
+    max-width: 100%;
+    margin-top: 8px;
+    overflow: hidden;
+    padding: 4px 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow-wrap: normal;
+    word-break: normal;
+}
+
+#resultsList .product-info h4 .product-name-badge {
+    margin-top: 8px;
+}
+
+@media (max-width: 768px) {
+    #resultsList .product-card {
+        min-height: 190px;
+        padding: 8px;
+    }
+
+    #resultsList .product-info h4 {
+        min-height: 68px;
     }
 }

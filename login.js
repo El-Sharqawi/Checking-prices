@@ -200,11 +200,86 @@ async function syncProductCategoriesFromDatabase() {
     }
 }
 
+async function runLegacyProductBrandMigration() {
+    if (!firebaseReady || !db) return;
+
+    try {
+        const migrationDoc = await db.collection("app_settings").doc("productBrandMigration").get();
+        const migrationState = migrationDoc.exists ? migrationDoc.data() : null;
+        const currentVersion = Number(migrationState?.version || 0);
+
+        if (currentVersion >= 1) return;
+
+        const snapshot = await db.collection("products").get();
+        const updates = [];
+
+        snapshot.forEach(doc => {
+            const product = { id: doc.id, ...doc.data() };
+            const rawName = normalizeProductInputName(product?.name || "");
+            const explicitBrand = normalizeProductInputBrand(
+                product?.brand ||
+                product?.brandName ||
+                product?.manufacturer ||
+                product?.badge ||
+                product?.productBrand ||
+                product?.marka
+            );
+
+            if (!rawName || explicitBrand) return;
+
+            const parsed = parseProductName(rawName);
+            if (!parsed.badge) return;
+
+            const cleanName = normalizeProductInputName(parsed.main || rawName);
+            const cleanBrand = normalizeProductInputBrand(parsed.badge);
+            if (!cleanName || !cleanBrand) return;
+
+            updates.push({
+                id: doc.id,
+                data: {
+                    name: cleanName,
+                    brand: cleanBrand,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }
+            });
+        });
+
+        if (!updates.length) {
+            await db.collection("app_settings").doc("productBrandMigration").set({
+                version: 1,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                completedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            return;
+        }
+
+        const batch = db.batch();
+        updates.forEach(item => {
+            batch.update(db.collection("products").doc(item.id), item.data);
+        });
+        batch.set(db.collection("app_settings").doc("productBrandMigration"), {
+            version: 1,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            completedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            migratedProducts: updates.length
+        }, { merge: true });
+        await batch.commit();
+    } catch (error) {
+        console.warn("Legacy product brand migration skipped:", error);
+    }
+}
+
 function populateProductCategories(selectedValue = "") {
     const select = document.getElementById("productCategory");
     const filter = document.getElementById("productCategoryFilter");
 
-    const categories = [...productCategories];
+    const categories = [...productCategories].sort((first, second) => {
+        const firstFixed = getCategoryOrderIndex(first);
+        const secondFixed = getCategoryOrderIndex(second);
+        if (firstFixed !== secondFixed) return firstFixed - secondFixed;
+        if (firstFixed < FIXED_CATEGORY_ORDER.length) return 0;
+        return productCategories.indexOf(first) - productCategories.indexOf(second);
+    });
     if (select) {
         select.innerHTML = '<option value="" disabled hidden></option>' + categories.map(category =>
             `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`
@@ -239,10 +314,20 @@ function normalizeCategoryText(value) {
 function suggestCategoryFromName(name) {
     const value = normalizeCategoryText(name);
     if (!value) return "";
+
+    const directCategoryMatch = [...productCategories]
+        .sort((first, second) => normalizeCategoryText(second).length - normalizeCategoryText(first).length)
+        .find(category => {
+            const normalizedCategory = normalizeCategoryText(category);
+            return normalizedCategory.length > 1 && value.includes(normalizedCategory);
+        });
+    if (directCategoryMatch) return directCategoryMatch;
+
     const keywords = {
         "مشروبات": ["عصير", "جوس", "بيبسي", "بيبيسي", "كولا", "كوكاكولا", "مشروب", "مياه", "ماء", "شاي", "شاى", "قهوة", "قهوه", "نسكافيه", "نسكفيه", "فيروز", "سبيرو سباتس", "ميرندا", "سفن", "سفن اب", "ريد بول", "مشروب طاقه", "باور هورس", "ستينج", "بيبسي دايت", "فانتا", "ديو", "تانج", "راني", "ايد", "energy", "drink", "juice", "water", "cola", "pepsi", "coca", "fanta", "red bull"],
-        "شيبسي": ["شيبسي", "شيبس", "تشيبس", "بطاطس", "مقرمش", "مقرمشات", "سناكس", "سناك", "فشار", "ذره مقرمشه", "كرسبي", "بفك", "بوشار", "تسالي", "لب", "فول سوداني", "crackers", "chips", "snack", "doritos", "lays", "ليز", "تايجر", "برينجلز", "pringles", "cheetos", "cheetos"],
-        "بسكويت": ["بسكويت", "بسكوت", "ويفر", "شوكولاته", "شيكولاته", "شكولاته", "شوكولا", "كاكاو", "حلوى", "حلاوه", "كيك", "جاتوه", "كوكيز", "قرشله", "بسكويت شاي", "cookies", "biscuit", "wafer", "chocolate", "cocoa", "oreo", "اوريو", "جالكسي", "galaxy", "cadbury", "kinder", "kit kat", "مارس", "سنيكرز", "snickers", "twix", "milka", "toblerone"],
+        "شيبسي": ["شيبسي", "شيبس", "شبسي", "تشيبس", "فوكس", "fox", "بطاطس", "مقرمش", "مقرمشات", "سناكس", "سناك", "فشار", "ذره مقرمشه", "كرسبي", "بفك", "بوشار", "تسالي", "لب", "فول سوداني", "crackers", "chips", "snack", "doritos", "lays", "ليز", "تايجر", "برينجلز", "pringles", "cheetos"],
+        "بسكويت": ["بسكويت", "بسكوت", "ويفر", "شوكولاته", "شيكولاته", "شكولاته", "شوكولا", "كاكاو", "حلوى", "حلاوه", "كيك", "شمعدان", "جاتوه", "كوكيز", "قرشله", "بسكويت شاي", "cookies", "biscuit", "wafer", "chocolate", "cocoa", "oreo", "اوريو", "جالكسي", "galaxy", "cadbury", "kinder", "kit kat", "مارس", "سنيكرز", "snickers", "twix", "milka", "toblerone"],
+        "كيك": ["كيك", "كيكة", "توينكز", "twinkies", "جاتوه", "سويسرول", "كاب كيك", "cupcake", "cake"],
         "زيوت": ["زيت", "زيوت", "سمن", "سمنة", "كانولا", "ذره", "عباد الشمس", "زيت زيتون", "زيتون", "زيت حار", "زيت قلي", "oil", "ghee", "olive oil"],
         "ألبان": ["لبن", "حليب", "جبنه", "جبن", "زبادي", "زبادى", "رايب", "قشطه", "قشطة", "كريمه", "كريمة", "موتزاريلا", "فيتا", "لبنه", "لبان", "دانون", "جهينه", "المراعي", "dairy", "milk", "cheese", "yogurt", "cream"],
         "معلبات": ["معلب", "معلبات", "تونه", "تونة", "فول", "صلصه", "صلصة", "ذره", "حمص", "بسله", "بسلة", "لانشون", "سردين", "مربى", "مربي", "مكرونه", "مكرونة", "كاتشب", "مايونيز", "canned", "tuna", "beans", "pasta", "ketchup", "mayonnaise"],
@@ -257,11 +342,58 @@ function suggestCategoryFromName(name) {
     ).filter(match => match.keyword && value.includes(match.keyword));
 
     matches.sort((a, b) => b.keyword.length - a.keyword.length);
-    return matches[0]?.category || "";
+    const suggestedKey = normalizeCategoryText(matches[0]?.category || "");
+    if (!suggestedKey) return "";
+
+    const categoryAliases = {
+        "مشروبات": ["مشروبات", "مشروب", "عصائر", "عصير", "مياه", "ماء", "سوائل"],
+        "شيبسي": ["شيبسي", "شيبس", "شبسي", "مقرمشات", "سناكس", "سناك"],
+        "بسكويت": ["بسكويت", "بسكوت", "ويفر", "حلويات"],
+        "كيك": ["كيك", "كيكة", "جاتوه", "حلويات"],
+        "زيوت": ["زيوت", "زيت", "سمن"],
+        "ألبان": ["ألبان", "لبن", "حليب", "جبن", "جبنه"],
+        "معلبات": ["معلبات", "معلب"],
+        "منظفات": ["منظفات", "منظف"]
+    };
+    const aliasEntry = Object.entries(categoryAliases).find(([key]) => normalizeCategoryText(key) === suggestedKey);
+    const aliases = aliasEntry ? aliasEntry[1] : [suggestedKey];
+
+    return productCategories.find(category => {
+        const normalizedCategory = normalizeCategoryText(category);
+        return aliases.some(alias => {
+            const normalizedAlias = normalizeCategoryText(alias);
+            return normalizedCategory === normalizedAlias || normalizedCategory.includes(normalizedAlias) || normalizedAlias.includes(normalizedCategory);
+        });
+    }) || "";
 }
 
 function suggestCategoryFromFile(fileName) {
     return suggestCategoryFromName(String(fileName || "").replace(/[._-]+/g, " "));
+}
+
+function updateDynamicProductBrandField(categoryValue = "") {
+    const label = document.getElementById("productBrandLabel");
+    const input = document.getElementById("productBrand");
+    if (!label || !input) return;
+
+    const category = normalizeCategoryText(categoryValue || document.getElementById("productCategory")?.value || "");
+    const beverageKeywords = ["مشروبات", "مشروب", "عصائر", "عصير", "جوس", "مياه", "ماء", "ألبان", "لبن", "حليب", "زيوت", "زيت", "سائل", "سوائل", "water", "juice", "drink", "beverage", "dairy", "milk", "oil"];
+    const flavorKeywords = ["شيبسي", "شيبس", "مقرمش", "مقرمشات", "سناكس", "سناك", "بسكويت", "بسكوت", "ويفر", "كوكيز", "chips", "snack", "biscuit", "cookie", "wafer"];
+
+    if (beverageKeywords.some(keyword => category.includes(normalizeCategoryText(keyword)))) {
+        label.textContent = "النوع / الحجم";
+        input.placeholder = "";
+        return;
+    }
+
+    if (flavorKeywords.some(keyword => category.includes(normalizeCategoryText(keyword)))) {
+        label.textContent = "الطعم / النكهة";
+        input.placeholder = "بالكاتشب، جبنة، بالفراولة";
+        return;
+    }
+
+    label.textContent = "الشارة / التفاصيل الفرعية";
+    input.placeholder = "أدخل التفاصيل الفرعية...";
 }
 
 function applySuggestedCategory(name) {
@@ -269,6 +401,7 @@ function applySuggestedCategory(name) {
     const select = document.getElementById("productCategory");
     if (suggestion && select && productCategories.includes(suggestion) && !select.dataset.categoryManuallyChanged) {
         select.value = suggestion;
+        updateDynamicProductBrandField(suggestion);
     }
 }
 
@@ -331,7 +464,8 @@ function renderCategoryManagerList() {
     const list = document.getElementById("categoryManagerList");
     if (!list) return;
     list.innerHTML = productCategories.map(category => `
-        <div class="category-manager-row">
+        <div class="category-manager-row" draggable="true" data-category="${escapeHtml(category)}">
+            <span class="category-drag-handle" aria-hidden="true" title="اسحب لإعادة الترتيب">⠿</span>
             <span>${escapeHtml(category)}</span>
             <span class="category-manager-actions">
                 <button type="button" onclick="renameCategory('${escapeHtml(category)}')">تعديل</button>
@@ -339,6 +473,68 @@ function renderCategoryManagerList() {
             </span>
         </div>
     `).join("");
+    setupCategoryDragAndDrop(list);
+}
+
+function setupCategoryDragAndDrop(list) {
+    if (!list || list.dataset.dragReady === "1") return;
+    list.dataset.dragReady = "1";
+    let draggedCategory = "";
+
+    list.addEventListener("dragstart", event => {
+        const row = event.target.closest(".category-manager-row");
+        if (!row) return;
+        draggedCategory = row.dataset.category || "";
+        row.classList.add("is-dragging");
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", draggedCategory);
+    });
+
+    list.addEventListener("dragover", event => {
+        const row = event.target.closest(".category-manager-row");
+        if (!row || !draggedCategory) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        row.classList.toggle("is-drag-over", row.dataset.category !== draggedCategory);
+    });
+
+    list.addEventListener("dragleave", event => {
+        event.target.closest(".category-manager-row")?.classList.remove("is-drag-over");
+    });
+
+    list.addEventListener("drop", async event => {
+        const targetRow = event.target.closest(".category-manager-row");
+        if (!targetRow || !draggedCategory) return;
+        event.preventDefault();
+
+        const targetCategory = targetRow.dataset.category || "";
+        const fromIndex = productCategories.indexOf(draggedCategory);
+        const toIndex = productCategories.indexOf(targetCategory);
+        if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
+
+        const previousCategories = [...productCategories];
+        productCategories.splice(fromIndex, 1);
+        productCategories.splice(toIndex, 0, draggedCategory);
+        renderCategoryManagerList();
+        populateProductCategories(document.getElementById("productCategory")?.value || "");
+
+        try {
+            await persistProductCategories();
+            showToast("تم حفظ ترتيب الأقسام");
+        } catch (error) {
+            productCategories = previousCategories;
+            renderCategoryManagerList();
+            populateProductCategories(document.getElementById("productCategory")?.value || "");
+            showToast("تعذر حفظ ترتيب الأقسام", false);
+        }
+    });
+
+    list.addEventListener("dragend", () => {
+        draggedCategory = "";
+        list.querySelectorAll(".is-dragging, .is-drag-over").forEach(row => {
+            row.classList.remove("is-dragging", "is-drag-over");
+        });
+    });
 }
 
 async function addCategory(name) {
@@ -607,44 +803,65 @@ function getProductById(id) {
 
 }
 
+const FIXED_CATEGORY_ORDER = ["مشروبات", "عصائر", "شيبسي", "سناكس", "اندومي", "بسكوت", "كيك", "شكولاته", "بقالة"];
+const FIXED_CATEGORY_ALIASES = {
+    "شيبسي": ["شيبسي", "شيبس", "شبسي"],
+    "سناكس": ["سناكس", "سناك", "مقرمشات"],
+    "بسكوت": ["بسكوت", "بسكويت"],
+    "شكولاته": ["شكولاته", "شوكولاته", "شوكولا"]
+};
+
+function getCategoryOrderIndex(category) {
+    const normalizedCategory = normalizeCategoryText(category);
+    const fixedIndex = FIXED_CATEGORY_ORDER.findIndex(item => {
+        const aliases = FIXED_CATEGORY_ALIASES[item] || [item];
+        return aliases.some(alias => normalizeCategoryText(alias) === normalizedCategory);
+    });
+    return fixedIndex >= 0 ? fixedIndex : FIXED_CATEGORY_ORDER.length;
+}
+
 function compareProductsByCategory(a, b) {
     const categoryCompare = getProductCategoryOrder(a) - getProductCategoryOrder(b);
     if (categoryCompare !== 0) return categoryCompare;
 
-    const brandCompare = getProductBrand(a).localeCompare(
-        getProductBrand(b),
-        "ar",
-        { sensitivity: "base" }
-    );
-    if (brandCompare !== 0) return brandCompare;
-
-    const packagingCompare = getProductPackaging(a).localeCompare(
-        getProductPackaging(b),
-        "ar",
-        { sensitivity: "base", numeric: true }
+    const packagingCompare = compareProductText(
+        getProductPackagingGroup(a),
+        getProductPackagingGroup(b)
     );
     if (packagingCompare !== 0) return packagingCompare;
 
-    const nameCompare = normalizeProductName(a?.name).localeCompare(
-        normalizeProductName(b?.name),
-        "ar",
-        { sensitivity: "base", numeric: true }
-    );
+    const nameCompare = compareProductText(a?.name, b?.name);
     if (nameCompare !== 0) return nameCompare;
+
+    const dynamicFieldCompare = compareProductText(getProductDynamicField(a), getProductDynamicField(b));
+    if (dynamicFieldCompare !== 0) return dynamicFieldCompare;
 
     return getProductCreationTime(a) - getProductCreationTime(b);
 }
 
+function compareProductText(first, second) {
+    return normalizeProductName(first).localeCompare(
+        normalizeProductName(second),
+        "ar",
+        { sensitivity: "base", numeric: true }
+    );
+}
+
+function isProductNameFirstCategory(category) {
+    const normalizedCategory = normalizeCategoryText(category);
+    return ["عصائر", "شيبسي", "سناكس", "مقرمشات", "بسكوت", "بسكويت", "كيك", "شكولاته", "شوكولاته", "شوكولا"]
+        .some(item => normalizeCategoryText(item) === normalizedCategory);
+}
+
 function getProductCategoryOrder(product) {
     const category = normalizeCategoryText(product?.category);
-    const primaryCategoryOrder = ["مشروبات", "عصائر", "شيبسي", "مقرمشات"];
-    const primaryIndex = primaryCategoryOrder.findIndex(name => category === normalizeCategoryText(name));
-    if (primaryIndex >= 0) return primaryIndex;
+    const fixedIndex = getCategoryOrderIndex(category);
+    if (fixedIndex < FIXED_CATEGORY_ORDER.length) return fixedIndex;
 
     const savedIndex = productCategories.findIndex(savedCategory =>
         normalizeCategoryText(savedCategory) === category
     );
-    return primaryCategoryOrder.length + (savedIndex >= 0 ? savedIndex : productCategories.length);
+    return FIXED_CATEGORY_ORDER.length + (savedIndex >= 0 ? savedIndex : productCategories.length);
 }
 
 function getProductCreationTime(product) {
@@ -670,6 +887,33 @@ function getProductBrand(product) {
     return normalizedName.split(" ").slice(0, 2).join(" ");
 }
 
+function getProductDynamicField(product) {
+    const explicitField = getExplicitProductBrand(product);
+    if (explicitField) return normalizeProductName(explicitField);
+    return normalizeProductName(parseProductName(product?.name || "").badge || "");
+}
+
+function getProductPackagingGroup(product) {
+    const rawPackaging = [
+        product?.packaging,
+        product?.packageType,
+        product?.size,
+        product?.quantity,
+        getProductDynamicField(product),
+        product?.name
+    ].map(value => normalizeProductName(value)).filter(Boolean).join(" ");
+
+    if (/(كانز|كان|علبه|علبة|can|cans)/i.test(rawPackaging)) return "01 كانز";
+    if (/(لتر|لترين|ل\b|liter|litre|l\b)/i.test(rawPackaging)) return "02 لتر";
+    if (/(مل|ملي|ملل|ml|milliliter)/i.test(rawPackaging)) return "03 مل";
+    if (/(زجاجه|زجاجة|ازازه|إزاز|bottle|glass)/i.test(rawPackaging)) return "04 زجاجة";
+    if (/(كيس|عبوه|عبوة|bag|pack|packet)/i.test(rawPackaging)) return "05 كيس/عبوة";
+    if (/(كرتونه|كرتونة|box|carton)/i.test(rawPackaging)) return "06 كرتونة";
+
+    const explicitPackaging = getProductPackaging(product);
+    return explicitPackaging ? `50 ${explicitPackaging}` : "99 غير محدد";
+}
+
 function getProductPackaging(product) {
     const explicitPackaging = [product?.packaging, product?.packageType, product?.size, product?.quantity]
         .map(value => String(value || "").trim())
@@ -687,51 +931,99 @@ function getProductPackaging(product) {
 }
 
 function sortProductsByCategory(products) {
-    return [...products].sort(compareProductsByCategory);
+    return [...products]
+        .map((product, index) => ({ product, index }))
+        .sort((first, second) => compareProductsByCategory(first.product, second.product) || first.index - second.index)
+        .map(item => item.product);
 }
 
 function normalizeProductName(value) {
     return String(value || "").trim().replace(/\s+/g, " ").toLowerCase();
 }
 
+function normalizeProductId(value) {
+    return String(value ?? "").trim();
+}
+
 function normalizeProductInputName(value) {
     return String(value || "").replace(/\s+/g, " ").trim();
 }
 
+function normalizeProductInputBrand(value) {
+    return normalizeProductInputName(value).replace(/^[-.\s]+|[-.\s]+$/g, "");
+}
+
+function getExplicitProductBrand(product) {
+    return [
+        product?.brand,
+        product?.brandName,
+        product?.manufacturer,
+        product?.badge,
+        product?.productBrand,
+        product?.marka
+    ]
+        .map(value => normalizeProductInputBrand(value))
+        .find(Boolean) || "";
+}
+
 function parseProductName(value) {
     const normalized = normalizeProductInputName(value);
-    const separatorIndex = normalized.search(/[.-]/);
-    if (separatorIndex < 0) return { main: normalized, badge: "" };
+    if (!normalized) return { main: "", badge: "" };
 
+    const separatorMatch = normalized.match(/\s*(?:-|–|—|\/|\.)\s*/);
+    if (!separatorMatch) return { main: normalized, badge: "" };
+
+    const separatorIndex = separatorMatch.index;
     const main = normalized.slice(0, separatorIndex).trim();
-    const badge = normalized.slice(separatorIndex + 1).trim();
+    const badge = normalized.slice(separatorIndex + separatorMatch[0].length).trim();
     if (!main || !badge) return { main: normalized, badge: "" };
-    return { main, badge };
+
+    const before = main.replace(/\s+/g, " ").trim();
+    const after = badge.replace(/\s+/g, " ").trim();
+    if (/^\d+([.,]\d+)?$/.test(before) && /^\d+([.,]\d+)?$/.test(after)) {
+        return { main: normalized, badge: "" };
+    }
+
+    return { main: before, badge: after };
 }
 
 function productNameMarkup(value) {
-    const { main, badge } = parseProductName(value);
-    return `<span class="product-name-main">${escapeHtml(main || "بدون اسم")}</span>${badge ? `<span class="product-name-badge">${escapeHtml(badge)}</span>` : ""}`;
+    const source = typeof value === "object" && value !== null ? value : { name: value };
+    const rawName = normalizeProductInputName(source.name || source.productName || "");
+    const explicitBrand = normalizeProductInputBrand(getExplicitProductBrand(source));
+    const legacyParts = parseProductName(rawName);
+
+    if (explicitBrand) {
+        return `<span class="product-name-main">${escapeHtml(rawName || "بدون اسم")}</span><span class="product-name-badge">${escapeHtml(explicitBrand)}</span>`;
+    }
+
+    if (legacyParts.badge) {
+        return `<span class="product-name-main">${escapeHtml(legacyParts.main || "بدون اسم")}</span><span class="product-name-badge">${escapeHtml(legacyParts.badge)}</span>`;
+    }
+
+    return `<span class="product-name-main">${escapeHtml(rawName || "بدون اسم")}</span>`;
 }
 
 function isDuplicateProductName(name, ignoreId = "") {
     const normalized = normalizeProductName(name);
     if (!normalized) return false;
+    const ignoredProductId = normalizeProductId(ignoreId);
 
     return allProductsCache.some(product => {
-        const currentId = String(product.id || "");
+        const currentId = normalizeProductId(product.id);
         const currentName = normalizeProductName(product.name || "");
-        return currentId !== ignoreId && currentName === normalized;
+        return currentId !== ignoredProductId && currentName === normalized;
     });
 }
 
 function isDuplicateProductBarcode(barcode, ignoreId = "") {
     const normalizedBarcode = normalizeBarcode(barcode);
     if (!normalizedBarcode || normalizedBarcode === "بدونباركود") return false;
+    const ignoredProductId = normalizeProductId(ignoreId);
 
     return allProductsCache.some(product => {
-        const currentId = String(product.id || "");
-        return currentId !== ignoreId && normalizeBarcode(product.barcode) === normalizedBarcode;
+        const currentId = normalizeProductId(product.id);
+        return currentId !== ignoredProductId && normalizeBarcode(product.barcode) === normalizedBarcode;
     });
 }
 
@@ -1143,11 +1435,21 @@ function updateStats(products) {
 
 }
 
-function updateProductCacheAndDisplay(product) {
-    const index = allProductsCache.findIndex(item => item.id === product.id);
-    if (index >= 0) allProductsCache[index] = product;
-    else allProductsCache.push(product);
-    allProductsCache = sortProductsByCategory(allProductsCache);
+function updateProductCacheAndDisplay(product, preservePosition = false) {
+    const productId = normalizeProductId(product?.id);
+    if (!productId) return;
+
+    const cachedProduct = { ...product, id: productId };
+    productsById.set(productId, cachedProduct);
+
+    const existingIndex = allProductsCache.findIndex(item =>
+        normalizeProductId(item.id) === productId
+    );
+    if (existingIndex >= 0) allProductsCache[existingIndex] = cachedProduct;
+    else allProductsCache.push(cachedProduct);
+    if (!preservePosition || existingIndex < 0) {
+        allProductsCache = sortProductsByCategory(allProductsCache);
+    }
     updateStats(allProductsCache);
     displayProducts(allProductsCache);
 }
@@ -1166,6 +1468,8 @@ async function saveProduct() {
     const saveButton = document.getElementById("saveProductBtn");
 
     const name = normalizeProductInputName(document.getElementById("productName").value);
+
+    const brand = normalizeProductInputBrand(document.getElementById("productBrand").value);
 
     const priceRaw = document.getElementById("productPrice").value.trim();
 
@@ -1195,20 +1499,22 @@ async function saveProduct() {
 
     }
 
-    if (isDuplicateProductName(name, editingId)) {
-        showToast("هذا المنتج موجود", false);
-        return;
-    }
-
     if (!category) {
         showToast("اختر القسم أولاً", false);
         document.getElementById("productCategory").focus();
         return;
     }
 
-    if (isDuplicateProductBarcode(barcode, editingId)) {
-        showToast("هذا الباركود مستخدم بالفعل لمنتج آخر", false);
-        return;
+    if (!editingId) {
+        if (isDuplicateProductName(name)) {
+            showToast("هذا المنتج موجود", false);
+            return;
+        }
+
+        if (isDuplicateProductBarcode(barcode)) {
+            showToast("هذا الباركود مستخدم بالفعل لمنتج آخر", false);
+            return;
+        }
     }
 
     if (saveButton?.disabled) return;
@@ -1233,8 +1539,8 @@ async function saveProduct() {
         const newImage = (await getImageAsDataUrl(imageFile)) || lookedUpImageUrl || null;
 
         if (editingId) {
-            const updatedProduct = await updateExistingProduct(editingId, name, priceRaw, category, barcode, newImage);
-            updateProductCacheAndDisplay(updatedProduct);
+            const updatedProduct = await updateExistingProduct(editingId, name, brand, priceRaw, category, barcode, newImage);
+            updateProductCacheAndDisplay(updatedProduct, true);
             document.getElementById("editingId").value = "";
             resetFormFields();
             showToast("تم التعديل");
@@ -1243,6 +1549,8 @@ async function saveProduct() {
             const newProduct = {
 
                 name,
+
+                brand,
 
                 price: priceRaw,
 
@@ -1289,7 +1597,7 @@ async function saveProduct() {
 
 }
 
-async function updateExistingProduct(id, name, price, category, barcode, newImage) {
+async function updateExistingProduct(id, name, brand, price, category, barcode, newImage) {
 
     const productRef = db.collection("products").doc(id);
 
@@ -1302,14 +1610,6 @@ async function updateExistingProduct(id, name, price, category, barcode, newImag
     }
 
     const old = oldSnapshot.data() || {};
-
-    if (isDuplicateProductName(name, id)) {
-        throw new Error("DUPLICATE_PRODUCT_NAME");
-    }
-
-    if (isDuplicateProductBarcode(barcode, id)) {
-        throw new Error("DUPLICATE_PRODUCT_BARCODE");
-    }
 
     const oldPrice = Number(old.price);
 
@@ -1326,6 +1626,8 @@ async function updateExistingProduct(id, name, price, category, barcode, newImag
     const updatedData = {
 
         name,
+
+        brand,
 
         price,
 
@@ -1398,6 +1700,8 @@ function resetFormFields() {
     const searchResults = document.getElementById("productSearchResults");
     const name = document.getElementById("productName");
 
+    const brand = document.getElementById("productBrand");
+
     const price = document.getElementById("productPrice");
 
     const category = document.getElementById("productCategory");
@@ -1416,6 +1720,7 @@ function resetFormFields() {
     if (search) search.value = "";
     if (searchResults) searchResults.innerHTML = "";
     if (name) name.value = "";
+    if (brand) brand.value = "";
     if (price) price.value = "";
 
     if (category) {
@@ -1424,6 +1729,8 @@ function resetFormFields() {
     }
 
     if (barcode) barcode.value = "";
+
+    updateDynamicProductBrandField("");
 
     if (image) image.value = "";
 
@@ -1522,7 +1829,8 @@ function displayProducts(products) {
         }
 
         card.title = name;
-        card.querySelector("[data-product-name]").innerHTML = productNameMarkup(product.name);
+        card.querySelector("[data-product-name]").innerHTML = productNameMarkup(product);
+        card.querySelector("[data-product-name]").title = name;
         card.querySelector("[data-product-subtitle]").textContent = getProductCategory(product) || "";
         card.querySelector("[data-product-price]").textContent = `${price} ج.م`;
         const image = card.querySelector("img");
@@ -1564,7 +1872,7 @@ function productMatchesQuery(product, query) {
     const normalizedQuery = String(query || "").trim().toLowerCase();
     if (!normalizedQuery) return true;
 
-    return [product.name, product.price, product.barcode]
+    return [product.name, product.brand, product.price, product.barcode]
         .some(value => String(value ?? "").toLowerCase().includes(normalizedQuery));
 }
 
@@ -1650,10 +1958,12 @@ function fillProductForm(id) {
 
     document.getElementById("editingId").value = product.id;
     document.getElementById("productName").value = product.name || "";
+    document.getElementById("productBrand").value = product.brand || "";
     document.getElementById("productPrice").value = product.price ?? "";
     const categoryInput = document.getElementById("productCategory");
     categoryInput.value = product.category || "";
-    categoryInput.dataset.categoryManuallyChanged = "1";
+    delete categoryInput.dataset.categoryManuallyChanged;
+    updateDynamicProductBrandField(categoryInput.value);
     document.getElementById("productBarcode").value = product.barcode === "بدون باركود" ? "" : (product.barcode || "");
     document.getElementById("productImageUrl").value = product.image || "";
     document.getElementById("productSearchInput").value = "";
@@ -1780,6 +2090,13 @@ function deleteProduct(id) {
 
                     await batch.commit();
 
+
+                productsById.delete(normalizeProductId(id));
+                allProductsCache = allProductsCache.filter(product =>
+                    normalizeProductId(product.id) !== normalizeProductId(id)
+                );
+                updateStats(allProductsCache);
+                displayProducts(allProductsCache);
                 }
 
                 showToast("تم الحذف", false);
@@ -1877,6 +2194,14 @@ async function deleteSelectedProducts() {
                     await deleteFirestoreRefsInChunks(updateRefs);
                 }
 
+                productIds.forEach(id => productsById.delete(normalizeProductId(id)));
+                const deletedProductIds = new Set(productIds.map(normalizeProductId));
+                allProductsCache = allProductsCache.filter(product =>
+                    !deletedProductIds.has(normalizeProductId(product.id))
+                );
+                updateStats(allProductsCache);
+                displayProducts(allProductsCache);
+
                 showToast("تم الحذف", false);
 
             } catch (error) {
@@ -1916,7 +2241,10 @@ function openProductModal(id) {
         };
     }
 
-    if (name) name.innerHTML = productNameMarkup(product.name);
+    if (name) {
+        name.innerHTML = productNameMarkup(product);
+        name.title = normalizeProductInputName(product.name || "");
+    }
     if (barcode) barcode.textContent = "الباركود: " + (product.barcode || "بدون باركود");
     if (category) category.textContent = "القسم: " + (getProductCategory(product) || "غير محدد");
 
@@ -1985,7 +2313,7 @@ function openUpdateModal(docId) {
 
     }
 
-    if (name) name.innerHTML = productNameMarkup(update.name);
+    if (name) name.innerHTML = productNameMarkup(update);
     if (price) {
 
         price.innerHTML = "";
@@ -2246,7 +2574,7 @@ function displayPriceUpdates(updates) {
                     >
 
                     <div class="price-update-main">
-                        <div class="price-update-name">${productNameMarkup(update.name)}</div>
+                        <div class="price-update-name">${productNameMarkup(update)}</div>
                         <div class="price-update-line">
                             <span class="price-update-old">${oldPrice} ج.م</span>
                             <span class="price-update-arrow">←</span>
@@ -3125,6 +3453,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
         initRealtimeListeners();
         syncProductCategoriesFromDatabase();
+        runLegacyProductBrandMigration();
 
     }
 
@@ -3160,7 +3489,9 @@ document.addEventListener("DOMContentLoaded", () => {
     productNameInput?.addEventListener("input", event => applySuggestedCategory(event.target.value));
     productCategoryInput?.addEventListener("change", event => {
         event.target.dataset.categoryManuallyChanged = "1";
+        updateDynamicProductBrandField(event.target.value);
     });
+    updateDynamicProductBrandField(productCategoryInput?.value || "");
 
     const posInput = document.getElementById("posSearchInput");
 
@@ -3360,7 +3691,7 @@ function renderCartRow(item, itemTotal, qtyHandler, removeHandler) {
     const id = escapeHtml(item.id);
     return `
         <tr>
-            <td class="lux-name">${productNameMarkup(item.name)}</td>
+            <td class="lux-name">${productNameMarkup(item)}</td>
             <td>
                 <div class="quantity-controls">
                     <button type="button" class="pos-qty-btn" onclick="${qtyHandler}('${id}', -1)">−</button>
