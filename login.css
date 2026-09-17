@@ -72,8 +72,8 @@ button:disabled {
 }
 
 .container {
-    width: 100%;
-    max-width: 540px;
+    width: 94%;
+    max-width: none;
     background: var(--card-bg);
     padding: 18px 18px 20px;
     border-radius: 18px;
@@ -1420,9 +1420,9 @@ body.dark-mode .modal-edit-btn {
         min-width: 0;
     }
     .product-info h4 {
-        font-size: 11px;
-        line-height: 1.2;
-        min-height: 2.4em;
+        font-size: 12px;
+        line-height: 1.3;
+        min-height: 3.9em;
         overflow-wrap: anywhere;
         word-break: break-word;
     }
@@ -1433,6 +1433,8 @@ body.dark-mode .modal-edit-btn {
         white-space: normal;
         overflow-wrap: anywhere;
         word-break: break-word;
+        -webkit-line-clamp: unset;
+        line-clamp: unset;
     }
     #resultsList .product-name-badge {
         width: fit-content;
@@ -7344,5 +7346,42 @@ body.dark-mode #searchSection .product-price-txt strong {
     #searchSection #resultsList .product-image-box {
         flex-basis: 106px !important;
         height: 106px !important;
+    }
+}
+
+/* Keep product names fully readable in the three-column mobile layout. */
+.container {
+    width: 94% !important;
+    max-width: none !important;
+}
+
+#resultsList .product-info h4 .product-name-main,
+#resultsList .product-info h4 .product-name-badge {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+}
+
+@media (max-width: 520px) {
+    #resultsList .product-card {
+        min-height: 205px;
+        height: auto;
+        padding: 8px 6px 10px;
+    }
+
+    #resultsList .product-info h4 {
+        min-height: 0;
+        margin-top: 6px;
+        font-size: 12px;
+        line-height: 1.35;
+    }
+
+    #resultsList .product-info h4 .product-name-main {
+        font-size: 12px;
+        line-height: 1.35;
     }
 }
