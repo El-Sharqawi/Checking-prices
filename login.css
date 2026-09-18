@@ -6976,15 +6976,6 @@ body.dark-mode #searchSection .product-price-txt strong {
         border-radius: 22px;
     }
 
-    #productModal .modal-img {
-        width: 280px;
-        height: 280px;
-        max-width: 100%;
-        max-height: 280px;
-        margin: 22px auto 16px;
-        object-fit: contain;
-    }
-
     #productModal .modal-name {
         font-size: 24px;
         line-height: 1.35;
@@ -7200,6 +7191,15 @@ body.dark-mode #searchSection .product-price-txt strong {
     }
 
     #productModal .modal-img {
+        width: 280px;
+        height: 280px;
+        max-width: 100%;
+        max-height: 280px;
+        margin: 22px auto 16px;
+        object-fit: contain;
+    }
+
+    #productModal .modal-img {
         width: 160px;
         height: 160px;
         max-width: 100%;
@@ -7364,10 +7364,10 @@ body.dark-mode #searchSection .product-price-txt strong {
 
 #productModal .modal-img {
     width: min(82vw, 320px);
-    height: min(82vw, 320px);
+    height: min(82vw, 320px) !important;
     max-width: 100%;
     max-height: min(82vw, 320px);
-    object-fit: contain;
+    object-fit: cover;
 }
 
 @media (max-width: 768px) {
